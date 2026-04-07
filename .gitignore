@@ -1,0 +1,15 @@
+project-spec.md
+STATUS.md
+AGENTS.md
+.vscode
+.idea
+.codex
+.gemini
+.gemini-cli
+.claude
+node_modules
+.venv
+dist
+coverage
+storybook-static
+*.tgz

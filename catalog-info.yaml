@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: plugin-service-tokens
+  description: Backstage plugin for machine-to-machine service token lifecycle management.
+  annotations:
+    # Tells TechDocs to build docs from the mkdocs.yml in this directory.
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: library
+  lifecycle: production
+  owner: user:default/guest

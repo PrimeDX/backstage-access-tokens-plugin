@@ -1,0 +1,63 @@
+{
+  "name": "@adriandantas/plugin-service-tokens-backend",
+  "version": "0.1.0",
+  "description": "Backstage backend plugin for service token lifecycle management and REST APIs.",
+  "license": "BUSL-1.1",
+  "backstage": {
+    "role": "backend-plugin",
+    "pluginId": "service-tokens",
+    "features": {
+      ".": "@backstage/BackendFeature"
+    }
+  },
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "files": [
+    "README.md",
+    "src/auth.js",
+    "src/config.js",
+    "src/createToken.js",
+    "src/database.js",
+    "src/entityRefs.js",
+    "src/expressRouter.js",
+    "src/getToken.js",
+    "src/http.js",
+    "src/index.d.ts",
+    "src/index.js",
+    "src/listTokens.js",
+    "src/migrations.js",
+    "src/plugin.js",
+    "src/revokeToken.js",
+    "src/router.js",
+    "src/scopes.js",
+    "src/tokens.js"
+  ],
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "author": "Adrian Dantas",
+  "keywords": [
+    "backstage",
+    "backstage-plugin",
+    "service-tokens",
+    "backend-plugin"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@adriandantas/plugin-service-tokens-node": "^0.1.0",
+    "@backstage/catalog-model": "^1.7.5",
+    "@backstage/backend-plugin-api": "^1.8.0",
+    "@backstage/plugin-permission-common": "^0.9.7",
+    "@backstage/plugin-catalog-node": "^2.0.0",
+    "express": "^4.22.0"
+  },
+  "scripts": {
+    "test": "node --test src/**/*.test.js"
+  }
+}
