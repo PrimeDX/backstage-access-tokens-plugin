@@ -1,0 +1,41 @@
+{
+  "name": "backstage-service-token-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "license": "BUSL-1.1",
+  "type": "module",
+  "scripts": {
+    "changeset": "changeset",
+    "docs:install": "python3 -m venv .venv && .venv/bin/pip install mkdocs mkdocs-material",
+    "docs:serve": ".venv/bin/mkdocs serve",
+    "ci": "npm run test && npm run storybook:build && npm run pack:dry-run",
+    "pack:backend": "npm_config_cache=/tmp/npm-cache npm pack --dry-run --workspace packages/plugin-service-tokens-backend",
+    "pack:dry-run": "npm run pack:frontend && npm run pack:backend && npm run pack:node",
+    "pack:frontend": "npm_config_cache=/tmp/npm-cache npm pack --dry-run --workspace packages/plugin-service-tokens",
+    "pack:node": "npm_config_cache=/tmp/npm-cache npm pack --dry-run --workspace packages/plugin-service-tokens-node",
+    "storybook": "CI=1 STORYBOOK_DISABLE_TELEMETRY=1 HOME=/tmp storybook dev -p 6006",
+    "storybook:build": "CI=1 STORYBOOK_DISABLE_TELEMETRY=1 HOME=/tmp storybook build",
+    "test": "node --test packages/*/src/*.test.js",
+    "test:backend": "node --test packages/plugin-service-tokens-backend/src/*.test.js",
+    "test:frontend": "node --test packages/plugin-service-tokens/src/*.test.js",
+    "test:node": "node --test packages/plugin-service-tokens-node/src/*.test.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/addon-interactions": "^8.6.14",
+    "@storybook/react-webpack5": "^8.6.14",
+    "better-sqlite3": "^11.10.0",
+    "knex": "^3.2.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.2",
+    "storybook": "^8.6.14"
+  }
+}
