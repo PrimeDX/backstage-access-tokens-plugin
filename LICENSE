@@ -1,0 +1,60 @@
+Business Source License 1.1
+
+Parameters
+
+Licensor:             Adrian Dantas
+Licensed Work:        backstage-service-token-plugin
+Additional Use Grant: You may copy, modify, create derivative works of, and
+                      self-host this software for internal business purposes
+                      at no charge. You may not provide this software (or a
+                      substantially similar hosted offering) to third parties
+                      as a managed/hosted service without a separate
+                      commercial license from the Licensor.
+Change Date:          2029-04-05
+Change License:       Apache License, Version 2.0
+
+Terms
+
+Business Source License 1.1
+
+Copyright (C) 2026 Adrian Dantas
+
+Everyone is granted the right to copy, modify, create derivative works, and
+redistribute the Licensed Work, subject to the terms of this License.
+
+The Licensor hereby grants you the right to copy, modify, create derivative
+works, publicly display, publicly perform, sublicense, and distribute the
+Licensed Work and such derivative works for any purpose, provided that any use
+of the Licensed Work in violation of this License will automatically terminate
+your rights under this License for the current and all other versions of the
+Licensed Work.
+
+Use Limitation. The right to use the Licensed Work for any purpose is granted
+only to the extent such use does not violate the Additional Use Grant.
+
+The Licensor may make new versions of the Licensed Work available under this
+License from time to time. As of the Change Date, all use of the Licensed Work
+and derivative works is governed by the Change License.
+
+If your use of the Licensed Work does not violate the Additional Use Grant,
+then this License grants you rights substantially similar to those granted
+under the Apache License, Version 2.0.
+
+If your use of the Licensed Work does violate the Additional Use Grant, then
+you must obtain a commercial license from the Licensor.
+
+This License does not grant any rights to use the Licensor's trademarks,
+service marks, or logos.
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS
+PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE LICENSOR BE
+LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
+LICENSED WORK OR THE USE OR OTHER DEALINGS IN THE LICENSED WORK.
+
+---
+
+This file is based on the BUSL-1.1 form published at:
+https://mariadb.com/bsl11/
