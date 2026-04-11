@@ -15,10 +15,14 @@
     "pack:node": "npm_config_cache=/tmp/npm-cache npm pack --dry-run --workspace packages/plugin-service-tokens-node",
     "storybook": "CI=1 STORYBOOK_DISABLE_TELEMETRY=1 HOME=/tmp storybook dev -p 6006",
     "storybook:build": "CI=1 STORYBOOK_DISABLE_TELEMETRY=1 HOME=/tmp storybook build",
-    "test": "node --test packages/*/src/*.test.js",
-    "test:backend": "node --test packages/plugin-service-tokens-backend/src/*.test.js",
+    "test": "npm run test:prepare && node --test packages/*/src/*.test.js",
+    "test:api-script": "bash scripts/test-api.sh",
+    "test:backend": "npm run test:prepare && node --test packages/plugin-service-tokens-backend/src/*.test.js",
     "test:frontend": "node --test packages/plugin-service-tokens/src/*.test.js",
-    "test:node": "node --test packages/plugin-service-tokens-node/src/*.test.js"
+    "test:node": "node --test packages/plugin-service-tokens-node/src/*.test.js",
+    "test:prepare": "npm rebuild better-sqlite3",
+    "test:ui-smoke": "playwright test",
+    "test:ui-smoke:headed": "playwright test --headed"
   },
   "engines": {
     "node": ">=22.0.0"
@@ -28,6 +32,7 @@
   ],
   "devDependencies": {
     "@changesets/cli": "^2.29.7",
+    "@playwright/test": "^1.32.3",
     "@storybook/addon-essentials": "^8.6.14",
     "@storybook/addon-interactions": "^8.6.14",
     "@storybook/react-webpack5": "^8.6.14",
