@@ -1,8 +1,15 @@
 # Testing the Service Token Plugin
 
-This guide walks through exercising the `backstage-service-token-plugin` end-to-end against a local Backstage integration harness.
+Audience: adopters and operators validating an installed plugin in a local or pre-production Backstage environment.
 
-> **Maintainer note:** If you are iterating on unpublished plugin changes, use the [Developer Test Guide](developer-test-guide.md) for the fastest repeatable path with `/Users/adrian/src/my-portal`. This guide stays focused on the adopter-style end-to-end flows.
+Use this guide to confirm the plugin works end to end after installation. For unpublished package work or local `file:` installs, use the maintainer-focused [Developer Test Guide](developer-test-guide.md).
+
+By the end of this guide you should be able to verify:
+
+- the admin UI loads and performs the main token lifecycle actions
+- the REST API returns the documented request and response shapes
+- raw service tokens authenticate against Backstage backend routes
+- revocation and permission checks behave as expected
 
 The frontend UI at `/admin/service-tokens` provides a full page experience: token list with filters, a **Create token** button, and **Audit** / **Revoke** actions per row — all wired to the backend. Choose the path that suits your workflow:
 
@@ -12,9 +19,9 @@ The frontend UI at `/admin/service-tokens` provides a full page experience: toke
 
 | Path | What it tests |
 |------|---------------|
-| [Path A — API Testing](#path-a--api-testing) | Full end-to-end via `curl` — no browser required |
-| [Path B — UI Testing](#path-b--ui-testing) | Full end-to-end via the browser UI |
-| [Path C — Playwright Smoke](#path-c--playwright-smoke) | Maintainer-oriented create → audit → revoke UI smoke path |
+| Path A — API Testing | Full end-to-end via `curl` — no browser required |
+| Path B — UI Testing | Full end-to-end via the browser UI |
+| Path C — Playwright Smoke | Focused create → audit → revoke UI smoke path |
 
 Paths A and B cover the same scenarios (create, list, audit, revoke, permission enforcement). Path C is intentionally narrower: it validates the primary admin UI flow against a local harness. You can also mix the paths — for example, create via the UI and verify via the API.
 
@@ -32,19 +39,17 @@ nvm use 22
 ### 2. Start the backend
 
 ```bash
-cd /home/roberto/projects/super-dev-portal
-source ~/.nvm/nvm.sh && nvm use 22
-node .yarn/releases/yarn-4.4.1.cjs workspace backend start 2>&1 | tee /tmp/backend.log
+cd /path/to/your-backstage-app
+yarn workspace backend start
 ```
 
-Wait until you see `Listening on :7007` in the output.
+Wait until the backend is listening on `http://localhost:7007`.
 
 ### 3. Start the frontend (separate terminal)
 
 ```bash
-cd /home/roberto/projects/super-dev-portal
-source ~/.nvm/nvm.sh && nvm use 22
-node .yarn/releases/yarn-4.4.1.cjs workspace app start 2>&1 | tee /tmp/frontend.log
+cd /path/to/your-backstage-app
+yarn workspace app start
 ```
 
 Wait until you see `Rspack compiled successfully` in the output.
@@ -497,7 +502,7 @@ The frontend page at `/admin/service-tokens`:
 
 ## Path C — Playwright Smoke
 
-This path is a maintainer-oriented smoke test for the primary admin UI flow. It is designed to complement, not replace, the API path:
+This path is a focused smoke test for the primary admin UI flow. It is designed to complement, not replace, the API path:
 
 - `scripts/test-api.sh` validates contract and auth behavior
 - Playwright validates that the user-facing create → audit → revoke flow still works
@@ -523,7 +528,6 @@ This path is a maintainer-oriented smoke test for the primary admin UI flow. It 
 - Node `22`
 - the plugin repo dependencies installed
 - a local Backstage harness already running
-- for the recommended maintainer loop, `/Users/adrian/src/my-portal`
 - `serviceTokens.cacheTtlSeconds: 0` in the harness local config so revocation checks are deterministic
 
 ### Run the smoke test
@@ -550,4 +554,4 @@ Expected:
 - the token is revoked with a reason
 - the audit dialog then shows `revoked` followed by `created`
 
-If you are using `/Users/adrian/src/my-portal`, refresh local `file:` dependencies with `yarn install` after plugin changes so the harness picks up the current package snapshot.
+If your local harness uses `file:` dependencies, refresh them with `yarn install` after package changes so the app picks up the current package snapshot.

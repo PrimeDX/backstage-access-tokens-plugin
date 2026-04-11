@@ -1,5 +1,9 @@
 # Releasing to npm
 
+Audience: maintainers publishing new package versions from this repository.
+
+Use this guide after code, tests, and documentation are already aligned and ready to ship.
+
 This repository publishes three public scoped packages:
 
 - `@adriandantas/plugin-service-tokens`
@@ -72,3 +76,4 @@ Run that command from the package directory you want to publish.
 - Confirm each package page exists on npm
 - Confirm the package README renders correctly
 - Confirm the install snippets in `README.md` still match the published versions
+- Confirm the docs still describe the current auth, permission, and scope-enforcement behavior accurately

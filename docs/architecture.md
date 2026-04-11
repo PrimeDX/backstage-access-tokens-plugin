@@ -1,5 +1,7 @@
 # Architecture
 
+Audience: contributors and advanced readers who need the internal design, not the install story.
+
 This document describes the internal design of the service token plugin — how the three packages fit together, how a token is created and verified, and the key design decisions that shaped the implementation.
 
 ---
@@ -269,6 +271,6 @@ The frontend package follows two conventions that differ from typical Backstage 
 - **Backend unit tests** use Node's built-in `node:test` runner with SQLite (via `better-sqlite3`) for database tests. No Jest, no Vitest.
 - **Frontend unit tests** use Node's built-in test runner for pure helper functions.
 - **UI component tests** use Storybook — each component has a dedicated story file covering all meaningful states.
-- **Integration tests** are run against the `super-dev-portal` reference app, which installs the plugin packages as local file dependencies.
+- **Integration tests** are run against a local Backstage harness app that installs the plugin packages and exercises the documented API and UI flows.
 
 See [Testing Guide](testing.md) for the full end-to-end test walkthrough.

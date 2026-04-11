@@ -1,5 +1,9 @@
 # Production Readiness Guide
 
+Audience: platform engineers preparing the plugin for production Backstage environments.
+
+Use this guide after installation is working and you are ready to harden policy, cache behavior, and operational practices.
+
 This guide covers what you need to verify, configure, and decide before running the service token plugin in a production Backstage deployment. It assumes you have already completed the [Getting Started](getting-started.md) walkthrough.
 
 ---
@@ -15,7 +19,7 @@ Run through this before going live. Each item links to the relevant section belo
 - [ ] `serviceTokens.cacheTtlSeconds` is tuned to match your revocation SLO (see [Cache TTL and revocation SLO](#cache-ttl-and-revocation-slo))
 - [ ] `serviceTokens.maxTokenLifetimeDays` is set to a value appropriate for your security policy
 - [ ] Audit log retention is understood and covered by your logging infrastructure (see [Audit log retention](#audit-log-retention))
-- [ ] At least one smoke test has been run against the production backend (see [Getting Started § Step 7](getting-started.md#step-7--smoke-test))
+- [ ] At least one smoke test has been run against the production backend (see [Getting Started](getting-started.md) for the smoke-test flow in Step 7)
 
 ---
 

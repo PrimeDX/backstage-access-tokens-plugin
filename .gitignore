@@ -12,6 +12,7 @@ node_modules
 dist
 coverage
 storybook-static
+site
 playwright-report
 test-results
 *.tgz
