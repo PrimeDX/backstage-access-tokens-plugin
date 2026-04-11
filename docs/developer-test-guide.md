@@ -1,66 +1,39 @@
 # Developer Test Guide
 
-This guide is the fastest reliable way to validate the plugin locally **before the packages are published to npm**.
+Audience: maintainers working on unpublished changes to this plugin.
 
-Use it when you are changing the plugin itself and want a maintainer-focused answer to one of these questions:
+Use this guide when you need fast, repeatable verification in a local Backstage harness before publishing new package versions.
 
-- Does the plugin still work in a real Backstage app?
-- Do local `file:` installs still behave correctly before publication?
-- Does the admin UI still support the core create → audit → revoke flow?
+By the end of this guide you should be able to answer:
 
-If you are validating the plugin as an adopter, start with the [Tutorial](tutorial.md). If you want the broad end-to-end operator flow after installation, use the [Testing Guide](testing.md). This guide is for maintainers iterating on unpublished changes.
+- does the plugin still work in a real Backstage app
+- do local `file:` installs still behave correctly
+- does the primary create -> audit -> revoke flow still work end to end
 
----
+For the adopter experience, use the [Tutorial](tutorial.md) or [Getting Started](getting-started.md). For the broader post-install validation path, use the [Testing Guide](testing.md).
 
 ## What This Guide Covers
 
-- Node 22 verification in this repo
-- Local `file:` installs into a Backstage app
-- A fast repeat harness using `my-portal`
-- API smoke coverage with `scripts/test-api.sh`
-- UI smoke coverage with Playwright
+- validating this repository before integration
+- maintaining a reusable local Backstage harness
+- running the API smoke path with `scripts/test-api.sh`
+- running the Playwright UI smoke path
+- revalidating local `file:` installs in a fresh app when needed
 
-The canonical contract for this guide matches:
+The canonical behavior for this guide matches:
 
 - [REST API Reference](api.md)
 - [Testing Guide](testing.md)
 - [Contract Decisions](contract-decisions.md)
 
-That means:
-
-- audit responses use `events` with `event`, `actor`, `metadata`, and `occurredAt`
-- audit events are returned newest-first
-- deterministic local revocation checks rely on `serviceTokens.cacheTtlSeconds: 0`
-
----
-
-## When To Use This Guide
-
-Use this guide instead of the main tutorial when:
-
-- you are validating unpublished package changes
-- you need local `file:` installs instead of npm packages
-- you want a repeatable maintainer loop against `/Users/adrian/src/my-portal`
-- you want both API and UI smoke checks without re-scaffolding a new app every time
-
-Use the tutorial instead when:
-
-- you want the adopter experience from scratch
-- you are checking docs readability for platform engineers
-- you want the simplest end-user install story
-
----
-
 ## Prerequisites
 
-Make sure these are available:
-
-- Node `22`
+- Node 22
 - Yarn
 - `jq`
 - `curl`
-- this plugin repo cloned locally
-- the local harness app at `/Users/adrian/src/my-portal`
+- this plugin repository cloned locally
+- a local Backstage harness app that you can start and reconfigure
 
 Check the toolchain:
 
@@ -78,17 +51,9 @@ source ~/.nvm/nvm.sh
 nvm use 22
 ```
 
-Expected:
-
-- `node --version` reports `v22.x`
-- Yarn is available
-- `jq` and `curl` are installed
-
----
-
 ## 1. Verify This Repo First
 
-From this repo:
+From this repository:
 
 ```bash
 cd /path/to/backstage-service-token-plugin
@@ -101,46 +66,35 @@ Expected:
 - all tests pass
 - all three packages pack successfully in dry-run mode
 
-If this fails, stop and fix the plugin repo before moving on.
+If this fails, fix the plugin repository before moving on to harness validation.
 
----
+## 2. Prepare a Reusable Local Harness
 
-## 2. Fast Repeat Path — Use `my-portal`
+Use any local Backstage app that you can restart quickly and modify safely. The harness should be configured to match the documented contract.
 
-This is the recommended maintainer loop after the first integration is working.
+Before starting the harness, verify:
 
-Why:
-
-- it is already aligned to the tutorial contract
-- it uses local `file:` dependencies from this repo
-- it is fast to re-run after plugin changes
-
-Before starting the harness, confirm these behaviors in `/Users/adrian/src/my-portal`:
-
-- `backend.auth.externalAccess` includes `backstage-service-token`
-- `serviceTokens.admin.userEntityRefs` includes `user:development/guest`
-- `serviceTokens.cacheTtlSeconds: 0` is set in local config
-- `group:default/platform` exists in `examples/org.yaml`
-- local `file:` dependencies have been refreshed with `yarn install`
+- `serviceTokens.admin.userEntityRefs` grants the guest or test user the service token permissions
+- `serviceTokens.cacheTtlSeconds: 0` is set in local config if you want deterministic revocation checks
+- the catalog includes at least one group you can use for token creation, such as `group:default/platform`
+- your harness can start both backend and frontend locally
 
 Then start the harness:
 
 ```bash
-cd /Users/adrian/src/my-portal
+cd /path/to/your-backstage-app
 yarn start
 ```
 
 Expected:
 
 - frontend serves on `http://localhost:3000`
-- backend listens on `http://localhost:7007`
-- no startup error occurs for the service token plugin
-
----
+- backend serves on `http://localhost:7007`
+- startup completes without plugin registration or permission-policy errors
 
 ## 3. Run the API Smoke Path
 
-From this repo, with `my-portal` running:
+With the harness running, execute the repository API smoke script:
 
 ```bash
 cd /path/to/backstage-service-token-plugin
@@ -151,27 +105,25 @@ Expected:
 
 - guest token acquisition succeeds
 - scope listing succeeds
-- token creation returns `201` and a one-time `rawToken`
-- raw token authenticates against the Catalog API
-- audit log returns an `events` array
+- token creation returns `201` with a one-time `rawToken`
+- the raw token authenticates against the Catalog API
+- audit responses use `{ "events": [...] }`
 - revoke returns `204`
-- revoked raw token is rejected with `401`
+- revoked raw tokens are rejected with `401`
 - unauthenticated create is rejected with `401`
 
-If this fails, treat it as a contract or harness issue first, not a Playwright issue.
-
----
+If this path fails, treat it as a contract, config, or harness issue before debugging Playwright.
 
 ## 4. Run the Playwright UI Smoke Path
 
-With `my-portal` already running:
+With the harness already running:
 
 ```bash
 cd /path/to/backstage-service-token-plugin
 PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke
 ```
 
-Optional:
+Optional headed run:
 
 ```bash
 PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke:headed
@@ -179,21 +131,17 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke:headed
 
 Expected:
 
-- the service token page loads
-- the create dialog works for a unique token
-- the success dialog shows the raw token once
+- the page loads
+- the create dialog succeeds for a unique token
+- the success dialog shows a raw token once
 - the audit dialog shows `created`
 - revoke succeeds
 - the table shows `Revoked`
-- the audit dialog shows newest-first ordering: `revoked`, then `created`
+- the audit dialog shows newest-first ordering after revoke
 
-This smoke test intentionally covers only the primary happy path. It does not yet validate every permission or error branch.
+## 5. Revalidate Local `file:` Installs in a Fresh App
 
----
-
-## 5. Fresh App Path — Revalidate Local `file:` Installs
-
-Use this path when you want to prove the plugin still works in a newly scaffolded Backstage app before publication.
+Use this path when you want to prove unpublished package changes still work in a newly scaffolded Backstage app.
 
 Create a fresh app:
 
@@ -204,52 +152,14 @@ cd /tmp
 npx @backstage/create-app@latest
 ```
 
-Move into the new app:
+Move into the app and install dependencies:
 
 ```bash
 cd /tmp/service-token-dev-test
-```
-
-Reinstall under Node 22:
-
-```bash
 yarn install
 ```
 
-Expected:
-
-- the clean app starts before plugin changes
-- Node 22 is the active runtime for native modules
-
----
-
-## 6. Install the Plugin From Local Package Folders
-
-Use this plugin repo path as an example:
-
-```text
-/path/to/backstage-service-token-plugin
-```
-
-Add a root Yarn resolution before backend install so the local node package is used consistently:
-
-```json
-"resolutions": {
-  "@types/react": "^18",
-  "@types/react-dom": "^18",
-  "@adriandantas/plugin-service-tokens-node@npm:^0.1.0": "file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens-node"
-}
-```
-
-If `resolutions` already exists, add the service-token entry rather than replacing existing values.
-
-Then run:
-
-```bash
-yarn install
-```
-
-Install the plugin packages with local `file:` paths:
+Then install the plugin packages from local folders:
 
 ```bash
 yarn --cwd packages/backend add \
@@ -262,65 +172,37 @@ yarn --cwd packages/app add \
   @adriandantas/plugin-service-tokens@file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens
 ```
 
-Then run:
+If your app needs a root `resolutions` entry so the local node package is used consistently, add it deliberately and keep any existing values intact.
 
-```bash
-yarn install
-```
+After install, wire the app to match the documented tutorial contract:
 
-Expected:
+- register the backend plugin
+- register the service token auth handler module
+- register the frontend plugin in `createApp({ features: [...] })`
+- configure admin users and, if needed, `serviceTokens.cacheTtlSeconds: 0` for deterministic revocation checks
 
-- installs succeed
-- peer warnings may appear
-- the local packages are materialized into the app successfully
+Then run the same API and UI smoke paths.
 
----
+## 6. What to Record When Something Fails
 
-## 7. Wire the Fresh App to Match the Tutorial Contract
+Capture enough detail to tell whether the issue belongs to this repository, the harness app, or the local installation flow:
 
-Use the [Tutorial](tutorial.md) and [Getting Started](getting-started.md) documents as the canonical wiring reference.
-
-For parity, the fresh app should end up with:
-
-- backend plugin registration
-- auth handler registration
-- custom permission policy
-- `backend.auth.externalAccess` for `backstage-service-token`
-- `serviceTokens.admin.userEntityRefs` including `user:development/guest`
-- `serviceTokens.cacheTtlSeconds: 0` in local config
-- `group:default/platform` present in the catalog
-- frontend registration of `serviceTokensPlugin`
-
-Expected:
-
-- `/admin/service-tokens` loads without `401` or `403`
-- API and UI smoke paths behave the same way as the maintainer harness
-
----
-
-## 8. What To Record If Something Fails
-
-Capture:
-
-- the exact command you ran
-- the exact error output
-- whether the failure was in this repo, `my-portal`, or a fresh app
-- whether the failure was in the API smoke path or the Playwright smoke path
-- whether the failure was contract-related, install-related, or harness-related
-
-That keeps maintainer debugging grounded in facts instead of assumptions.
-
----
+- the exact command that failed
+- backend and frontend logs
+- whether the failure reproduced in the reusable harness, a fresh app, or both
+- whether the mismatch is in behavior, docs, or packaging
+- whether the failure affects the public contract in [Contract Decisions](contract-decisions.md)
 
 ## Recommended Maintainer Loop
 
 For day-to-day iteration:
 
-1. Change the plugin
-2. Run `npm test`
-3. Refresh `my-portal` with `yarn install` if package contents changed
-4. Start `my-portal`
-5. Run `npm run test:api-script -- http://localhost:7007`
-6. Run `PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke`
+1. Make the plugin change in this repository.
+2. Run `npm test`.
+3. Run `npm run pack:dry-run` if package contents may have changed.
+4. Refresh the local harness dependencies if you are using local `file:` installs.
+5. Start or restart the harness.
+6. Run `npm run test:api-script -- http://localhost:7007`.
+7. Run `PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke`.
 
-That gives quick confidence in both contract behavior and the main admin UI path before publication work begins.
+That sequence gives quick confidence in both the public contract and the primary admin UI flow before release work begins.

@@ -1,5 +1,9 @@
 # REST API Reference
 
+Audience: integrators and operators working directly with the token management API.
+
+Use this reference for request and response contracts, route permissions, and development-time authentication examples.
+
 The service token backend exposes its API at `/api/service-tokens`. Every endpoint requires a valid Backstage user session plus the route-specific permission listed below.
 
 ---

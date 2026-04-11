@@ -44,6 +44,7 @@ Treat these as locked unless the public contract is intentionally changed across
 - Treat tests as a major concern, not a cleanup step
 - Update docs and tests together when behavior, contract, or workflow changes
 - Keep documentation current whenever code, APIs, configuration, or maintainer workflow changes
+- Write `README.md` and general user-facing documentation with the standards of an experienced open source technical writer for Backstage-style projects: clear audience-aware structure, practical examples, accurate installation and usage guidance, and concise explanations that help new adopters succeed quickly
 - Add or update JSDoc where exported behavior, interfaces, or non-obvious logic need durable explanation
 - Keep commits reviewable and grouped by change type
 - Use Conventional Commits

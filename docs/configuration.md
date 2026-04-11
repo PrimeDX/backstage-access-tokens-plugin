@@ -1,5 +1,9 @@
 # Configuration Reference
 
+Audience: platform engineers configuring the plugin in an existing Backstage app.
+
+Use this reference to tune token lifetime, cache behavior, admin access, and scope catalog entries.
+
 All configuration lives under the `serviceTokens` key in `app-config.yaml`. Every key is optional — the plugin ships with sensible defaults and will start without any configuration present.
 
 ---
@@ -107,7 +111,7 @@ serviceTokens:
 
 > **Important:** The default value (`user:development/guest`) is intentionally permissive for local development. Always set an explicit list in production.
 
-The permission check is delegated to your Backstage permission policy. The config value is read by the policy implementation — see [Getting Started § Step 4](getting-started.md#step-4--add-a-permission-policy) for the reference policy.
+The permission check is delegated to your Backstage permission policy. The config value is read by the policy implementation — see [Getting Started](getting-started.md) for the reference policy in Step 4.
 
 > **Migration note:** Older examples used a single `service-tokens.admin` permission. The current plugin uses three granular permissions instead. If you still check only `serviceTokensAdminPermission`, users will have read access only until you update your policy.
 

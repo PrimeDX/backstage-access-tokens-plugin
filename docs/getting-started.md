@@ -1,5 +1,9 @@
 # Getting Started
 
+Audience: platform engineers wiring the plugin into an existing Backstage app.
+
+Use this guide when your Backstage app already exists and you want the shortest supported path to installation, configuration, and a working smoke test.
+
 This guide walks a platform engineer through installing and wiring the service token plugin into an existing Backstage application. By the end you will have:
 
 - The backend plugin running and serving the REST API at `/api/service-tokens`

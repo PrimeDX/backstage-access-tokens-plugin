@@ -1,5 +1,9 @@
 # Build a Backstage App with Service Token Support — End-to-End Tutorial
 
+Audience: evaluators and adopters starting from a fresh Backstage app.
+
+Use this guide when you want to experience the full setup journey from scaffolding a new app through validating the plugin in both API and UI flows.
+
 > **Estimated time:** ~30 minutes  
 > **Difficulty:** Beginner-friendly — no prior Backstage experience required
 
