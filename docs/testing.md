@@ -1,8 +1,8 @@
 # Testing the Service Token Plugin
 
-This guide walks through exercising the `backstage-service-token-plugin` end-to-end against the `super-dev-portal` integration harness.
+This guide walks through exercising the `backstage-service-token-plugin` end-to-end against a local Backstage integration harness.
 
-> **Note:** Path examples in this document use `/home/roberto/projects/super-dev-portal` because they were captured from the reference harness. Replace with your own Backstage app path when following these steps.
+> **Maintainer note:** If you are iterating on unpublished plugin changes, use the [Developer Test Guide](developer-test-guide.md) for the fastest repeatable path with `/Users/adrian/src/my-portal`. This guide stays focused on the adopter-style end-to-end flows.
 
 The frontend UI at `/admin/service-tokens` provides a full page experience: token list with filters, a **Create token** button, and **Audit** / **Revoke** actions per row — all wired to the backend. Choose the path that suits your workflow:
 
@@ -14,8 +14,9 @@ The frontend UI at `/admin/service-tokens` provides a full page experience: toke
 |------|---------------|
 | [Path A — API Testing](#path-a--api-testing) | Full end-to-end via `curl` — no browser required |
 | [Path B — UI Testing](#path-b--ui-testing) | Full end-to-end via the browser UI |
+| [Path C — Playwright Smoke](#path-c--playwright-smoke) | Maintainer-oriented create → audit → revoke UI smoke path |
 
-Both paths cover the same scenarios (create, list, audit, revoke, permission enforcement). You can also mix them — e.g. create via the UI and verify via the API.
+Paths A and B cover the same scenarios (create, list, audit, revoke, permission enforcement). Path C is intentionally narrower: it validates the primary admin UI flow against a local harness. You can also mix the paths — for example, create via the UI and verify via the API.
 
 ---
 
@@ -129,7 +130,7 @@ curl -s http://localhost:7007/api/service-tokens \
 **Expected response:**
 
 ```json
-{ "tokens": [] }
+{ "tokens": [], "total": 0, "limit": 50, "offset": 0 }
 ```
 
 ---
@@ -207,10 +208,10 @@ curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID/audit \
     {
       "id": "<uuid>",
       "tokenId": "<TOKEN_ID>",
-      "action": "created",
-      "performedBy": "user:development/guest",
-      "occurredAt": "<timestamp>",
-      "reason": null
+      "event": "created",
+      "actor": "user:development/guest",
+      "metadata": {},
+      "occurredAt": "<timestamp>"
     }
   ]
 }
@@ -263,7 +264,10 @@ curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID/audit \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
-**Expected:** Two events — `created` and `revoked` — with the reason `"testing revocation flow"`.
+**Expected:** Two events in newest-first order:
+
+- `revoked` with `metadata.reason = "testing revocation flow"`
+- `created` with empty `metadata`
 
 #### Filter the list by status
 
@@ -282,7 +286,7 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
   -w "\nHTTP status: %{http_code}\n"
 ```
 
-**Expected:** HTTP `401 Unauthorized`. The revoked token is rejected.
+**Expected:** HTTP `401 Unauthorized` once revocation has propagated through the configured cache TTL. If your app keeps the default `serviceTokens.cacheTtlSeconds: 60`, wait up to 60 seconds; for deterministic local checks, set the TTL to `0`.
 
 ---
 
@@ -436,8 +440,8 @@ http://localhost:3000/admin/service-tokens
 
 **Expected:**
 - Two rows in the audit table:
-  1. **created** — `user:development/guest` — no reason
-  2. **revoked** (red chip) — `user:development/guest` — reason: `testing revocation via UI`
+  1. **revoked** (red chip) — `user:development/guest` — reason: `testing revocation via UI`
+  2. **created** — `user:development/guest` — no reason
 
 2. Click **Close**.
 
@@ -453,7 +457,7 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
   -w "\nHTTP status: %{http_code}\n"
 ```
 
-**Expected:** HTTP `401 Unauthorized`. The revoked token is rejected by the backend.
+**Expected:** HTTP `401 Unauthorized` once revocation has propagated through the configured cache TTL. If your local app sets `serviceTokens.cacheTtlSeconds: 0`, this happens immediately.
 
 ---
 
@@ -488,3 +492,62 @@ The frontend page at `/admin/service-tokens`:
 - ✅ **Create token** button opens `CreateTokenDialog` — full form with name, description, group selector, scope checkboxes, expiry date, and a success step with copy-to-clipboard
 - ✅ **Revoke** button per row opens `RevokeDialog` — confirmation with optional reason, disabled for already-revoked tokens
 - ✅ **Audit** button per row opens `AuditLogDialog` — event table with action chips, actor, reason, and timestamp
+
+---
+
+## Path C — Playwright Smoke
+
+This path is a maintainer-oriented smoke test for the primary admin UI flow. It is designed to complement, not replace, the API path:
+
+- `scripts/test-api.sh` validates contract and auth behavior
+- Playwright validates that the user-facing create → audit → revoke flow still works
+
+### What it covers
+
+- page load at `/admin/service-tokens`
+- create dialog happy path
+- one-time raw token display after creation
+- audit log rendering
+- revoke flow
+- newest-first audit ordering after revoke
+
+### What it does not cover yet
+
+- every permission-denied branch
+- backend error state rendering
+- cross-browser matrix coverage
+- CI-managed ephemeral harness startup
+
+### Prerequisites
+
+- Node `22`
+- the plugin repo dependencies installed
+- a local Backstage harness already running
+- for the recommended maintainer loop, `/Users/adrian/src/my-portal`
+- `serviceTokens.cacheTtlSeconds: 0` in the harness local config so revocation checks are deterministic
+
+### Run the smoke test
+
+With your harness already running:
+
+```bash
+cd /path/to/backstage-service-token-plugin
+PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke
+```
+
+Optional headed mode:
+
+```bash
+PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke:headed
+```
+
+Expected:
+
+- the page loads successfully
+- the smoke test creates a uniquely named token for `group:default/platform`
+- the success dialog shows a raw token once
+- the audit dialog first shows `created`
+- the token is revoked with a reason
+- the audit dialog then shows `revoked` followed by `created`
+
+If you are using `/Users/adrian/src/my-portal`, refresh local `file:` dependencies with `yarn install` after plugin changes so the harness picks up the current package snapshot.

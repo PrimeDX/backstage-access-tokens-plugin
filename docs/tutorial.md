@@ -57,7 +57,7 @@ cd my-portal
 Start the app in development mode:
 
 ```bash
-yarn dev
+yarn start
 ```
 
 This starts both the backend (port 7007) and the frontend (port 3000) in a single terminal. Wait until you see both of these lines:
@@ -67,7 +67,7 @@ This starts both the backend (port 7007) and the frontend (port 3000) in a singl
 [1] Rspack compiled successfully
 ```
 
-> **Tip:** `yarn dev` runs both processes together. If you prefer separate terminals, use `yarn workspace backend start` and `yarn workspace app start` in two separate shells.
+> **Tip:** `yarn start` runs both processes together. If you prefer separate terminals, use `yarn workspace backend start` and `yarn workspace app start` in two separate shells.
 
 ### ✅ Checkpoint 1
 
@@ -97,12 +97,6 @@ yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-node
 yarn --cwd packages/app add @adriandantas/plugin-service-tokens
 ```
 
-Also install the Backstage permission backend (required for the permission policy in Part 5):
-
-```bash
-yarn --cwd packages/backend add @backstage/plugin-permission-backend
-```
-
 ### ✅ Checkpoint 2
 
 Run `yarn install` to make sure the workspace is consistent:
@@ -119,26 +113,12 @@ You should see no errors. If you see peer dependency warnings, they are safe to 
 
 *~5 minutes*
 
-Open `packages/backend/src/index.ts`. You'll see a file that looks like this:
+Open `packages/backend/src/index.ts`. You will see a file that already includes `plugin-permission-backend` and `plugin-permission-backend-module-allow-all-policy` from the scaffold.
+
+Add the service token plugin and auth handler module imports at the top, then register them **after** the existing permission lines:
 
 ```typescript
 import { createBackend } from '@backstage/backend-defaults';
-
-const backend = createBackend();
-
-backend.add(import('@backstage/plugin-app-backend'));
-backend.add(import('@backstage/plugin-catalog-backend'));
-// ... other plugins ...
-
-backend.start();
-```
-
-Add the service token plugin, the auth handler module, and the permission backend:
-
-```typescript
-import { createBackend } from '@backstage/backend-defaults';
-import { serviceTokensPlugin } from '@adriandantas/plugin-service-tokens-backend';
-import { serviceTokenHandlerModule } from '@adriandantas/plugin-service-tokens-node';
 
 const backend = createBackend();
 
@@ -146,14 +126,16 @@ backend.add(import('@backstage/plugin-app-backend'));
 backend.add(import('@backstage/plugin-catalog-backend'));
 // ... your other plugins ...
 
+// permission plugin — already present in the scaffold, DO NOT add it again
+backend.add(import('@backstage/plugin-permission-backend'));
+// NOTE: keep the allow-all policy for now; we will replace it in Part 5
+backend.add(import('@backstage/plugin-permission-backend-module-allow-all-policy'));
+
 // Service token plugin — REST API and token database
-backend.add(serviceTokensPlugin);
+backend.add(import('@adriandantas/plugin-service-tokens-backend'));
 
 // Auth handler — makes raw service tokens accepted by Backstage's auth layer
-backend.add(serviceTokenHandlerModule);
-
-// Permission backend — required for the permission policy
-backend.add(import('@backstage/plugin-permission-backend'));
+backend.add(import('@adriandantas/plugin-service-tokens-node'));
 
 backend.start();
 ```
@@ -161,7 +143,9 @@ backend.start();
 **Why two registrations?**
 
 - `serviceTokensPlugin` provides the REST API at `/api/service-tokens` and manages the token database.
-- `serviceTokenHandlerModule` registers the `backstage-service-token` external auth handler with Backstage's `core.auth` service. This is what makes raw service tokens accepted as valid credentials on *any* backend route — not just the service token API. It must be registered as a service factory (not a module init hook) because `core.auth` is constructed before module init hooks run.
+- `serviceTokenHandlerModule` registers the `backstage-service-token` external auth handler with Backstage's `core.auth` service. This is what makes raw service tokens accepted as valid credentials on *any* backend route — not just the service token API.
+
+> ⚠️ **Do not add `plugin-permission-backend` a second time.** A fresh Backstage scaffold already includes it. Adding it twice causes a startup crash: *"ExtensionPoint with ID 'permission.policy' is already registered"*.
 
 ### ✅ Checkpoint 3
 
@@ -179,10 +163,10 @@ You should see `Backend listening on :7007` with no import errors. Stop it (`Ctr
 
 *~2 minutes*
 
-Open `packages/app/src/App.tsx`. Find the `createApp` call and add the service token plugin to the `features` array:
+Open `packages/app/src/App.tsx` and add the service token plugin to the `features` array:
 
 ```typescript
-import { createApp } from '@backstage/frontend-app-api';
+import { createApp } from '@backstage/frontend-defaults';
 import serviceTokensPlugin from '@adriandantas/plugin-service-tokens';
 
 const app = createApp({
@@ -221,8 +205,6 @@ The plugin enforces three granular permissions on its API endpoints:
 | `service-tokens:write` | Create tokens |
 | `service-tokens:revoke` | Revoke tokens |
 
-All three are `ResourcePermission<'service-token'>`, making them compatible with Backstage RBAC plugins.
-
 > ⚠️ **If you already have a permission policy** in your app, do not create a new one — Backstage supports only one active policy at a time. Instead, add the service token permission checks to your existing `handle` method and skip to the "Register the policy" step below.
 
 **Create the policy file:**
@@ -240,11 +222,6 @@ import {
   PolicyQuery,
   PolicyQueryUser,
 } from '@backstage/plugin-permission-node';
-import {
-  serviceTokensReadPermission,
-  serviceTokensWritePermission,
-  serviceTokensRevokePermission,
-} from '@adriandantas/plugin-service-tokens-node';
 import { Config } from '@backstage/config';
 
 export class ServiceTokensPermissionPolicy implements PermissionPolicy {
@@ -254,6 +231,12 @@ export class ServiceTokensPermissionPolicy implements PermissionPolicy {
     request: PolicyQuery,
     user?: PolicyQueryUser,
   ): Promise<PolicyDecision> {
+    const {
+      serviceTokensReadPermission,
+      serviceTokensWritePermission,
+      serviceTokensRevokePermission,
+    } = await import('@adriandantas/plugin-service-tokens-node');
+
     const adminRefs =
       this.config.getOptionalStringArray(
         'serviceTokens.admin.userEntityRefs',
@@ -261,7 +244,6 @@ export class ServiceTokensPermissionPolicy implements PermissionPolicy {
 
     const isAdmin = adminRefs.includes(user?.info.userEntityRef ?? '');
 
-    // Grant all three service token permissions to admin users
     if (
       isPermission(request.permission, serviceTokensReadPermission) ||
       isPermission(request.permission, serviceTokensWritePermission) ||
@@ -270,7 +252,6 @@ export class ServiceTokensPermissionPolicy implements PermissionPolicy {
       return { result: isAdmin ? AuthorizeResult.ALLOW : AuthorizeResult.DENY };
     }
 
-    // Allow all other permissions — adjust to match your existing policy
     return { result: AuthorizeResult.ALLOW };
   }
 }
@@ -278,25 +259,36 @@ export class ServiceTokensPermissionPolicy implements PermissionPolicy {
 
 **Register the policy in your backend:**
 
-Back in `packages/backend/src/index.ts`, add the policy module:
+Back in `packages/backend/src/index.ts`, make **two changes together**:
+
+1. **Remove** the allow-all policy line (it conflicts with your custom policy).
+2. **Add** the custom policy module in its place.
+
+> ⚠️ **Critical — both changes must happen at the same time:**
+> - Removing the allow-all policy without adding a replacement causes: *"No policy module installed!"*
+> - Adding a custom policy without removing the allow-all causes: *"ExtensionPoint with ID 'permission.policy' is already registered"*
+> - Backstage only allows **one** policy module registered at a time.
+
+Your updated `index.ts` should look like this:
 
 ```typescript
 import { createBackend } from '@backstage/backend-defaults';
 import { createBackendModule, coreServices } from '@backstage/backend-plugin-api';
 import { policyExtensionPoint } from '@backstage/plugin-permission-node/alpha';
-import { serviceTokensPlugin } from '@adriandantas/plugin-service-tokens-backend';
-import { serviceTokenHandlerModule } from '@adriandantas/plugin-service-tokens-node';
 import { ServiceTokensPermissionPolicy } from './serviceTokensPermissionPolicy';
 
 const backend = createBackend();
 
 // ... your other plugins ...
 
-backend.add(serviceTokensPlugin);
-backend.add(serviceTokenHandlerModule);
+// permission plugin
 backend.add(import('@backstage/plugin-permission-backend'));
+// NOTE: the allow-all line has been REMOVED and replaced by permissionModuleServiceTokens below
 
-// Permission policy — grants all three service token permissions to users in config
+backend.add(import('@adriandantas/plugin-service-tokens-backend'));
+backend.add(import('@adriandantas/plugin-service-tokens-node'));
+
+// Permission policy — grants service token permissions to users listed in config
 const permissionModuleServiceTokens = createBackendModule({
   pluginId: 'permission',
   moduleId: 'service-tokens-policy',
@@ -324,48 +316,87 @@ backend.start();
 
 *~2 minutes*
 
-**Add admin users to `app-config.yaml`:**
-
-Open `app-config.yaml` (in the root of your Backstage app) and add the `serviceTokens` section:
+**Add the service token handler and admin users to `app-config.yaml`:**
 
 ```yaml
+backend:
+  auth:
+    externalAccess:
+      - type: backstage-service-token
+        options: {}
+
 serviceTokens:
   admin:
     userEntityRefs:
       - user:development/guest   # the default dev user — replace in production
 ```
 
-> ⚠️ **Not sure what your entity ref is?** When you sign in as guest in development, your entity ref is `user:development/guest`. This is the default and is what we'll use throughout this tutorial.
+> **Why `backend.auth.externalAccess`?** Backstage's auth layer only invokes external token handlers that are listed in this config. The `backstage-service-token` entry tells Backstage to route unrecognised tokens through the service token plugin's verifier. Without it, raw tokens are rejected with `Illegal token` even though the plugin is installed.
 
-> ⚠️ **Production note:** The `user:development/guest` default is intentionally permissive for local development. In production, replace this with the entity refs of your actual admin users (e.g. `user:default/alice`).
+> ⚠️ **Production note:** Replace `user:development/guest` with the entity refs of your actual admin users (e.g. `user:default/alice`) in production.
 
-**Add a dev database override to `app-config.local.yaml`:**
-
-Create (or open) `app-config.local.yaml` and add a dedicated SQLite file for the plugin. This keeps the service token data separate from the rest of the app's in-memory database:
+**Create `app-config.local.yaml`** with a dedicated SQLite file for the plugin:
 
 ```yaml
 backend:
   database:
     plugin:
       service-tokens:
-        connection: '/tmp/service-tokens.sqlite'
+        connection: 'packages/backend/tmp/service-tokens.sqlite'
+
+serviceTokens:
+  cacheTtlSeconds: 0
 ```
 
-> **Note:** `app-config.local.yaml` is gitignored by default. It's the right place for dev-only overrides.
+> **Note:** `app-config.local.yaml` is gitignored by default. It is the right place for dev-only overrides. Backstage resolves relative SQLite paths from the project root, and `packages/backend/tmp/` is the conventional location.
+>
+> Setting `cacheTtlSeconds: 0` makes the revocation step deterministic for this tutorial. In production, keep the default or tune it intentionally.
 
 ---
 
-## Part 7 — Start the app
+## Part 7 — Add a tutorial group to the catalog
 
-*~1 minute*
+*~3 minutes*
 
-Start both the backend and frontend:
+The plugin validates `groupEntityRef` against real `Group` entities in the Backstage catalog. Open `examples/org.yaml` and add:
 
-```bash
-yarn dev
+```yaml
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform
+spec:
+  type: team
+  profile:
+    displayName: Platform
+  children: []
 ```
 
-Wait for both of these lines to appear:
+This gives us a stable group ref: `group:default/platform`
+
+Confirm that `app-config.yaml` includes `org.yaml` in `catalog.locations`. In a fresh app it is already there:
+
+```yaml
+catalog:
+  locations:
+    - type: file
+      target: ../../examples/org.yaml
+      rules:
+        - allow: [User, Group]
+```
+
+> **Why this matters:** If `org.yaml` is not listed, the backend will not ingest the `Group`, and token creation will fail with `groupEntityRef must reference an existing Group entity`.
+
+---
+
+## Part 8 — Start the app
+
+```bash
+yarn start
+```
+
+Wait for both lines:
 
 ```
 [0] Backend listening on :7007
@@ -374,43 +405,52 @@ Wait for both of these lines to appear:
 
 ### ✅ Checkpoint 5
 
-Open `http://localhost:3000/admin/service-tokens` in your browser.
-
-**Expected:** The page loads with a "Service Tokens" header, a filter bar, a **Create token** button, and an empty table. No 401 or 403 error is shown.
-
-If you see a 403 error, double-check that `user:development/guest` is in `serviceTokens.admin.userEntityRefs` in `app-config.yaml` and restart the backend.
+Open `http://localhost:3000/admin/service-tokens`. The page should load with a "Service Tokens" header, filter bar, and **Create token** button. No 401 or 403 error.
 
 ---
 
-## Part 8 — Test via the API
+## Part 9 — Verify the tutorial group exists
 
-*~10 minutes*
-
-Now let's prove the whole system works end-to-end with `curl`. Each step shows the command, the expected output, and what it proves.
-
-### Step A1 — Get a guest token
-
-The guest auth provider issues a short-lived Backstage identity token. Capture it:
+First get a guest token (same step as Part 10 Step A1):
 
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:7007/api/auth/guest/refresh \
   -H 'Content-Type: application/json' \
   | jq -r '.backstageIdentity.token')
+```
 
+Then query the catalog:
+
+```bash
+curl -s "http://localhost:7007/api/catalog/entities?filter=kind=group" \
+  -H "Authorization: Bearer $TOKEN" \
+  | jq '.[] | {name: .metadata.name, namespace: (.metadata.namespace // "default"), ref: ("group:" + (.metadata.namespace // "default") + "/" + .metadata.name)}'
+```
+
+**Expected output includes:**
+
+```json
+{
+  "name": "platform",
+  "namespace": "default",
+  "ref": "group:default/platform"
+}
+```
+
+---
+
+## Part 10 — Test via the API
+
+### Step A1 — Get a guest token
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:7007/api/auth/guest/refresh \
+  -H 'Content-Type: application/json' \
+  | jq -r '.backstageIdentity.token')
 echo "TOKEN=$TOKEN"
 ```
 
-Verify it decodes to the guest identity:
-
-```bash
-echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
-```
-
-**Expected:** `"sub": "user:development/guest"` in the decoded payload.
-
-> ⚠️ **Tokens are short-lived.** If you get a 401 response on a later step, re-run this command to get a fresh token.
-
----
+> ⚠️ Tokens are short-lived. Re-run this command if you get 401 on later steps.
 
 ### Step A2 — List available scopes
 
@@ -418,24 +458,6 @@ echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
 curl -s http://localhost:7007/api/service-tokens/scopes \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
-
-**Expected:**
-
-```json
-{
-  "scopes": [
-    { "id": "catalog:read",       "description": "Read access to the Software Catalog API",       "plugin": "catalog" },
-    { "id": "catalog:write",      "description": "Write access to the Software Catalog API",      "plugin": "catalog" },
-    { "id": "techdocs:read",      "description": "Read access to TechDocs",                       "plugin": "techdocs" },
-    { "id": "scaffolder:read",    "description": "Read access to Scaffolder templates and tasks", "plugin": "scaffolder" },
-    { "id": "scaffolder:execute", "description": "Execute Scaffolder templates",                  "plugin": "scaffolder" }
-  ]
-}
-```
-
-**What this proves:** The backend is running, the plugin is registered, and the guest user has the permissions needed for the read path.
-
----
 
 ### Step A3 — Create a service token
 
@@ -446,61 +468,27 @@ RESPONSE=$(curl -s -X POST http://localhost:7007/api/service-tokens \
   -d '{
     "name": "tutorial-token",
     "description": "Created during the tutorial",
-    "groupEntityRef": "group:default/guests",
+    "groupEntityRef": "group:default/platform",
     "scopes": ["catalog:read"],
     "expiresInDays": 30
   }')
 
 echo "$RESPONSE" | jq .
-```
 
-**Expected:**
-
-```json
-{
-  "token": {
-    "id": "<uuid>",
-    "name": "tutorial-token",
-    "description": "Created during the tutorial",
-    "groupEntityRef": "group:default/guests",
-    "scopes": ["catalog:read"],
-    "createdBy": "user:development/guest",
-    "createdAt": "<timestamp>",
-    "expiresAt": "<timestamp>",
-    "status": "active"
-  },
-  "rawToken": "<opaque-token-string>"
-}
-```
-
-> ⚠️ **The `rawToken` is shown exactly once.** It is never stored — only its SHA-256 hash is persisted. Copy it now. You will need it in the next step.
-
-Capture the token ID and raw token for subsequent steps:
-
-```bash
 TOKEN_ID=$(echo "$RESPONSE" | jq -r '.token.id')
 RAW_TOKEN=$(echo "$RESPONSE" | jq -r '.rawToken')
-
-echo "TOKEN_ID=$TOKEN_ID"
-echo "RAW_TOKEN=$RAW_TOKEN"
 ```
 
----
+> ⚠️ `rawToken` is shown exactly once. Copy it now.
 
 ### Step A4 — Use the raw token against the Catalog API
-
-This is the key moment: a machine credential authenticating against Backstage.
 
 ```bash
 curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
   -H "Authorization: Bearer $RAW_TOKEN" | jq .
 ```
 
-**Expected:** HTTP 200 with a JSON array containing at least one catalog entity.
-
-**What this proves:** The `serviceTokenHandlerModule` is correctly registered. Backstage's `core.auth` service accepted the raw token, resolved it to a service principal (`service-token:group:default/guests:tutorial-token`), and the Catalog API served the request.
-
----
+**Expected:** HTTP 200 with catalog entities.
 
 ### Step A5 — Inspect the audit log
 
@@ -508,25 +496,6 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
 curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID/audit \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
-
-**Expected:**
-
-```json
-{
-  "events": [
-    {
-      "id": "<uuid>",
-      "tokenId": "<TOKEN_ID>",
-      "action": "created",
-      "performedBy": "user:development/guest",
-      "occurredAt": "<timestamp>",
-      "reason": null
-    }
-  ]
-}
-```
-
----
 
 ### Step A6 — Revoke the token
 
@@ -540,8 +509,6 @@ curl -s -X DELETE http://localhost:7007/api/service-tokens/$TOKEN_ID \
 
 **Expected:** `HTTP status: 204`
 
----
-
 ### Step A7 — Confirm the raw token is rejected
 
 ```bash
@@ -550,150 +517,61 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
   -w "\nHTTP status: %{http_code}\n"
 ```
 
-**Expected:** `HTTP status: 401`
-
-**What this proves:** Revocation works. The token is no longer accepted by the auth layer.
-
-> **Cache note:** Revocation takes effect within `cacheTtlSeconds` (default: 60 seconds). If you get a 200 immediately after revoking, wait a moment and try again.
-
-Also confirm the audit log now has two events:
-
-```bash
-curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID/audit \
-  -H "Authorization: Bearer $TOKEN" | jq .
-```
-
-**Expected:** Two events — `created` and `revoked` — with the reason `"tutorial revocation test"`.
-
----
+**Expected:** `HTTP status: 401` immediately in this tutorial, because Part 6 sets `serviceTokens.cacheTtlSeconds: 0`.
 
 ### Step A8 — Test permission enforcement
 
-**Unauthenticated request (should get 401):**
+**Unauthenticated (should get 401):**
 
 ```bash
 curl -s -X POST http://localhost:7007/api/service-tokens \
   -H "Content-Type: application/json" \
-  -d '{"name":"should-fail","groupEntityRef":"group:default/guests","scopes":["catalog:read"]}' \
+  -d '{"name":"should-fail","groupEntityRef":"group:default/platform","scopes":["catalog:read"]}' \
   -w "\nHTTP status: %{http_code}\n"
 ```
 
-**Expected:** `HTTP status: 401`
-
-**Non-admin user (should get 403):**
-
-Temporarily remove `user:development/guest` from `app-config.yaml`:
-
-```yaml
-serviceTokens:
-  admin:
-    userEntityRefs: []   # empty — no admins
-```
-
-Restart the backend, get a fresh token, then try to create a token:
-
-```bash
-TOKEN=$(curl -s -X POST http://localhost:7007/api/auth/guest/refresh \
-  -H 'Content-Type: application/json' | jq -r '.backstageIdentity.token')
-
-curl -s -X POST http://localhost:7007/api/service-tokens \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"should-fail","groupEntityRef":"group:default/guests","scopes":["catalog:read"]}' \
-  -w "\nHTTP status: %{http_code}\n"
-```
-
-**Expected:** `HTTP status: 403` with body `{"error":"Forbidden: admin access required"}`.
-
-Restore the original config and restart the backend before continuing.
-
----
+**Non-admin user (should get 403):** Temporarily set `userEntityRefs: []` in `app-config.yaml`, restart, get a fresh token, and retry the create call. Expected: `HTTP status: 403`. Restore the config before continuing.
 
 ### ✅ Checkpoint 6
 
-You've confirmed:
-- ✅ Backend is running and the plugin is registered
+- ✅ Backend running and plugin registered
 - ✅ Guest user has admin permission
-- ✅ Token creation works and returns a raw token
-- ✅ Raw token authenticates against the Catalog API
-- ✅ Revocation works and the token is rejected after revocation
-- ✅ Unauthenticated requests get 401, non-admin requests get 403
+- ✅ Token creation returns a raw token
+- ✅ Raw token authenticates against Catalog API
+- ✅ Revocation works — token rejected after revoke
+- ✅ Unauthenticated → 401; non-admin → 403
 
 ---
 
-## Part 9 — Test via the UI
+## Part 11 — Test via the UI
 
-*~5 minutes*
-
-Now do the same lifecycle through the browser. Make sure both the backend and frontend are running (`yarn dev`).
+Make sure `yarn start` is running.
 
 ### Step B1 — Navigate to the page
 
-Open `http://localhost:3000/admin/service-tokens`.
-
-**Expected:**
-- The page loads with the **"Service Tokens"** header.
-- A filter bar (Status dropdown + Group field) and a **Create token** button are visible.
-- The table shows an empty state: *"No service tokens yet"*.
-
----
+Open `http://localhost:3000/admin/service-tokens`. Expected: "Service Tokens" header, filter bar, **Create token** button, empty table.
 
 ### Step B2 — Create a token
 
-1. Click **Create token**.
-2. The **Create service token** dialog opens.
-3. Fill in the form:
-   - **Name:** `ui-tutorial-token`
-   - **Description:** `Created via UI during the tutorial`
-   - **Owning group:** select `group:default/guests`
-   - **Permissions:** check `catalog:read`
-   - **Expiry date:** leave the default (30 days)
-4. Click **Create token**.
-
-**Expected on success:** The dialog switches to a success step showing a green checkmark and the raw token in a monospace box with a copy icon.
-
-5. **Click the copy icon** to copy the raw token. You'll need it in Step B6.
-6. Click **Done**.
-
-**Expected after closing:** The table now shows one row for `ui-tutorial-token` with status **Active**.
-
----
+1. Click **Create token**
+2. Fill in: Name `ui-tutorial-token`, Group `group:default/platform`, Permission `catalog:read`
+3. Click **Create token**
+4. Copy the raw token shown in the success dialog
+5. Click **Done** — table shows one active row
 
 ### Step B3 — Filter the list
 
-1. In the **Status** dropdown, select `Active`.
-   - **Expected:** `ui-tutorial-token` remains visible.
-2. In the **Group** field, type `group:default/guests`.
-   - **Expected:** `ui-tutorial-token` still appears.
-3. Click **Clear** to reset both filters.
-
----
+Test the Status and Group filters, then click Clear.
 
 ### Step B4 — View the audit log
 
-1. Click the **Audit** button on the `ui-tutorial-token` row.
-2. The **Audit log** dialog opens.
-
-**Expected:** One row with event chip **created**, actor `user:development/guest`, and no reason.
-
-3. Click **Close**.
-
----
+Click **Audit** on the row. Expected: one `created` event.
 
 ### Step B5 — Revoke the token
 
-1. Click the **Revoke** button on the `ui-tutorial-token` row.
-2. The **Revoke token?** dialog opens.
-3. Enter reason: `tutorial revocation via UI`
-4. Click **Revoke**.
-
-**Expected after closing:** The `ui-tutorial-token` row now shows a **Revoked** status chip. The Revoke button is disabled.
-
----
+Click **Revoke**, enter reason `tutorial revocation via UI`, confirm. Expected: row shows **Revoked** status.
 
 ### Step B6 — Confirm the raw token is rejected
-
-Use the raw token you copied in Step B2:
 
 ```bash
 curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
@@ -701,35 +579,21 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
   -w "\nHTTP status: %{http_code}\n"
 ```
 
-**Expected:** `HTTP status: 401`
-
----
+**Expected:** `HTTP status: 401` immediately in this tutorial, because Part 6 sets `serviceTokens.cacheTtlSeconds: 0`.
 
 ### Step B7 — Confirm revocation in the audit log
 
-1. Click **Audit** on the `ui-tutorial-token` row.
-
-**Expected:** Two rows:
-1. **created** — `user:development/guest` — no reason
-2. **revoked** (red chip) — `user:development/guest` — reason: `tutorial revocation via UI`
-
----
+Click **Audit** again. Expected: two rows in newest-first order — `revoked` with the reason, then `created`.
 
 ### ✅ Checkpoint 7 — Tutorial complete
-
-You've built a Backstage app from scratch, installed and configured the service token plugin, and verified the full token lifecycle through both the API and the browser UI.
 
 ---
 
 ## Cleanup
 
-To reset all token state, remove the SQLite database file:
-
 ```bash
-rm /tmp/service-tokens.sqlite
+rm packages/backend/tmp/service-tokens.sqlite
 ```
-
-The file is recreated with fresh migrations on the next backend start.
 
 ---
 
@@ -737,21 +601,23 @@ The file is recreated with fresh migrations on the next backend start.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `401 Unauthorized` on all API calls | Guest token expired (they are short-lived) | Re-run the `curl -X POST .../guest/refresh` command |
-| `403 Forbidden` on all API calls | User not in `serviceTokens.admin.userEntityRefs` | Add `user:development/guest` to `app-config.yaml` and restart the backend |
-| Raw token still works after revocation | Token is cached (up to `cacheTtlSeconds` seconds) | Wait 60 seconds and try again, or set `cacheTtlSeconds: 0` in config |
-| `Cannot find module '@backstage/backend-defaults/auth'` | Plugin not resolved from app's `node_modules` | Ensure packages are installed as workspace dependencies (`yarn --cwd packages/backend add ...`) |
+| `401 Unauthorized` on all API calls | Guest token expired | Re-run the `guest/refresh` curl command |
+| `403 Forbidden` on all API calls | User not in `serviceTokens.admin.userEntityRefs` | Add `user:development/guest` to `app-config.yaml` and restart |
+| `groupEntityRef must reference an existing Group entity` | Tutorial group not in catalog | Complete Part 7, verify `catalog.locations`, restart backend |
+| Catalog group query returns `[]` | No `Group` entities loaded | Add `platform` group to `examples/org.yaml`, restart backend |
+| Raw token still works after revocation | Token is cached | For this tutorial, confirm `serviceTokens.cacheTtlSeconds: 0` is present in `app-config.local.yaml`; otherwise wait up to the configured TTL |
+| `ExtensionPoint with ID 'permission.policy' is already registered` | Two policy modules registered at once | Remove `plugin-permission-backend-module-allow-all-policy` from `index.ts` |
+| `No policy module installed!` | Allow-all was removed but no replacement added | Add `permissionModuleServiceTokens` to `index.ts` (Part 5) |
+| Frontend shows 403 on page load | Permission policy not registered | Confirm `permissionModuleServiceTokens` is in `index.ts` and backend was restarted |
+| `Cannot find module` errors | Plugin not installed in workspace | Run `yarn --cwd packages/backend add @adriandantas/...` |
 | Migrations not running | `database.migrations.skip: true` in config | Remove that config key for the `service-tokens` plugin |
-| Frontend shows 403 on page load | Permission policy not registered | Confirm `permissionModuleServiceTokens` is added to `index.ts` and the backend was restarted |
 
 ---
 
 ## What's next
 
-You now have a working foundation. Here's where to go from here:
-
-- **[Configuration Reference](configuration.md)** — tune token lifetime, cache TTL, and add custom scopes for your own plugins
-- **[REST API Reference](api.md)** — integrate service tokens into CI pipelines and automation scripts
-- **[Production Readiness Guide](production-readiness.md)** — group-based admin access, policy merging, cache tuning, and audit log retention
-- **[Architecture](architecture.md)** — understand how token verification works under the hood, including the auth handler wiring and scope propagation design
-- **[Scope Enforcement Runbook](runbooks/scope-enforcement.md)** — optional guide for enforcing token scopes on specific routes in your own plugins
+- **[Configuration Reference](configuration.md)** — tune token lifetime, cache TTL, and add custom scopes
+- **[REST API Reference](api.md)** — integrate service tokens into CI pipelines
+- **[Production Readiness Guide](production-readiness.md)** — group-based admin access, policy merging, audit log retention
+- **[Architecture](architecture.md)** — understand how token verification works under the hood
+- **[Scope Enforcement Runbook](runbooks/scope-enforcement.md)** — enforce token scopes on specific routes in your own plugins

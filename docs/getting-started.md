@@ -12,7 +12,7 @@ This guide walks a platform engineer through installing and wiring the service t
 
 ## Prerequisites
 
-- A working Backstage app using the **new backend system** (`createBackend`) and the **new frontend system** (`createApp` from `@backstage/frontend-app-api`)
+- A working Backstage app using the **new backend system** (`createBackend`) and the **new frontend system** (`createApp`)
 - Node.js 22
 - The plugin workspace cloned or copied alongside your Backstage monorepo
 
@@ -100,7 +100,7 @@ backend.start();
 
 ```typescript
 // packages/app/src/App.tsx
-import { createApp } from '@backstage/frontend-app-api';
+import { createApp } from '@backstage/frontend-defaults';
 import serviceTokensPlugin from '@adriandantas/plugin-service-tokens';
 
 const app = createApp({

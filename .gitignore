@@ -3,6 +3,7 @@ STATUS.md
 AGENTS.md
 .vscode
 .idea
+.DS_Store
 .codex
 .gemini
 .gemini-cli
@@ -12,4 +13,6 @@ node_modules
 dist
 coverage
 storybook-static
+playwright-report
+test-results
 *.tgz

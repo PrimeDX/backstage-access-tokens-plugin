@@ -251,9 +251,9 @@ export function ServiceTokensPage() {
       setAuditEntries(
         (data.events ?? []).map(e => ({
           id: e.id,
-          event: e.action,
-          actorEntityRef: e.performedBy,
-          reason: e.reason ?? null,
+          event: e.event,
+          actorEntityRef: e.actor ?? null,
+          reason: e.metadata?.reason ?? null,
           createdAt: e.occurredAt,
         })),
       );

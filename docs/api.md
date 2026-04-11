@@ -209,7 +209,7 @@ curl -s -X POST http://localhost:7007/api/service-tokens \
     "revokedBy": null,
     "status": "active"
   },
-  "rawToken": "bst_v1_a1b2c3d4e5f6..."
+  "rawToken": "bsst_a1b2c3d4e5f6..."
 }
 ```
 
@@ -219,7 +219,7 @@ curl -s -X POST http://localhost:7007/api/service-tokens \
 
 | Status | Body | Cause |
 |---|---|---|
-| `400 Bad Request` | `{"error": "..."}` | Missing required fields, invalid scope IDs, expiry exceeds maximum, or group not found in catalog |
+| `422 Unprocessable Entity` | `{"error": "..."}` | Missing required fields, invalid scope IDs, expiry exceeds maximum, or group not found in catalog |
 | `409 Conflict` | `{"error": "..."}` | A token with the same name already exists for this group |
 
 ---
@@ -247,11 +247,18 @@ curl -s http://localhost:7007/api/service-tokens/3fa85f64-5717-4562-b3fc-2c963f6
 
 ```json
 {
-  "token": {
-    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "name": "ci-pipeline",
-    ...
-  }
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "name": "ci-pipeline",
+  "description": "Token for the main CI pipeline",
+  "groupEntityRef": "group:default/platform",
+  "scopes": ["catalog:read"],
+  "createdBy": "user:default/alice",
+  "createdAt": "2025-01-15T10:30:00.000Z",
+  "expiresAt": "2025-02-14T10:30:00.000Z",
+  "lastUsedAt": null,
+  "revokedAt": null,
+  "revokedBy": null,
+  "status": "active"
 }
 ```
 
@@ -335,18 +342,20 @@ curl -s http://localhost:7007/api/service-tokens/3fa85f64-5717-4562-b3fc-2c963f6
     {
       "id": "a1b2c3d4-...",
       "tokenId": "3fa85f64-...",
-      "action": "created",
-      "performedBy": "user:default/alice",
-      "occurredAt": "2025-01-15T10:30:00.000Z",
-      "reason": null
+      "event": "revoked",
+      "actor": "user:default/alice",
+      "metadata": {
+        "reason": "Rotating credentials"
+      },
+      "occurredAt": "2025-01-20T14:00:00.000Z"
     },
     {
       "id": "e5f6a7b8-...",
       "tokenId": "3fa85f64-...",
-      "action": "revoked",
-      "performedBy": "user:default/alice",
-      "occurredAt": "2025-01-20T14:00:00.000Z",
-      "reason": "Rotating credentials"
+      "event": "created",
+      "actor": "user:default/alice",
+      "metadata": {},
+      "occurredAt": "2025-01-15T10:30:00.000Z"
     }
   ]
 }
@@ -358,12 +367,12 @@ curl -s http://localhost:7007/api/service-tokens/3fa85f64-5717-4562-b3fc-2c963f6
 |---|---|---|
 | `id` | string (UUID) | Unique event identifier |
 | `tokenId` | string (UUID) | The token this event belongs to |
-| `action` | `created` \| `revoked` | The lifecycle action |
-| `performedBy` | string | User entity ref of the actor |
+| `event` | `created` \| `revoked` | The lifecycle event |
+| `actor` | string \| null | User entity ref of the actor |
+| `metadata` | object | Event-specific metadata, such as `{ "reason": "..." }` for revocation |
 | `occurredAt` | ISO 8601 | When the event occurred |
-| `reason` | string \| null | Reason provided at revocation, or `null` |
 
-Events are returned in ascending chronological order.
+Events are returned in descending chronological order (newest first).
 
 ---
 
@@ -374,7 +383,7 @@ Raw service tokens are used as Bearer tokens against any Backstage backend API e
 ```bash
 # Use a service token to call the Catalog API
 curl -s "http://localhost:7007/api/catalog/entities?limit=10" \
-  -H "Authorization: Bearer bst_v1_a1b2c3d4e5f6..."
+  -H "Authorization: Bearer bsst_a1b2c3d4e5f6..."
 ```
 
 **Token behaviour:**

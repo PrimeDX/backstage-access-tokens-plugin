@@ -17,8 +17,10 @@ This plugin provides:
 - [Getting Started](getting-started.md) — install and wire the plugin into an existing Backstage app
 - [Configuration Reference](configuration.md) — all `serviceTokens` config keys and defaults
 - [REST API Reference](api.md) — request/response formats for all endpoints
+- [Contract Decisions](contract-decisions.md) — canonical public behavior where earlier sessions diverged
 - [Architecture](architecture.md) — package design, token lifecycle, and database model
 - [Testing Guide](testing.md) — end-to-end API and UI test flows
+- [Developer Test Guide](developer-test-guide.md) — fastest local integration path before npm publication
 - [Release Guide](releasing.md) — versioning and publishing the npm packages
 - [Production Readiness](production-readiness.md) — group-based admin access, policy merging, cache tuning, audit retention
 - [Scope Enforcement Runbook](runbooks/scope-enforcement.md) — optional operator guidance for consumer-driven enforcement

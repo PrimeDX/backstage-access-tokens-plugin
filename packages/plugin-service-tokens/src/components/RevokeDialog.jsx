@@ -65,7 +65,7 @@ export function RevokeDialog({
         h(
           Typography,
           { variant: 'body2', color: 'textSecondary' },
-          'This action cannot be undone. Any service using this token will immediately lose access.',
+          'This action cannot be undone. Services using this token lose access after revocation propagates through the configured cache TTL.',
         ),
         token &&
           h(
