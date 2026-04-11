@@ -109,9 +109,14 @@ backend.add(serviceTokenHandlerModule);
 
 ```typescript
 // packages/app/src/App.tsx (new frontend system)
+import { createApp } from '@backstage/frontend-defaults';
 import serviceTokensPlugin from '@adriandantas/plugin-service-tokens';
 
-app.addFeatures([serviceTokensPlugin]);
+const app = createApp({
+  features: [serviceTokensPlugin],
+});
+
+export default app.createRoot();
 ```
 
 ### 4. Add a permission policy
@@ -168,7 +173,7 @@ curl -s "https://your-backstage/api/catalog/entities?limit=10" \
   -H "Authorization: Bearer <rawToken>"
 ```
 
-The token authenticates as the group it was scoped to. Revoked or expired tokens return `401 Unauthorized`.
+The token authenticates as the group it was scoped to. Revoked or expired tokens return `401 Unauthorized` after cache invalidation, bounded by `serviceTokens.cacheTtlSeconds`.
 
 ---
 
