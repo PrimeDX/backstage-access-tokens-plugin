@@ -28,8 +28,8 @@ GitHub Actions now owns the normal release lifecycle:
 
 1. Contributor PRs run the `CI` workflow on every pull request and push to `main`.
 2. `Changeset Required` enforces the rule that pull requests touching the published package surface include a Changeset.
-3. `OSV-Scanner PR Scan` checks pull requests for newly introduced dependency vulnerabilities without requiring GitHub Code Security licensing.
-4. `Semgrep` runs open source static analysis on pull requests and pushes to `main`.
+3. `Dependency Review` checks pull requests for newly introduced vulnerable or disallowed dependencies.
+4. `CodeQL` analyzes the repository on pull requests, pushes to `main`, and a weekly schedule.
 5. After a PR merges to `main`, the `Release PR` workflow opens or updates a `Version Packages` pull request with the pending version bumps.
 6. When that reviewed release PR is merged into `main`, the `Publish` workflow reruns verification, confirms the merge contains Changesets-managed package version bumps, publishes the changed packages to npm, and pushes the generated release tags back to GitHub.
 7. The `UI Smoke` workflow is available as a manual GitHub Actions run for a reachable Backstage harness when you want browser validation without blocking normal CI.
@@ -43,8 +43,8 @@ flowchart LR
   A["Contributor PR<br/>code + docs + tests + changeset"] --> B["Pull Request opened or updated"]
   B --> C["CI<br/>npm run ci"]
   B --> D["Changeset Required<br/>release intent gate"]
-  B --> E["OSV-Scanner PR Scan<br/>dependency risk gate"]
-  B --> M["Semgrep<br/>static security analysis"]
+  B --> E["Dependency Review<br/>dependency risk gate"]
+  B --> M["CodeQL<br/>static security analysis"]
   C --> F{"PR merged to main?"}
   D --> F
   E --> F
@@ -82,12 +82,12 @@ It does not require a Changeset for:
 
 - Default branch: `main`
 - Branch protection on `main` so CI must pass before merge
-- Required status checks on pull requests: `CI`, `Changeset Required`, `OSV-Scanner PR Scan`, and `Semgrep`
+- Required status checks on pull requests: `CI`, `Changeset Required`, `Dependency Review`, and `CodeQL`
 - `NPM_TOKEN` configured in repository or organization GitHub Actions secrets
 - npm package ownership configured for the `@adriandantas` scope
-- GitHub Code Security / Advanced Security is not required for the repository's CI security gates
+- GitHub code scanning enabled so CodeQL results are visible in the Security tab
 
-The publish workflow uses npm provenance via `changeset publish --provenance`, so it still requires GitHub Actions OIDC support.
+The publish workflow uses npm provenance via `changeset publish --provenance`, so it also requires GitHub Actions OIDC support.
 
 Docs publishing remains intentionally out of scope for this automation pass. If GitHub Pages or another docs deployment is added later, it should use a separate workflow rather than being coupled to npm publication.
 
@@ -143,7 +143,7 @@ Before publishing, confirm documentation and compatibility guardrails for this r
 - Auth/authz behavior changes are documented (including enforced vs metadata-only semantics)
 - Security-significant or breaking changes include migration notes and operator actions
 - Public API or integration pattern changes are called out in release notes/changelogs
-- Open security findings from `OSV-Scanner PR Scan` and `Semgrep` are triaged before release
+- Open security findings from `Dependency Review` and `CodeQL` are triaged before release
 - `Publish` is expected to skip cleanly when `NPM_TOKEN` is not configured, and to push tags only after a successful publish
 
 ## Manual publish fallback
