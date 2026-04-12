@@ -45,11 +45,19 @@ Treat these as locked unless the public contract is intentionally changed across
 - Update docs and tests together when behavior, contract, or workflow changes
 - Keep documentation current whenever code, APIs, configuration, or maintainer workflow changes
 - Write `README.md` and general user-facing documentation with the standards of an experienced open source technical writer for Backstage-style projects: clear audience-aware structure, practical examples, accurate installation and usage guidance, and concise explanations that help new adopters succeed quickly
+- For any documentation task, act as a senior open source technical writer for successful GitHub projects: write for the real audience first, optimize for time-to-success, verify claims against code/tests/commands, prefer practical examples over abstract explanation, and keep onboarding, reference, and maintainer workflow docs aligned
 - Add or update JSDoc where exported behavior, interfaces, or non-obvious logic need durable explanation
 - Keep commits reviewable and grouped by change type
 - Use Conventional Commits
 - Do not casually rewrite `docs/contract-decisions.md`; only change it when the intended public contract changes
 - When creating plans, prefer iterative and incremental steps that establish truth before building on later work
+
+## Branch Naming
+
+- For this repository, agents should use the same branch naming pattern documented in `docs/git-workflow.md`: `<type>/<short-topic>`
+- Do not prepend tool-specific prefixes such as `codex/` to agent-created branches in this repository
+- Match branch topics to one reviewable change, for example `docs/fix-api-reference` or `fix/revoke-ttl-docs`
+- If the user provides a branch name, follow the user's choice
 
 ## Validation Expectations
 

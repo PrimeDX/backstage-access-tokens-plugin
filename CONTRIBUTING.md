@@ -40,6 +40,7 @@ npm run pack:dry-run
 ## Contribution standards
 
 - Follow Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`...)
+- Use branch names that follow the repository Git workflow pattern: `<type>/<short-topic>`
 - Keep PRs small and focused
 - Add/adjust tests for behavior changes
 - Update docs whenever behavior, API, or config changes

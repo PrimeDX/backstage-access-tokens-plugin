@@ -174,6 +174,7 @@ Start here based on what you are trying to do:
 | [Architecture](docs/architecture.md) | Contributor | Internal design and package responsibilities |
 | [Contract Decisions](docs/contract-decisions.md) | Contributor or reviewer | Canonical public behavior that should stay stable |
 | [Developer Test Guide](docs/developer-test-guide.md) | Maintainer | Fast repeatable verification for unpublished changes |
+| [Git Workflow](docs/git-workflow.md) | Maintainer or contributor | Branching and pull request conventions for this repository |
 | [Release Guide](docs/releasing.md) | Maintainer | Changesets and npm publishing workflow |
 
 ## Package READMEs
