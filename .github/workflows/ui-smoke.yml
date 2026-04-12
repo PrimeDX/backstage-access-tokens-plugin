@@ -1,0 +1,45 @@
+name: Manual UI Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Reachable URL for a seeded Backstage harness. Use serviceTokens.cacheTtlSeconds=0 when revoke timing must be deterministic.
+        required: true
+        default: http://localhost:3000
+
+jobs:
+  ui-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run UI smoke test
+        run: npm run test:ui-smoke
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ inputs.base_url }}
+          PLAYWRIGHT_USE_SYSTEM_CHROME: "false"
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-smoke-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
