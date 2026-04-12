@@ -1,102 +1,66 @@
 # backstage-service-token-plugin
 
-> Long-lived, group-scoped service tokens for Backstage — with a full admin UI, audit log, and permission-based access control.
+> Long-lived, group-scoped service tokens for Backstage, with a dedicated admin UI, audit log, and permission-aware management API.
 
 [![Node 22](https://img.shields.io/badge/node-22-brightgreen)](https://nodejs.org/)
 [![Backstage](https://img.shields.io/badge/backstage-compatible-blue)](https://backstage.io/)
 [![Packages](https://img.shields.io/badge/packages-3-informational)](#packages)
 [![License: BUSL-1.1](https://img.shields.io/badge/license-BUSL--1.1-yellow)](LICENSE)
 
----
+## What This Plugin Does
 
-## What is this?
+Backstage's built-in auth model is centered on short-lived user tokens. That is a good fit for browser sessions, but it is awkward for CI jobs, automation, and service-to-service integrations that need stable credentials for backend APIs.
 
-Backstage's built-in auth model issues **short-lived user tokens** — great for browser sessions, but impractical for CI pipelines, scripts, and service-to-service integrations that need to call Backstage backend APIs without a human in the loop.
+This plugin adds service tokens that are:
 
-This plugin adds **service tokens**: named, group-scoped, long-lived credentials that are:
+- created and managed through an admin page at `/admin/service-tokens`
+- stored as SHA-256 hashes, with the raw token shown only once at creation time
+- scoped to a catalog group and resolved as a `service` principal
+- revocable, with audit events for creation and revocation
+- protected by granular admin permissions: `service-tokens:read`, `service-tokens:write`, and `service-tokens:revoke`
 
-- Created and managed through a dedicated admin UI
-- Stored as SHA-256 hashes — the raw token is shown **once** at creation and never again
-- Verified by a custom `backstage-service-token` external auth handler wired into Backstage's auth layer
-- Scoped to a catalog group — the token authenticates as a `service` principal with subject `service-token:<group>:<token-name>` (e.g. `service-token:group:default/platform:ci-pipeline`)
-- Revocable at any time, with an optional reason captured in the audit log
+## What This Plugin Does Not Do
 
----
+Service token scopes are metadata only. They are stored, displayed, and exposed through the API, but this plugin does not automatically enforce scope-level authorization on arbitrary Backstage routes.
 
-## Features
-
-| | |
-|---|---|
-| ✅ | Create named, group-scoped tokens with configurable scopes and expiry |
-| ✅ | Raw token shown **once** at creation — SHA-256 hashed at rest |
-| ✅ | Revoke tokens with optional reason |
-| ✅ | Full per-token audit log (`created`, `revoked` events) |
-| ✅ | Filter token list by status and owning group |
-| ✅ | Granular permission-based admin authorization (`service-tokens:read`, `service-tokens:write`, `service-tokens:revoke`) |
-| ✅ | In-memory token cache with configurable TTL |
-| ✅ | Automatic DB migrations via Knex (SQLite, Postgres, MySQL) |
-| ✅ | Built-in scope catalogue + custom scopes via config |
-| ✅ | Storybook stories for every UI component |
-
----
-
-## Security model (important)
-
-Service token **scopes are currently metadata only**. They are stored with the token, exposed in UI/API, and intended for policy decisions, but this plugin does **not** enforce scope-level authorization on arbitrary Backstage API routes.
-
-If your organization requires strict scope enforcement, implement checks in consuming plugins/policies before using broad service tokens in production.
-
-This plugin's security responsibilities are intentionally limited to token lifecycle controls (issuance, hashing at rest, verification, expiry, revocation, and audit trail) plus admin permission enforcement on service-token management APIs.
-
-Auth/authz behavior changes should include explicit documentation and, when breaking or security-significant, migration notes.
-
----
-
-## Framework prerequisites
-
-This plugin builds on two Backstage framework capabilities. Neither requires a specific provider — the recommendations below are the most common starting points.
-
-| Capability | What it does for this plugin | Recommended setup | Backstage docs |
-|---|---|---|---|
-| **Default auth policy** | Validates every inbound token (service or user) before your route handler runs | Built-in — active by default in `createBackend()`. Do **not** set `dangerouslyDisableDefaultAuthPolicy: true` in production. | [Auth service overview](https://backstage.io/docs/backend-system/core-services/auth) |
-| **Permission framework** | Enforces `service-tokens:read`, `service-tokens:write`, and `service-tokens:revoke` on token management endpoints | Install `@backstage/plugin-permission-backend` and wire a policy (see [Quick Start Step 4](#4-add-a-permission-policy)) | [Permission framework overview](https://backstage.io/docs/permissions/overview) |
-
-> If you are starting from scratch with either framework, the [Getting Started guide](docs/getting-started.md) includes wiring examples for both. You can also follow the linked Backstage docs independently before installing this plugin.
-
----
+If you need strict scope enforcement, implement those checks in the consuming plugin or permission policy. The plugin itself is responsible for token issuance, hashing at rest, verification, expiry, revocation, audit logging, and admin authorization around token management.
 
 ## Packages
 
-This workspace contains three packages that work together:
+This workspace publishes three packages:
 
-| Package | Role |
+| Package | Purpose |
 |---|---|
-| [`@adriandantas/plugin-service-tokens`](packages/plugin-service-tokens) | Frontend plugin — admin UI at `/admin/service-tokens` |
-| [`@adriandantas/plugin-service-tokens-backend`](packages/plugin-service-tokens-backend) | Backend plugin — REST API, Knex persistence, permission enforcement |
-| [`@adriandantas/plugin-service-tokens-node`](packages/plugin-service-tokens-node) | Shared node library — token verification, cache, auth handler module |
+| [`@adriandantas/plugin-service-tokens`](packages/plugin-service-tokens) | Frontend plugin that adds the admin UI |
+| [`@adriandantas/plugin-service-tokens-backend`](packages/plugin-service-tokens-backend) | Backend plugin with the REST API, persistence, and permission checks |
+| [`@adriandantas/plugin-service-tokens-node`](packages/plugin-service-tokens-node) | Shared node library with the auth handler module, permission exports, and token verification utilities |
 
----
+## Before You Install
+
+This plugin expects a Backstage app that already uses:
+
+- the new backend system with `createBackend()`
+- the new frontend system with `createApp({ features: [...] })`
+- the default auth policy enabled
+- the Backstage permission framework for admin authorization
+
+The [Getting Started guide](docs/getting-started.md) walks through these prerequisites in detail for an existing Backstage app. The [Tutorial](docs/tutorial.md) covers the full from-scratch experience.
 
 ## Quick Start
 
-### 1. Add the packages to your Backstage app
+### 1. Install the packages
 
-Install the published packages directly from npm under the `@adriandantas` scope.
-
-In your Backstage app repo, add local file dependencies:
-
-```json
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-backend
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-node
-```
+Add the published packages to your Backstage app:
 
 ```bash
+yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-backend
+yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-node
 yarn --cwd packages/app add @adriandantas/plugin-service-tokens
 ```
 
-### 2. Register the backend plugin
+### 2. Register the backend plugin and auth handler
 
-```typescript
+```ts
 // packages/backend/src/index.ts
 import { serviceTokensPlugin } from '@adriandantas/plugin-service-tokens-backend';
 import { serviceTokenHandlerModule } from '@adriandantas/plugin-service-tokens-node';
@@ -107,8 +71,8 @@ backend.add(serviceTokenHandlerModule);
 
 ### 3. Register the frontend plugin
 
-```typescript
-// packages/app/src/App.tsx (new frontend system)
+```ts
+// packages/app/src/App.tsx
 import { createApp } from '@backstage/frontend-defaults';
 import serviceTokensPlugin from '@adriandantas/plugin-service-tokens';
 
@@ -121,8 +85,14 @@ export default app.createRoot();
 
 ### 4. Add a permission policy
 
-```typescript
+```ts
 // packages/backend/src/serviceTokensPermissionPolicy.ts
+import {
+  AuthorizeResult,
+  isPermission,
+} from '@backstage/plugin-permission-common';
+import { PermissionPolicy } from '@backstage/plugin-permission-node';
+import { Config } from '@backstage/config';
 import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
@@ -130,26 +100,32 @@ import {
 } from '@adriandantas/plugin-service-tokens-node';
 
 class ServiceTokensPermissionPolicy implements PermissionPolicy {
+  constructor(private readonly config: Config) {}
+
   async handle(request, user) {
+    const adminRefs =
+      this.config.getOptionalStringArray('serviceTokens.admin.userEntityRefs') ?? [];
+
+    const isAdmin = adminRefs.includes(user?.info.userEntityRef ?? '');
+
     if (
       isPermission(request.permission, serviceTokensReadPermission) ||
       isPermission(request.permission, serviceTokensWritePermission) ||
       isPermission(request.permission, serviceTokensRevokePermission)
     ) {
-      const adminRefs = config.getOptionalStringArray('serviceTokens.admin.userEntityRefs') ?? [];
-      if (adminRefs.includes(user?.info.userEntityRef ?? '')) {
-        return { result: AuthorizeResult.ALLOW };
-      }
-      return { result: AuthorizeResult.DENY };
+      return {
+        result: isAdmin ? AuthorizeResult.ALLOW : AuthorizeResult.DENY,
+      };
     }
+
     return { result: AuthorizeResult.ALLOW };
   }
 }
 ```
 
-`serviceTokens.admin.userEntityRefs` remains a convenient config source for your policy, but the policy itself now grants three separate permissions. Existing policies that only check `serviceTokensAdminPermission` will grant read access only; update them before rollout if they should continue to allow token creation and revocation.
+Existing policies that still check only `serviceTokensAdminPermission` will grant read access only. Update them before rollout if those users should also create or revoke tokens.
 
-### 5. Configure
+### 5. Add minimal configuration
 
 ```yaml
 # app-config.yaml
@@ -160,66 +136,60 @@ serviceTokens:
       - user:default/bob
 ```
 
-That's it. Navigate to `/admin/service-tokens` in your Backstage app.
-
----
+At that point the admin UI is available at `/admin/service-tokens`.
 
 ## Using a Service Token
 
-Once a token is created, use it as a Bearer token against any Backstage backend API:
+Once a token is created, use it as a bearer token against any Backstage backend API:
 
 ```bash
-curl -s "https://your-backstage/api/catalog/entities?limit=10" \
-  -H "Authorization: Bearer <rawToken>"
+curl -s "https://your-backstage.example.com/api/catalog/entities?limit=10" \
+  -H "Authorization: Bearer <raw-token>"
 ```
 
-The token authenticates as the group it was scoped to. Revoked or expired tokens return `401 Unauthorized` after cache invalidation, bounded by `serviceTokens.cacheTtlSeconds`.
+The token authenticates as the group it was created for. Revoked or expired tokens eventually stop working once cache invalidation propagates, bounded by `serviceTokens.cacheTtlSeconds`.
 
----
+For deterministic local testing of immediate revocation, set `serviceTokens.cacheTtlSeconds: 0`.
 
-## 📚 Documentation
+## Security Notes
 
-| Document | Audience | Description |
+- Keep the default auth policy enabled. Do not set `backend.auth.dangerouslyDisableDefaultAuthPolicy: true` in production.
+- Treat service token scopes as advisory metadata unless you have added enforcement in consuming plugins or policies.
+- The raw token is shown once and cannot be retrieved later.
+- Audit responses use `{ "events": [...] }` and are returned newest-first.
+
+## Documentation
+
+Start here based on what you are trying to do:
+
+| Doc | Audience | Purpose |
 |---|---|---|
-| [Documentation Home](docs/index.md) | All audiences | Top-level docs index and suggested reading order |
-| [Getting Started](docs/getting-started.md) | Platform engineer | Complete install and wiring walkthrough |
-| [Configuration Reference](docs/configuration.md) | Platform engineer | Every config key, defaults, and examples |
-| [REST API Reference](docs/api.md) | Consumer / integrator | All endpoints, request/response shapes, error codes |
-| [Architecture](docs/architecture.md) | Contributor / advanced user | Package internals, token lifecycle, DB schema |
-| [Testing Guide](docs/testing.md) | Developer | End-to-end test walkthrough (API and UI paths) |
-| [Production Readiness](docs/production-readiness.md) | Platform engineer | Group-based admin access, policy merging, cache TTL, audit retention |
+| [Documentation Home](docs/index.md) | Everyone | Entry point and reading guide |
+| [Tutorial](docs/tutorial.md) | Evaluator or new adopter | End-to-end install in a fresh Backstage app |
+| [Getting Started](docs/getting-started.md) | Platform engineer | Integrate the plugin into an existing Backstage app |
+| [Configuration Reference](docs/configuration.md) | Platform engineer | Configure token TTL, scopes, and admin access |
+| [REST API Reference](docs/api.md) | Integrator | Request and response contracts for every endpoint |
+| [Testing Guide](docs/testing.md) | Adopter or operator | Validate the plugin through API, UI, and smoke checks |
+| [Production Readiness](docs/production-readiness.md) | Platform engineer | Hardening guidance for auth, policy, and operations |
+| [Architecture](docs/architecture.md) | Contributor | Internal design and package responsibilities |
+| [Contract Decisions](docs/contract-decisions.md) | Contributor or reviewer | Canonical public behavior that should stay stable |
+| [Developer Test Guide](docs/developer-test-guide.md) | Maintainer | Fast repeatable verification for unpublished changes |
 | [Release Guide](docs/releasing.md) | Maintainer | Changesets and npm publishing workflow |
 
----
+## Package READMEs
 
-## Migration note
+If you are looking at this project from npm package pages:
 
-This branch intentionally changes the permission model from a single `service-tokens.admin` check to three granular permissions:
-
-- `service-tokens:read`
-- `service-tokens:write`
-- `service-tokens:revoke`
-
-The deprecated `serviceTokensAdminPermission` export is kept only as a read-permission alias for transition purposes. If your existing Backstage policy checks only `serviceTokensAdminPermission`, users will still be able to read token data but will lose create and revoke access until the policy is updated.
-
----
-
-## Publication readiness checklist
-
-Before publishing the first release:
-
-- Add screenshots or GIFs for `/admin/service-tokens` (table + create + audit + revoke)
-- Wire CI status and npm version badges once the repository remote exists
-- Tag the first release (`v0.1.0` or `v1.0.0` per your semver strategy)
-- Keep docs publishing phased: 1) in-repo docs, 2) GitHub Pages publishing, 3) operator runbooks/cookbooks
-
----
+- [Frontend package README](packages/plugin-service-tokens/README.md)
+- [Backend package README](packages/plugin-service-tokens-backend/README.md)
+- [Node package README](packages/plugin-service-tokens-node/README.md)
 
 ## Development
 
 ### Prerequisites
 
-- Node.js 22 (via `nvm`)
+- Node.js 22
+- npm or Yarn workspace tooling
 
 ```bash
 nvm install 22
@@ -230,8 +200,6 @@ nvm use 22
 
 ```bash
 npm test
-
-# Focused package runs
 npm run test:backend
 npm run test:node
 npm run test:frontend
@@ -240,21 +208,9 @@ npm run test:frontend
 ### Preview docs
 
 ```bash
-npm run docs:serve
-```
-
-Serves the documentation site at `http://localhost:8000`. On first use, create the local Python venv and install MkDocs into it:
-
-```bash
-# On Debian/Ubuntu/WSL — install python3-venv first if not present
-sudo apt-get install -y python3-venv
-# Create the venv and install MkDocs (one-time)
 npm run docs:install
-# Then serve
 npm run docs:serve
 ```
-
-The venv is created at `.venv/` (gitignored). After the one-time install, only `npm run docs:serve` is needed.
 
 ### Run Storybook
 
@@ -268,21 +224,18 @@ npm run storybook
 npm run pack:dry-run
 ```
 
-Stories are available for all five UI components: `ServiceTokensTableView`, `ServiceTokensFilters`, `CreateTokenDialog`, `RevokeDialog`, and `AuditLogDialog`.
-
----
-
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution standards and the pull request checklist.
 
----
+`AGENTS.md` is also tracked in this repository to define expectations for coding agents working on the project.
+
+If you are iterating on unpublished package changes, use the maintainer-focused [Developer Test Guide](docs/developer-test-guide.md).
 
 ## License
 
 Business Source License 1.1 (BUSL-1.1).
 
-✅ Free for teams to self-host and use internally.  
-❌ Hosting this plugin (or a substantially similar managed service) for third parties requires a commercial license from the licensor.
+Free for internal self-hosted use. Hosting this plugin, or a substantially similar managed service, for third parties requires a commercial license from the licensor.
 
 See [LICENSE](LICENSE) for full terms.

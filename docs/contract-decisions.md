@@ -1,5 +1,7 @@
 # Contract Decisions
 
+Audience: contributors and reviewers maintaining stable public behavior.
+
 This note records the canonical public behavior for the plugin where earlier LLM-assisted sessions left code, tests, and docs out of sync.
 
 These decisions are the source of truth for future edits unless the public contract is intentionally changed.

@@ -10,10 +10,14 @@ nav:
   - REST API: api.md
   - Architecture: architecture.md
   - Testing: testing.md
-  - Releasing: releasing.md
   - Production Readiness: production-readiness.md
   - Runbooks:
       - Scope Enforcement: runbooks/scope-enforcement.md
+  - Reference:
+      - Contract Decisions: contract-decisions.md
+  - Maintainers:
+      - Developer Test Guide: developer-test-guide.md
+      - Releasing: releasing.md
 
 theme:
   name: material

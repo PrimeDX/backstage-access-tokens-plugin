@@ -1,6 +1,11 @@
 # @adriandantas/plugin-service-tokens
 
-Frontend Backstage plugin for managing service tokens from `/admin/service-tokens`.
+Frontend Backstage plugin that adds the service token admin page at `/admin/service-tokens`.
+
+Use this package together with:
+
+- `@adriandantas/plugin-service-tokens-backend` for the REST API and persistence
+- `@adriandantas/plugin-service-tokens-node` for the auth handler module used by the backend
 
 ## Install
 
@@ -21,4 +26,6 @@ const app = createApp({
 export default app.createRoot();
 ```
 
-See the repository root documentation for complete setup, including the backend plugin and auth handler module.
+This package registers the UI. It does not provide the backend API on its own.
+
+For the full installation flow, configuration, and permission policy wiring, see the root [README](../../README.md) and [Getting Started guide](../../docs/getting-started.md).

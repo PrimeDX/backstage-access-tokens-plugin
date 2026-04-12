@@ -1,49 +1,38 @@
 # Backstage Service Token Plugin Docs
 
-Welcome to the documentation for the **Backstage Service Token Plugin**.
+These docs are organized by audience so adopters can move quickly, while maintainers still have a clear place for internal workflows.
 
-This plugin provides:
+## Start Here
 
-- A backend API for creating, listing, and revoking service tokens
-- An external auth handler so raw service tokens can authenticate against Backstage backend routes
-- A frontend admin page at `/admin/service-tokens`
-- Granular permission-based administration via `service-tokens:read`, `service-tokens:write`, and `service-tokens:revoke`
+Choose the path that matches your job:
 
----
+- [Tutorial](tutorial.md) for the full from-scratch experience in a new Backstage app
+- [Getting Started](getting-started.md) to install the plugin into an existing Backstage app
+- [Configuration Reference](configuration.md) to tune behavior and policy inputs
+- [REST API Reference](api.md) to integrate against the token management endpoints
+- [Testing Guide](testing.md) to validate the plugin after installation
+- [Production Readiness](production-readiness.md) to harden the setup for real environments
 
-## Start here
+## Adopters and Operators
 
-- [Tutorial](tutorial.md) — build a Backstage app from scratch and integrate the plugin end-to-end (~30 min)
-- [Getting Started](getting-started.md) — install and wire the plugin into an existing Backstage app
-- [Configuration Reference](configuration.md) — all `serviceTokens` config keys and defaults
-- [REST API Reference](api.md) — request/response formats for all endpoints
-- [Contract Decisions](contract-decisions.md) — canonical public behavior where earlier sessions diverged
-- [Architecture](architecture.md) — package design, token lifecycle, and database model
-- [Testing Guide](testing.md) — end-to-end API and UI test flows
-- [Developer Test Guide](developer-test-guide.md) — fastest local integration path before npm publication
-- [Release Guide](releasing.md) — versioning and publishing the npm packages
-- [Production Readiness](production-readiness.md) — group-based admin access, policy merging, cache tuning, audit retention
-- [Scope Enforcement Runbook](runbooks/scope-enforcement.md) — optional operator guidance for consumer-driven enforcement
+- [Tutorial](tutorial.md)
+- [Getting Started](getting-started.md)
+- [Configuration Reference](configuration.md)
+- [REST API Reference](api.md)
+- [Testing Guide](testing.md)
+- [Production Readiness](production-readiness.md)
+- [Scope Enforcement Runbook](runbooks/scope-enforcement.md)
 
----
+## Contributors and Advanced Readers
 
-## Suggested reading order
+- [Architecture](architecture.md)
+- [Contract Decisions](contract-decisions.md)
 
-1. Begin with [Getting Started](getting-started.md)
-2. Tune settings in [Configuration Reference](configuration.md)
-3. Integrate automation using [REST API Reference](api.md)
-4. Dive deeper with [Architecture](architecture.md)
-5. Validate your setup with [Testing Guide](testing.md)
-6. Publish updates with [Release Guide](releasing.md)
-7. Harden for production with the [Production Readiness Guide](production-readiness.md)
-8. Optionally enforce token scopes with the [Scope Enforcement Runbook](runbooks/scope-enforcement.md)
+`Contract Decisions` is the canonical reference for stable public behavior when code, tests, and documentation have previously drifted.
 
----
+## Maintainers
 
-## Documentation publishing roadmap
+- [Developer Test Guide](developer-test-guide.md)
+- [Release Guide](releasing.md)
 
-Documentation publishing follows a phased model:
-
-1. Keep in-repo docs complete and decision-oriented.
-2. Publish docs to GitHub Pages with minimal tooling first, then harden navigation/versioning.
-3. Add operator runbooks/cookbooks for enforcement patterns and incident handling.
+These docs are intentionally maintainer-oriented. They cover unpublished package testing, local file-based verification, and npm release workflow rather than the adopter install story.
