@@ -33,6 +33,7 @@ Choose the path that matches your job:
 ## Maintainers
 
 - [Developer Test Guide](developer-test-guide.md)
+- [Git Workflow](git-workflow.md)
 - [Release Guide](releasing.md)
 
-These docs are intentionally maintainer-oriented. They cover unpublished package testing, local file-based verification, and npm release workflow rather than the adopter install story.
+These docs are intentionally maintainer-oriented. They cover unpublished package testing, local file-based verification, branch and pull request conventions, and npm release workflow rather than the adopter install story.
