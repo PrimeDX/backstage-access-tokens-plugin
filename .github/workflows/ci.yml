@@ -6,15 +6,17 @@ on:
   pull_request:
 
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: yarn
@@ -23,4 +25,12 @@ jobs:
         run: yarn install --immutable
 
       - name: Run verification suite
-        run: npm run ci
+        run: npm run ci 2>&1 | tee verify.log
+
+      - name: Upload verification log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-log
+          path: verify.log
+          if-no-files-found: ignore

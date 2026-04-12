@@ -1,0 +1,119 @@
+name: Publish
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  release-guard:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.guard.outputs.should_publish }}
+      reason: ${{ steps.guard.outputs.reason }}
+
+    steps:
+      - name: Checkout merged release commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Confirm this merge is the reviewed release PR
+        id: guard
+        env:
+          GITHUB_EVENT_PULL_REQUEST_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          RESULT=$(node scripts/is-release-pr-merge.mjs)
+          echo "$RESULT"
+          SHOULD_PUBLISH=$(node -e "const fs = require('node:fs'); const data = JSON.parse(fs.readFileSync(0, 'utf8')); process.stdout.write(String(data.shouldPublish));" <<<"$RESULT")
+          REASON=$(node -e "const fs = require('node:fs'); const data = JSON.parse(fs.readFileSync(0, 'utf8')); process.stdout.write(data.reason);" <<<"$RESULT")
+          echo "should_publish=$SHOULD_PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "reason=$REASON" >> "$GITHUB_OUTPUT"
+
+      - name: Skip ordinary merged pull requests
+        if: steps.guard.outputs.should_publish != 'true'
+        run: echo "${{ steps.guard.outputs.reason }}"
+
+  verify:
+    needs: release-guard
+    if: needs.release-guard.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout merged release commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run verification suite
+        run: npm run ci 2>&1 | tee verify.log
+
+      - name: Upload verification log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-verify-log
+          path: verify.log
+          if-no-files-found: ignore
+
+  publish:
+    needs: [release-guard, verify]
+    if: needs.release-guard.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    steps:
+      - name: Checkout merged release commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: yarn
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Skip publish when NPM_TOKEN is not configured
+        if: env.NODE_AUTH_TOKEN == ''
+        run: echo "NPM_TOKEN is not configured; skipping npm publish."
+
+      - name: Publish changed packages to npm
+        if: env.NODE_AUTH_TOKEN != ''
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: npx changeset publish --provenance
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ env.NODE_AUTH_TOKEN }}
+
+      - name: Push release tags
+        if: env.NODE_AUTH_TOKEN != '' && steps.changesets.outputs.published == 'true'
+        run: git push origin --tags
