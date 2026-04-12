@@ -59,8 +59,8 @@ GitHub Actions now handles the release lifecycle in three layers:
 
 - `CI` runs on every pull request and push to `main`, and verifies the canonical `npm run ci` lane
 - `Changeset Required` runs on pull requests and enforces the documented rule that changes to the published package surface include a Changeset
-- `Dependency Review` runs on pull requests and blocks risky dependency changes before merge
-- `CodeQL` runs on pull requests, pushes to `main`, and a weekly schedule to surface static-analysis findings in GitHub Security
+- `OSV-Scanner PR Scan` runs on pull requests and blocks newly introduced dependency vulnerabilities without requiring GitHub Code Security
+- `Semgrep` runs open source static analysis on pull requests and pushes to `main`
 - `Release PR` runs on pushes to `main` and opens or updates a `Version Packages` pull request from pending Changesets
 - `Publish` runs only when the reviewed `Version Packages` pull request is merged to `main`, reruns the verification suite, and publishes to npm only when package version bumps are present and `NPM_TOKEN` is configured
 
@@ -71,7 +71,7 @@ The intended merge flow is:
 3. Review and merge the auto-generated `Version Packages` release PR.
 4. Let the `Publish` workflow release the new versions to npm.
 
-Repository settings should enforce branch protection on `main` so `CI`, `Changeset Required`, `Dependency Review`, and `CodeQL` pass before merge.
+Repository settings should enforce branch protection on `main` so `CI`, `Changeset Required`, `OSV-Scanner PR Scan`, and `Semgrep` pass before merge.
 
 The Changeset rule is intentionally narrow. A Changeset is required when a PR modifies shipped package files such as:
 
