@@ -53,7 +53,8 @@
     "@adriandantas/plugin-service-tokens-backend": "file:../../packages/plugin-service-tokens-backend",
     "@adriandantas/plugin-service-tokens-node": "file:../../packages/plugin-service-tokens-node",
     "@types/react": "^18",
-    "@types/react-dom": "^18"
+    "@types/react-dom": "^18",
+    "undici@npm:^5.28.2": "npm:6.24.0"
   },
   "prettier": "@backstage/cli/config/prettier",
   "lint-staged": {
