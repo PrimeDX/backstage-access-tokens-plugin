@@ -139,6 +139,8 @@ Expected:
 - the table shows `Revoked`
 - the audit dialog shows newest-first ordering after revoke
 
+CI now runs this path automatically in the `CI / ui-smoke` job by installing `e2e/harness` dependencies and using Playwright `webServer` to start/wait for the harness before running the same smoke command. When CI fails, download `ui-smoke-artifacts` and review `playwright-report` and `test-results` first, then check the `Run UI smoke test` step logs for Playwright `webServer` startup output.
+
 ## 5. Revalidate Local `file:` Installs in a Fresh App
 
 Use this path when you want to prove unpublished package changes still work in a newly scaffolded Backstage app.

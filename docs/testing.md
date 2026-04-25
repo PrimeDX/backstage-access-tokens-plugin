@@ -521,7 +521,6 @@ This path is a focused smoke test for the primary admin UI flow. It is designed 
 - every permission-denied branch
 - backend error state rendering
 - cross-browser matrix coverage
-- CI-managed ephemeral harness startup
 
 ### Prerequisites
 
@@ -555,3 +554,13 @@ Expected:
 - the audit dialog then shows `revoked` followed by `created`
 
 If your local harness uses `file:` dependencies, refresh them with `yarn install` after package changes so the app picks up the current package snapshot.
+
+### CI coverage
+
+Pull requests and `main` pushes run this same smoke spec in GitHub Actions through the `CI / ui-smoke` job. The job installs root and harness dependencies, then Playwright starts and waits for `e2e/harness` via `webServer` while executing:
+
+```bash
+PLAYWRIGHT_HARNESS_DIR=e2e/harness PLAYWRIGHT_BASE_URL=http://localhost:3000 PLAYWRIGHT_USE_SYSTEM_CHROME=false npm run test:ui-smoke
+```
+
+If it fails, inspect the uploaded `ui-smoke-artifacts` bundle (`playwright-report` and `test-results`) and the `Run UI smoke test` logs for Playwright `webServer` startup output.

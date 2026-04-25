@@ -7,6 +7,7 @@ const useSystemChrome = process.env.PLAYWRIGHT_USE_SYSTEM_CHROME !== 'false';
 export default defineConfig({
   testDir: './playwright',
   fullyParallel: false,
+  workers: process.env.CI ? 1 : undefined,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
@@ -30,6 +31,8 @@ export default defineConfig({
         cwd: harnessDir,
         url: baseURL,
         reuseExistingServer: true,
+        stdout: 'pipe',
+        stderr: 'pipe',
         timeout: 180_000,
       }
     : undefined,

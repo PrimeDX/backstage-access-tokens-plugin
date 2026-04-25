@@ -23,9 +23,9 @@ async function selectMaterialOption(page, _label, optionName) {
   await field.click();
 
   const option = page
-    .getByRole('option', { name: optionName, exact: true })
-    .or(page.getByRole('menuitem', { name: optionName, exact: true }))
-    .or(page.getByText(optionName, { exact: true }));
+    .getByRole('option', { name: optionName })
+    .or(page.getByRole('menuitem', { name: optionName }))
+    .or(page.getByText(optionName));
 
   await expect(option.first()).toBeVisible();
   await option.first().click();
@@ -38,7 +38,9 @@ test('create, audit, and revoke a service token from the admin UI', async ({ pag
   await page.goto('/admin/service-tokens');
   await maybeEnterGuest(page);
 
-  await expect(page.getByRole('main').getByRole('heading', { name: 'Service Tokens' })).toBeVisible();
+  await expect(
+    page.getByRole('main').getByRole('heading', { name: 'Service Tokens', exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Create token' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Create token' }).click();

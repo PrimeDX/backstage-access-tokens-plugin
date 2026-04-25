@@ -32,7 +32,8 @@ GitHub Actions now owns the normal release lifecycle:
 4. `CodeQL` analyzes the repository on pull requests, pushes to `main`, and a weekly schedule.
 5. After a PR merges to `main`, the `Release PR` workflow opens or updates a `Version Packages` pull request with the pending version bumps.
 6. When that reviewed release PR is merged into `main`, the `Publish` workflow reruns verification, confirms the merge contains Changesets-managed package version bumps, publishes the changed packages to npm, and pushes the generated release tags back to GitHub.
-7. The `UI Smoke` workflow is available as a manual GitHub Actions run for a reachable Backstage harness when you want browser validation without blocking normal CI.
+7. The `CI` workflow now includes a required `ui-smoke` job that starts the in-repo harness and runs `npm run test:ui-smoke` on pull requests and `main` pushes.
+8. The `Manual UI Smoke` workflow remains available as a maintainer-triggered run for a reachable external harness URL when ad-hoc validation is needed.
 
 This keeps versioning reviewable while still allowing hands-off publication after approval.
 
@@ -54,7 +55,8 @@ flowchart LR
   H --> I{"Release PR merged?"}
   I -- "yes" --> J["Publish workflow<br/>rerun verify + changeset publish"]
   J --> K["npm packages published<br/>with provenance + pushed tags"]
-  B -. "optional" .-> L["UI Smoke workflow_dispatch<br/>Playwright against reachable harness"]
+  B --> N["CI ui-smoke job<br/>Playwright against in-repo harness"]
+  B -. "optional" .-> L["Manual UI Smoke workflow_dispatch<br/>Playwright against reachable harness"]
 ```
 
 The important split is:
@@ -82,7 +84,7 @@ It does not require a Changeset for:
 
 - Default branch: `main`
 - Branch protection on `main` so CI must pass before merge
-- Required status checks on pull requests: `CI`, `Changeset Required`, `Dependency Review`, and `CodeQL`
+- Required status checks on pull requests: `CI / verify`, `CI / ui-smoke`, `Changeset Required`, `Dependency Review`, and `CodeQL`
 - `NPM_TOKEN` configured in repository or organization GitHub Actions secrets
 - npm package ownership configured for the `@adriandantas` scope
 - GitHub code scanning enabled so CodeQL results are visible in the Security tab
@@ -91,9 +93,25 @@ The publish workflow uses npm provenance via `changeset publish --provenance`, s
 
 Docs publishing remains intentionally out of scope for this automation pass. If GitHub Pages or another docs deployment is added later, it should use a separate workflow rather than being coupled to npm publication.
 
-## Manual UI smoke expectations
+## CI and manual UI smoke expectations
 
-`Manual UI Smoke` is intentionally maintainer-triggered and non-blocking. Use it when you want browser validation against a real Backstage harness without making external harness health a merge requirement.
+`CI / ui-smoke` is the default browser gate for pull requests. It installs root and harness dependencies, then runs the smoke test with Playwright-managed harness startup/readiness via `webServer`:
+
+- `PLAYWRIGHT_HARNESS_DIR=e2e/harness`
+- `PLAYWRIGHT_BASE_URL=http://localhost:3000`
+- `PLAYWRIGHT_USE_SYSTEM_CHROME=false`
+
+When the job fails, review uploaded artifacts (`ui-smoke-artifacts`) including:
+
+- `playwright-report`
+- `test-results`
+
+Troubleshooting notes:
+
+- If startup fails before tests run, inspect the `Run UI smoke test` step logs for Playwright `webServer` output.
+- Confirm `cd e2e/harness && yarn install --immutable` succeeded in the `Install harness dependencies` step.
+
+`Manual UI Smoke` remains intentionally maintainer-triggered and non-blocking. Use it when you want browser validation against a real external Backstage harness without making external harness health a merge requirement.
 
 Before dispatching the workflow, confirm the target harness:
 
