@@ -17,6 +17,8 @@
     "pack:node": "npm_config_cache=/tmp/npm-cache npm pack --dry-run --workspace packages/plugin-service-tokens-node",
     "storybook": "CI=1 STORYBOOK_DISABLE_TELEMETRY=1 HOME=/tmp storybook dev -p 6006",
     "storybook:build": "CI=1 STORYBOOK_DISABLE_TELEMETRY=1 HOME=/tmp storybook build",
+    "security:check": "if [ -f package-lock.json ]; then npm audit --workspaces --include-workspace-root --audit-level=moderate; else echo 'Skipping root npm audit (no package-lock.json found).'; fi && cd e2e/harness && yarn npm audit -A -R --severity moderate --no-deprecations",
+    "security:changed": "if git status --porcelain -- package-lock.json e2e/harness/yarn.lock | grep -q .; then npm run security:check; else echo 'No lockfile changes detected (package-lock.json, e2e/harness/yarn.lock). Skipping security audit.'; fi",
     "test": "npm run test:prepare && node --test packages/*/src/*.test.js",
     "test:api-script": "bash scripts/test-api.sh",
     "test:backend": "npm run test:prepare && node --test packages/plugin-service-tokens-backend/src/*.test.js",
