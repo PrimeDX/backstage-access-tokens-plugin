@@ -34,3 +34,90 @@ jobs:
           name: verify-log
           path: verify.log
           if-no-files-found: ignore
+
+  security-publishable:
+    runs-on: ubuntu-latest
+    needs: verify
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run publishable dependency security gate
+        run: npm run security:publishable
+
+  security-harness:
+    runs-on: ubuntu-latest
+    needs: verify
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Install harness dependencies
+        run: cd e2e/harness && yarn install --immutable
+
+      - name: Run harness dependency security gate
+        run: npm run security:harness
+
+  ui-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - verify
+      - security-publishable
+      - security-harness
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Install harness dependencies
+        run: cd e2e/harness && yarn install --immutable
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run UI smoke test
+        run: npm run test:ui-smoke
+        env:
+          PLAYWRIGHT_HARNESS_DIR: e2e/harness
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          PLAYWRIGHT_USE_SYSTEM_CHROME: "false"
+
+      - name: Upload UI smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-smoke-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore

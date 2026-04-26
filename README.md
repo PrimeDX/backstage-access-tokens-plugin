@@ -225,6 +225,20 @@ npm run storybook
 npm run pack:dry-run
 ```
 
+### Check dependency risk locally
+
+Run the dependency audit gate that mirrors the repository's dependency review expectations:
+
+```bash
+npm run security:changed
+```
+
+If you want a full snapshot audit even when lockfiles did not change:
+
+```bash
+npm run security:check
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution standards and the pull request checklist.

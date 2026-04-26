@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+test.setTimeout(240_000);
+
 function addDays(date, days) {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
@@ -10,36 +12,282 @@ function isoDate(daysFromNow) {
   return addDays(new Date(), daysFromNow).toISOString().slice(0, 10);
 }
 
+function escapeRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function parseEntityRef(entityRef) {
+  const [kindPart = '', targetPart = ''] = String(entityRef).split(':', 2);
+  const [namespacePart = 'default', namePart = ''] = targetPart.split('/', 2);
+  const kind = kindPart.toLocaleLowerCase('en-US');
+  const namespace = namespacePart || 'default';
+  const name = namePart;
+
+  if (!kind || !name) {
+    throw new Error(`Invalid entity ref: ${entityRef}`);
+  }
+
+  return { kind, namespace, name };
+}
+
 async function maybeEnterGuest(page) {
   const enterButton = page.getByRole('button', { name: /^Enter$/i });
   if (await enterButton.count()) {
-    await enterButton.first().click();
+    await enterButton.first().click({ timeout: 2000 }).catch(() => {});
   }
+}
+
+async function fetchGuestAccessToken(page, backendUrl) {
+  let response;
+  let rawPayload = '';
+
+  try {
+    response = await page.request.get(`${backendUrl}/api/auth/guest/refresh`);
+    rawPayload = await response.text();
+  } catch (error) {
+    return {
+      status: 'fetch-error',
+      token: '',
+      payloadSnippet: String(error?.message ?? error ?? 'unknown fetch error'),
+    };
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(rawPayload);
+  } catch {
+    payload = {};
+  }
+
+  return {
+    status: response.status(),
+    token: payload?.backstageIdentity?.token ?? '',
+    payloadSnippet: rawPayload.replace(/\s+/g, ' ').slice(0, 300),
+  };
+}
+
+async function waitForGuestAuthReady(page) {
+  const backendUrl = process.env.PLAYWRIGHT_BACKEND_URL ?? 'http://localhost:7007';
+  const timeoutMs = 120_000;
+  const start = Date.now();
+
+  while (Date.now() - start < timeoutMs) {
+    const snapshot = await fetchGuestAccessToken(page, backendUrl);
+    if (snapshot.status === 200 && snapshot.token) {
+      return;
+    }
+    await page.waitForTimeout(1000);
+  }
+
+  throw new Error('guest auth endpoint did not become ready in time');
+}
+
+async function readCatalogGroups(page, url, token) {
+  let response;
+  let rawPayload = '';
+
+  try {
+    response = await page.request.get(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    rawPayload = await response.text();
+  } catch (error) {
+    return {
+      status: 'fetch-error',
+      refs: [],
+      payloadSnippet: String(error?.message ?? error ?? 'unknown fetch error'),
+    };
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(rawPayload);
+  } catch {
+    payload = [];
+  }
+
+  const entities = Array.isArray(payload) ? payload : payload?.items ?? [];
+  const refs = entities.map(entity => {
+    const namespace = entity?.metadata?.namespace ?? 'default';
+    const name = entity?.metadata?.name ?? '';
+    return `group:${namespace}/${name}`;
+  });
+
+  return {
+    status: response.status(),
+    refs,
+    payloadSnippet: rawPayload.replace(/\s+/g, ' ').slice(0, 300),
+  };
+}
+
+async function readCatalogEntityByName(page, url, token) {
+  let response;
+  let rawPayload = '';
+
+  try {
+    response = await page.request.get(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    rawPayload = await response.text();
+  } catch (error) {
+    return {
+      status: 'fetch-error',
+      payloadSnippet: String(error?.message ?? error ?? 'unknown fetch error'),
+    };
+  }
+
+  return {
+    status: response.status(),
+    payloadSnippet: rawPayload.replace(/\s+/g, ' ').slice(0, 300),
+  };
+}
+
+async function waitForServiceTokensPage(page) {
+  const heading = page.getByRole('main').getByRole('heading', {
+    name: 'Service Tokens',
+    exact: true,
+  });
+  const enterButton = page.getByRole('button', { name: /^Enter$/i });
+  const timeoutMs = 60_000;
+  const start = Date.now();
+
+  while (Date.now() - start < timeoutMs) {
+    const headingVisible = await heading.isVisible().catch(() => false);
+    if (headingVisible) {
+      return;
+    }
+
+    const guestErrorVisible = await page
+      .getByText(/You cannot sign in as a guest/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (guestErrorVisible) {
+      await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+      await page.waitForTimeout(1000);
+      continue;
+    }
+
+    const canEnter = await enterButton.isVisible().catch(() => false);
+    if (canEnter) {
+      await enterButton.first().click({ timeout: 2000 }).catch(() => {});
+    }
+
+    await page.waitForTimeout(500);
+  }
+
+  await expect(heading).toBeVisible();
+}
+
+async function waitForCatalogGroup(page, entityRef) {
+  const timeoutMs = 180_000;
+  const start = Date.now();
+  const backendUrl = process.env.PLAYWRIGHT_BACKEND_URL ?? 'http://localhost:7007';
+  const { kind, namespace, name } = parseEntityRef(entityRef);
+  const groupsUrlLower = `${backendUrl}/api/catalog/entities?filter=kind=group&limit=200`;
+  const groupsUrlUpper = `${backendUrl}/api/catalog/entities?filter=kind=Group&limit=200`;
+  const groupByNameUrl = `${backendUrl}/api/catalog/entities/by-name/${kind}/${namespace}/${name}`;
+  let lastStatus = 'n/a';
+  let lastRefs = [];
+  let lastSnippet = '';
+
+  while (Date.now() - start < timeoutMs) {
+    const authSnapshot = await fetchGuestAccessToken(page, backendUrl);
+    const lowerSnapshot = await readCatalogGroups(page, groupsUrlLower, authSnapshot.token);
+    const upperSnapshot = await readCatalogGroups(page, groupsUrlUpper, authSnapshot.token);
+    const byNameSnapshot = await readCatalogEntityByName(page, groupByNameUrl, authSnapshot.token);
+
+    lastStatus = `auth:${authSnapshot.status} lower:${lowerSnapshot.status} upper:${upperSnapshot.status} byName:${byNameSnapshot.status}`;
+    lastRefs = lowerSnapshot.refs.length ? lowerSnapshot.refs : upperSnapshot.refs;
+    lastSnippet = byNameSnapshot.status === 200
+      ? byNameSnapshot.payloadSnippet
+      : lowerSnapshot.refs.length
+      ? lowerSnapshot.payloadSnippet
+      : upperSnapshot.refs.length
+      ? upperSnapshot.payloadSnippet
+      : authSnapshot.payloadSnippet ||
+        byNameSnapshot.payloadSnippet ||
+        lowerSnapshot.payloadSnippet ||
+        upperSnapshot.payloadSnippet;
+
+    if (byNameSnapshot.status === 200 || lastRefs.includes(entityRef)) {
+      return;
+    }
+
+    await page.waitForTimeout(2000);
+  }
+
+  throw new Error(
+    `waiting for catalog group ${entityRef} failed; urls=[${groupsUrlLower}, ${groupsUrlUpper}, ${groupByNameUrl}]; status=${lastStatus}; refs=${JSON.stringify(lastRefs)}; payload=${lastSnippet}`,
+  );
+}
+
+async function waitForCreateTokenActionable(page) {
+  const createButton = page.getByRole('button', { name: /Create token|Loading groups/i });
+  const timeoutMs = 120_000;
+  const start = Date.now();
+
+  while (Date.now() - start < timeoutMs) {
+    const enabled = await createButton.isEnabled().catch(() => false);
+    if (enabled) {
+      await expect(page.getByRole('button', { name: 'Create token' })).toBeVisible();
+      return;
+    }
+    await page.waitForTimeout(1000);
+  }
+
+  throw new Error('Create token button never became actionable (groups not ready)');
 }
 
 async function selectMaterialOption(page, _label, optionName) {
   const dialog = page.getByRole('dialog');
-  const field = dialog.getByRole('button').first();
-  await field.click();
+  const field = dialog.locator('[role="button"][aria-haspopup="listbox"]').first();
+  const optionMatcher = new RegExp(`\\b${escapeRegex(optionName)}\\b`, 'i');
+  const timeoutMs = 120_000;
+  const start = Date.now();
+  let lastOptions = [];
 
-  const option = page
-    .getByRole('option', { name: optionName, exact: true })
-    .or(page.getByRole('menuitem', { name: optionName, exact: true }))
-    .or(page.getByText(optionName, { exact: true }));
+  await expect(field).toBeVisible();
 
-  await expect(option.first()).toBeVisible();
-  await option.first().click();
+  while (Date.now() - start < timeoutMs) {
+    await field.click().catch(() => {});
+    const optionElements = page.getByRole('option');
+    const optionCount = await optionElements.count();
+    lastOptions = [];
+
+    for (let i = 0; i < optionCount; i += 1) {
+      const text = (await optionElements.nth(i).innerText().catch(() => '')).trim();
+      if (text) {
+        lastOptions.push(text);
+      }
+      if (optionMatcher.test(text)) {
+        await optionElements.nth(i).click();
+        return;
+      }
+    }
+
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(1000);
+  }
+
+  throw new Error(
+    `waiting for "${optionName}" option to become available; visibleOptions=${JSON.stringify(lastOptions)}`,
+  );
 }
 
 test('create, audit, and revoke a service token from the admin UI', async ({ page }) => {
+  const owningGroupRef = 'group:development/platform';
+  const { name: owningGroupName } = parseEntityRef(owningGroupRef);
   const tokenName = `ui-smoke-${Date.now()}`;
   const revokeReason = 'Playwright smoke revocation';
 
+  await waitForGuestAuthReady(page);
   await page.goto('/admin/service-tokens');
   await maybeEnterGuest(page);
+  await waitForServiceTokensPage(page);
 
-  await expect(page.getByRole('main').getByRole('heading', { name: 'Service Tokens' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Create token' })).toBeVisible();
+  await waitForCatalogGroup(page, owningGroupRef);
+  await waitForCreateTokenActionable(page);
 
   await page.getByRole('button', { name: 'Create token' }).click();
 
@@ -49,7 +297,7 @@ test('create, audit, and revoke a service token from the admin UI', async ({ pag
 
   await createDialog.locator('input').first().fill(tokenName);
   await createDialog.locator('textarea').first().fill('Created by the Playwright smoke test');
-  await selectMaterialOption(page, 'Owning group', 'platform');
+  await selectMaterialOption(page, 'Owning group', owningGroupName);
   await createDialog.getByRole('checkbox', { name: /catalog:read/i }).check();
   await createDialog.locator('input[type="date"]').fill(isoDate(60));
   await createDialog.getByRole('button', { name: 'Create token' }).click();
