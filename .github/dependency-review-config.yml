@@ -1,4 +1,6 @@
 fail-on-severity: moderate
+allow-ghsas:
+  - GHSA-w5hq-g745-h8pq # Temporary: tracked in issue #21, remove after upstream deps stop resolving uuid@9.x
 allow-licenses:
   - MIT
   - Apache-2.0
