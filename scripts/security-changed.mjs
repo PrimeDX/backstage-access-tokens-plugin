@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 const HARNESS_LOCKFILE = 'e2e/harness/yarn.lock';
 const HARNESS_DIR = 'e2e/harness';
 const BASE_REF = process.env.SECURITY_BASE_REF ?? 'origin/main';
-const HIGH_SEVERITIES = new Set(['high', 'critical']);
+const MODERATE_OR_HIGHER = new Set(['moderate', 'high', 'critical']);
 
 function run(cmd, args, opts = {}) {
   const result = spawnSync(cmd, args, {
@@ -65,7 +65,11 @@ function parseAuditJsonLines(output) {
 
     const payload = parsed?.children;
     const severity = String(payload?.Severity ?? '').toLowerCase();
-    if (!HIGH_SEVERITIES.has(severity)) {
+    if (!MODERATE_OR_HIGHER.has(severity)) {
+      continue;
+    }
+    const advisoryUrl = String(payload?.URL ?? '').trim();
+    if (!advisoryUrl) {
       continue;
     }
 
@@ -79,7 +83,7 @@ function parseAuditJsonLines(output) {
       packageName: String(parsed?.value ?? '').trim(),
       severity,
       issue: String(payload?.Issue ?? '').trim(),
-      url: String(payload?.URL ?? '').trim(),
+      url: advisoryUrl,
     });
   }
 
@@ -166,20 +170,20 @@ function main() {
       : new Map();
     const headAdvisories = runHarnessAudit(resolve(HARNESS_DIR));
 
-    const newHighs = [...headAdvisories.values()].filter(
+    const newAdvisories = [...headAdvisories.values()].filter(
       advisory => !baseAdvisories.has(advisory.id),
     );
 
-    if (newHighs.length === 0) {
+    if (newAdvisories.length === 0) {
       console.log(
-        `No new high/critical advisories introduced in ${HARNESS_LOCKFILE} compared to ${BASE_REF}.`,
+        `No new moderate/high/critical advisories introduced in ${HARNESS_LOCKFILE} compared to ${BASE_REF}.`,
       );
       process.exit(0);
     }
 
     printAdvisories(
-      `New high/critical advisories introduced in ${HARNESS_LOCKFILE} (base: ${BASE_REF}):`,
-      newHighs,
+      `New moderate/high/critical advisories introduced in ${HARNESS_LOCKFILE} (base: ${BASE_REF}):`,
+      newAdvisories,
     );
     process.exit(1);
   } finally {
