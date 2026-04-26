@@ -14,7 +14,7 @@ import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
   serviceTokensRevokePermission,
-} from '@adriandantas/plugin-service-tokens-node';
+} from '@primedx/plugin-service-tokens-node';
 import { Config } from '@backstage/config';
 
 class ServiceTokensPermissionPolicy implements PermissionPolicy {

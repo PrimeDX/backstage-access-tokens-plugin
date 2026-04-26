@@ -7,8 +7,8 @@
  */
 
 import { createBackend } from '@backstage/backend-defaults';
-import { serviceTokenHandlerModule } from '@adriandantas/plugin-service-tokens-node';
-import { serviceTokensPlugin } from '@adriandantas/plugin-service-tokens-backend';
+import { serviceTokenHandlerModule } from '@primedx/plugin-service-tokens-node';
+import { serviceTokensPlugin } from '@primedx/plugin-service-tokens-backend';
 import { serviceTokensPermissionPolicyModule } from './serviceTokensPermissionPolicyModule';
 
 const backend = createBackend();
