@@ -59,6 +59,7 @@ From this repository:
 cd /path/to/backstage-service-token-plugin
 npm test
 npm run pack:dry-run
+npm run security:ci
 npm run security:changed
 ```
 
@@ -66,6 +67,8 @@ Expected:
 
 - all tests pass
 - all three packages pack successfully in dry-run mode
+- `security:publishable` blocks on newly introduced `moderate+` advisories in publishable dependencies versus `origin/main`
+- `security:harness` blocks on `high` / `critical` advisories in `e2e/harness`
 - if `e2e/harness/yarn.lock` changed, newly introduced `high` / `critical` advisories (compared to `origin/main`) are surfaced before PR creation
 - if lockfiles did not change, the command exits cleanly with a skip message
 
@@ -149,7 +152,7 @@ Expected:
 - the table shows `Revoked`
 - the audit dialog shows newest-first ordering after revoke
 
-CI now runs this path automatically in the `CI / ui-smoke` job by installing `e2e/harness` dependencies and using Playwright `webServer` to start/wait for the harness before running the same smoke command. When CI fails, download `ui-smoke-artifacts` and review `playwright-report` and `test-results` first, then check the `Run UI smoke test` step logs for Playwright `webServer` startup output.
+CI now runs this path automatically in the `CI / ui-smoke` job by installing `e2e/harness` dependencies and using Playwright `webServer` to start/wait for the harness before running the same smoke command. `CI / security-publishable` and `CI / security-harness` run alongside this flow as required gates. When CI fails, download `ui-smoke-artifacts` and review `playwright-report` and `test-results` first, then check the `Run UI smoke test` step logs for Playwright `webServer` startup output.
 
 If the smoke test fails while selecting the owning group:
 
