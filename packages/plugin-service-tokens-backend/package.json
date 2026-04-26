@@ -2,7 +2,7 @@
   "name": "@adriandantas/plugin-service-tokens-backend",
   "version": "0.1.0",
   "description": "Backstage backend plugin for service token lifecycle management and REST APIs.",
-  "license": "BUSL-1.1",
+  "license": "Apache-2.0",
   "backstage": {
     "role": "backend-plugin",
     "pluginId": "service-tokens",

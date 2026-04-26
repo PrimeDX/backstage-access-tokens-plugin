@@ -2,7 +2,7 @@
   "name": "@adriandantas/plugin-service-tokens",
   "version": "0.1.0",
   "description": "Backstage frontend plugin for creating, listing, auditing, and revoking service tokens.",
-  "license": "BUSL-1.1",
+  "license": "Apache-2.0",
   "backstage": {
     "role": "frontend-plugin",
     "pluginId": "service-tokens",

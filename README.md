@@ -5,7 +5,7 @@
 [![Node 22](https://img.shields.io/badge/node-22-brightgreen)](https://nodejs.org/)
 [![Backstage](https://img.shields.io/badge/backstage-compatible-blue)](https://backstage.io/)
 [![Packages](https://img.shields.io/badge/packages-3-informational)](#packages)
-[![License: BUSL-1.1](https://img.shields.io/badge/license-BUSL--1.1-yellow)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 ## What This Plugin Does
 
@@ -235,8 +235,6 @@ If you are iterating on unpublished package changes, use the maintainer-focused 
 
 ## License
 
-Business Source License 1.1 (BUSL-1.1).
-
-Free for internal self-hosted use. Hosting this plugin, or a substantially similar managed service, for third parties requires a commercial license from the licensor.
+Apache License 2.0 (Apache-2.0).
 
 See [LICENSE](LICENSE) for full terms.
