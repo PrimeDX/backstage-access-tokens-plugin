@@ -2,6 +2,17 @@ fail-on-severity: moderate
 allow-ghsas:
   - GHSA-w5hq-g745-h8pq # Temporary: tracked in issue #21, remove after upstream deps stop resolving uuid@9.x
   - GHSA-x7hr-w5r2-h6wg # Temporary: tracked in issue #22, remove after upstream deps stop resolving prismjs<1.30.0
+  - GHSA-39q2-94rc-95cp # Temporary: tracked in issue #23
+  - GHSA-5v7r-6r5c-r473 # Temporary: tracked in issue #23
+  - GHSA-crv5-9vww-q3g8 # Temporary: tracked in issue #23
+  - GHSA-gh4j-gqv2-49f6 # Temporary: tracked in issue #23
+  - GHSA-h5c3-5r3r-rr8q # Temporary: tracked in issue #23
+  - GHSA-h7mw-gpvr-xq4m # Temporary: tracked in issue #23
+  - GHSA-qx2v-qp2m-jg93 # Temporary: tracked in issue #23
+  - GHSA-r4q5-vmmm-2653 # Temporary: tracked in issue #23
+  - GHSA-rmvr-2pp2-xj38 # Temporary: tracked in issue #23
+  - GHSA-v9jr-rg53-9pgp # Temporary: tracked in issue #23
+  - GHSA-xx4v-prfh-6cgc # Temporary: tracked in issue #23
 allow-licenses:
   - MIT
   - Apache-2.0
