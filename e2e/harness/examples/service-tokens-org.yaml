@@ -11,6 +11,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Group
 metadata:
   name: platform
+  namespace: development
 spec:
   type: team
   children: []
