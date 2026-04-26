@@ -14,6 +14,13 @@ import {
 } from './helpers.js';
 
 const h = React.createElement;
+const GROUP_FETCH_RETRY_INTERVAL_MS = 2000;
+const GROUP_FETCH_MAX_ATTEMPTS = 30;
+const GROUP_KIND_FILTERS = ['group', 'Group'];
+const GROUP_ENDPOINT_BUILDERS = [
+  (catalogBase, kindFilter) => `${catalogBase}/entities/by-query?filter=kind=${kindFilter}&limit=200`,
+  (catalogBase, kindFilter) => `${catalogBase}/entities?filter=kind=${kindFilter}&limit=200`,
+];
 
 const EMPTY_FORM = () => ({
   name: '',
@@ -22,6 +29,63 @@ const EMPTY_FORM = () => ({
   scopes: [],
   expiresAt: defaultExpiryValue(),
 });
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function extractCatalogEntities(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload?.items)) {
+    return payload.items
+      .map(item => item?.entity ?? item)
+      .filter(Boolean);
+  }
+
+  if (Array.isArray(payload?.results)) {
+    return payload.results
+      .map(item => item?.entity ?? item)
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function toEntityRefParts(entityRef) {
+  const [kindPart = '', targetPart = ''] = String(entityRef).split(':', 2);
+  const [namespacePart = 'default', namePart = ''] = targetPart.split('/', 2);
+  const kind = kindPart.toLocaleLowerCase('en-US');
+  if (!kind || !namePart) {
+    return null;
+  }
+  return { kind, namespace: namespacePart || 'default', name: namePart };
+}
+
+function extractOwnershipEntityRefs(payload) {
+  if (Array.isArray(payload?.ownershipEntityRefs)) return payload.ownershipEntityRefs;
+  if (Array.isArray(payload?.identity?.ownershipEntityRefs)) {
+    return payload.identity.ownershipEntityRefs;
+  }
+  if (Array.isArray(payload?.ent)) return payload.ent;
+  if (Array.isArray(payload?.claims?.ent)) return payload.claims.ent;
+  return [];
+}
+
+async function fetchEntityByName(fetchApi, catalogBase, entityRefParts) {
+  const kind = encodeURIComponent(entityRefParts.kind);
+  const namespace = encodeURIComponent(entityRefParts.namespace);
+  const name = encodeURIComponent(entityRefParts.name);
+  const response = await fetchApi.fetch(
+    `${catalogBase}/entities/by-name/${kind}/${namespace}/${name}`,
+  );
+  if (!response.ok) {
+    return null;
+  }
+  return response.json();
+}
 
 export function ServiceTokensPage() {
   const discoveryApi = useApi(discoveryApiRef);
@@ -40,6 +104,8 @@ export function ServiceTokensPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [scopes, setScopes] = useState([]);
   const [groupOptions, setGroupOptions] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [groupsError, setGroupsError] = useState(null);
   const [createForm, setCreateForm] = useState(EMPTY_FORM);
   const [createSubmitting, setCreateSubmitting] = useState(false);
   const [createdToken, setCreatedToken] = useState(null);
@@ -55,6 +121,85 @@ export function ServiceTokensPage() {
   const [auditToken, setAuditToken] = useState(null);
   const [auditEntries, setAuditEntries] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
+
+  const loadGroupOptions = useCallback(async () => {
+    setGroupsLoading(true);
+    setGroupsError(null);
+    try {
+      const catalogBase = await discoveryApi.getBaseUrl('catalog');
+      const authBase = await discoveryApi.getBaseUrl('auth');
+      await fetchApi.fetch(`${authBase}/guest/refresh`).catch(() => {});
+
+      for (let attempt = 0; attempt < GROUP_FETCH_MAX_ATTEMPTS; attempt += 1) {
+        for (const endpointBuilder of GROUP_ENDPOINT_BUILDERS) {
+          for (const kindFilter of GROUP_KIND_FILTERS) {
+            const groupsRes = await fetchApi.fetch(
+              endpointBuilder(catalogBase, kindFilter),
+            );
+
+            if (groupsRes.ok) {
+              const payload = await groupsRes.json();
+              const entities = extractCatalogEntities(payload).filter(
+                entity =>
+                  String(entity?.kind ?? '').toLocaleLowerCase('en-US') === 'group' &&
+                  Boolean(entity?.metadata?.name),
+              );
+              const nextOptions = mapGroupEntityOptions(entities);
+
+              if (nextOptions.length > 0) {
+                setGroupOptions(nextOptions);
+                return nextOptions;
+              }
+            }
+          }
+        }
+
+        const userInfoRes = await fetchApi.fetch(`${authBase}/v1/userinfo`);
+        if (userInfoRes.ok) {
+          const userInfoPayload = await userInfoRes.json();
+          const ownershipGroupRefs = extractOwnershipEntityRefs(userInfoPayload)
+            .map(toEntityRefParts)
+            .filter(Boolean)
+            .filter(parts => parts.kind === 'group');
+
+          const ownershipEntities = [];
+          for (const groupRef of ownershipGroupRefs) {
+            const entity = await fetchEntityByName(fetchApi, catalogBase, groupRef).catch(
+              () => null,
+            );
+            if (
+              entity &&
+              String(entity?.kind ?? '').toLocaleLowerCase('en-US') === 'group' &&
+              entity?.metadata?.name
+            ) {
+              ownershipEntities.push(entity);
+            }
+          }
+
+          const fallbackOptions = mapGroupEntityOptions(ownershipEntities);
+          if (fallbackOptions.length > 0) {
+            setGroupOptions(fallbackOptions);
+            return fallbackOptions;
+          }
+        }
+
+        if (attempt < GROUP_FETCH_MAX_ATTEMPTS - 1) {
+          await sleep(GROUP_FETCH_RETRY_INTERVAL_MS);
+        }
+      }
+      setGroupsError(
+        'Groups are still loading from the catalog. Please wait a moment and try again.',
+      );
+      return [];
+    } catch {
+      setGroupsError(
+        'Unable to load groups from the catalog right now. Please retry in a few seconds.',
+      );
+      return [];
+    } finally {
+      setGroupsLoading(false);
+    }
+  }, [discoveryApi, fetchApi]);
 
   // ── load token list ──────────────────────────────────────────────────────────
   const loadTokens = useCallback(
@@ -102,23 +247,11 @@ export function ServiceTokensPage() {
         // non-fatal — scopes list will be empty
       }
 
-      try {
-        const catalogBase = await discoveryApi.getBaseUrl('catalog');
-        const groupsRes = await fetchApi.fetch(
-          `${catalogBase}/entities?filter=kind=Group&limit=200`,
-        );
-        if (groupsRes.ok) {
-          const entities = await groupsRes.json();
-          setGroupOptions(mapGroupEntityOptions(entities));
-        }
-      } catch {
-        // non-fatal — group dropdown will be empty
-      }
+      await loadGroupOptions();
     }
 
     loadMeta();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadTokens, loadGroupOptions, discoveryApi, fetchApi]);
 
   // ── filter change ────────────────────────────────────────────────────────────
   function handleStatusChange(status) {
@@ -134,7 +267,11 @@ export function ServiceTokensPage() {
   }
 
   // ── create token ─────────────────────────────────────────────────────────────
-  function handleOpenCreate() {
+  async function handleOpenCreate() {
+    const nextOptions = await loadGroupOptions();
+    if (!nextOptions.length) {
+      return;
+    }
     setCreateForm(EMPTY_FORM());
     setCreatedToken(null);
     setCreateError(null);
@@ -295,13 +432,19 @@ export function ServiceTokensPage() {
                 onGroupChange: handleGroupChange,
               }),
               h(
-                Button,
-                {
-                  variant: 'contained',
-                  color: 'primary',
-                  onClick: handleOpenCreate,
-                },
-                'Create token',
+                'div',
+                { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end' } },
+                h(
+                  Button,
+                  {
+                    variant: 'contained',
+                    color: 'primary',
+                    onClick: handleOpenCreate,
+                    disabled: groupsLoading,
+                  },
+                  groupsLoading ? 'Loading groups...' : 'Create token',
+                ),
+                groupsError ? h('small', { style: { marginTop: 6 } }, groupsError) : null,
               ),
             ),
             h(ServiceTokensTableView, {

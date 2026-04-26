@@ -154,7 +154,11 @@ function FormStep({ scopes, groupOptions, form, onFormChange, onSubmit, onClose,
               onTouch('groupEntityRef');
               onFormChange('groupEntityRef', e.target.value);
             },
-            disabled: submitting,
+            disabled: submitting || groupOptions.length === 0,
+            helperText:
+              groupOptions.length === 0
+                ? 'Groups are loading from the catalog. Please wait a few seconds.'
+                : undefined,
           },
           h(MenuItem, { value: '' }, h('em', null, 'Select a group…')),
           ...groupOptions.map(opt =>
