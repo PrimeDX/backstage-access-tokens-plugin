@@ -89,16 +89,16 @@ The service token plugin ships as three npm packages:
 
 | Package | Role |
 |---|---|
-| `@adriandantas/plugin-service-tokens-backend` | REST API, database, permission enforcement |
-| `@adriandantas/plugin-service-tokens-node` | Shared auth handler — makes raw tokens accepted by Backstage |
-| `@adriandantas/plugin-service-tokens` | Frontend admin UI |
+| `@primedx/plugin-service-tokens-backend` | REST API, database, permission enforcement |
+| `@primedx/plugin-service-tokens-node` | Shared auth handler — makes raw tokens accepted by Backstage |
+| `@primedx/plugin-service-tokens` | Frontend admin UI |
 
 Install them into the correct workspaces:
 
 ```bash
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-backend
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-node
-yarn --cwd packages/app add @adriandantas/plugin-service-tokens
+yarn --cwd packages/backend add @primedx/plugin-service-tokens-backend
+yarn --cwd packages/backend add @primedx/plugin-service-tokens-node
+yarn --cwd packages/app add @primedx/plugin-service-tokens
 ```
 
 ### ✅ Checkpoint 2
@@ -136,10 +136,10 @@ backend.add(import('@backstage/plugin-permission-backend'));
 backend.add(import('@backstage/plugin-permission-backend-module-allow-all-policy'));
 
 // Service token plugin — REST API and token database
-backend.add(import('@adriandantas/plugin-service-tokens-backend'));
+backend.add(import('@primedx/plugin-service-tokens-backend'));
 
 // Auth handler — makes raw service tokens accepted by Backstage's auth layer
-backend.add(import('@adriandantas/plugin-service-tokens-node'));
+backend.add(import('@primedx/plugin-service-tokens-node'));
 
 backend.start();
 ```
@@ -171,7 +171,7 @@ Open `packages/app/src/App.tsx` and add the service token plugin to the `feature
 
 ```typescript
 import { createApp } from '@backstage/frontend-defaults';
-import serviceTokensPlugin from '@adriandantas/plugin-service-tokens';
+import serviceTokensPlugin from '@primedx/plugin-service-tokens';
 
 const app = createApp({
   features: [
@@ -239,7 +239,7 @@ export class ServiceTokensPermissionPolicy implements PermissionPolicy {
       serviceTokensReadPermission,
       serviceTokensWritePermission,
       serviceTokensRevokePermission,
-    } = await import('@adriandantas/plugin-service-tokens-node');
+    } = await import('@primedx/plugin-service-tokens-node');
 
     const adminRefs =
       this.config.getOptionalStringArray(
@@ -289,8 +289,8 @@ const backend = createBackend();
 backend.add(import('@backstage/plugin-permission-backend'));
 // NOTE: the allow-all line has been REMOVED and replaced by permissionModuleServiceTokens below
 
-backend.add(import('@adriandantas/plugin-service-tokens-backend'));
-backend.add(import('@adriandantas/plugin-service-tokens-node'));
+backend.add(import('@primedx/plugin-service-tokens-backend'));
+backend.add(import('@primedx/plugin-service-tokens-node'));
 
 // Permission policy — grants service token permissions to users listed in config
 const permissionModuleServiceTokens = createBackendModule({
@@ -613,7 +613,7 @@ rm packages/backend/tmp/service-tokens.sqlite
 | `ExtensionPoint with ID 'permission.policy' is already registered` | Two policy modules registered at once | Remove `plugin-permission-backend-module-allow-all-policy` from `index.ts` |
 | `No policy module installed!` | Allow-all was removed but no replacement added | Add `permissionModuleServiceTokens` to `index.ts` (Part 5) |
 | Frontend shows 403 on page load | Permission policy not registered | Confirm `permissionModuleServiceTokens` is in `index.ts` and backend was restarted |
-| `Cannot find module` errors | Plugin not installed in workspace | Run `yarn --cwd packages/backend add @adriandantas/...` |
+| `Cannot find module` errors | Plugin not installed in workspace | Run `yarn --cwd packages/backend add @primedx/...` |
 | Migrations not running | `database.migrations.skip: true` in config | Remove that config key for the `service-tokens` plugin |
 
 ---

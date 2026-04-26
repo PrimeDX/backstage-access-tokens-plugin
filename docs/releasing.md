@@ -6,9 +6,9 @@ Use this guide after code, tests, and documentation are already aligned and read
 
 This repository publishes three public scoped packages:
 
-- `@adriandantas/plugin-service-tokens`
-- `@adriandantas/plugin-service-tokens-backend`
-- `@adriandantas/plugin-service-tokens-node`
+- `@primedx/plugin-service-tokens`
+- `@primedx/plugin-service-tokens-backend`
+- `@primedx/plugin-service-tokens-node`
 
 ## Prerequisites
 

@@ -1,5 +1,5 @@
 {
-  "name": "@adriandantas/plugin-service-tokens-node",
+  "name": "@primedx/plugin-service-tokens-node",
   "version": "0.1.0",
   "description": "Backstage node library and external auth handler module for service token verification.",
   "license": "Apache-2.0",

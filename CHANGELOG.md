@@ -18,6 +18,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ### Changed
 
 - License migrated from Business Source License 1.1 (BUSL-1.1) to Apache License 2.0 (Apache-2.0).
+- Package scope renamed from `@adriandantas/*` to `@primedx/*` before first publish.
 - Token-management routes now authorize per action instead of using a single admin permission.
 - Documentation and examples now describe the granular permission model throughout the project.
 

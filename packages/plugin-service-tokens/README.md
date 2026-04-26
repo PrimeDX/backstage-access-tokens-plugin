@@ -1,4 +1,4 @@
-# @adriandantas/plugin-service-tokens
+# @primedx/plugin-service-tokens
 
 Backstage frontend plugin for the service token admin page.
 
@@ -10,15 +10,15 @@ Install this package when you want the service token admin UI in your Backstage 
 
 Use it together with:
 
-- `@adriandantas/plugin-service-tokens-backend` for the `/api/service-tokens` backend API and persistence
-- `@adriandantas/plugin-service-tokens-node` for the backend auth handler and permission exports
+- `@primedx/plugin-service-tokens-backend` for the `/api/service-tokens` backend API and persistence
+- `@primedx/plugin-service-tokens-node` for the backend auth handler and permission exports
 
 ## Install
 
 Add the frontend plugin to your Backstage app workspace:
 
 ```bash
-yarn --cwd packages/app add @adriandantas/plugin-service-tokens
+yarn --cwd packages/app add @primedx/plugin-service-tokens
 ```
 
 ## Minimum Working Setup
@@ -28,7 +28,7 @@ Register the frontend feature with `createApp({ features: [...] })`:
 ```ts
 // packages/app/src/App.tsx
 import { createApp } from '@backstage/frontend-defaults';
-import serviceTokensPlugin from '@adriandantas/plugin-service-tokens';
+import serviceTokensPlugin from '@primedx/plugin-service-tokens';
 
 const app = createApp({
   features: [

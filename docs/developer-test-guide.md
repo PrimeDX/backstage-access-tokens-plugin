@@ -163,13 +163,13 @@ Then install the plugin packages from local folders:
 
 ```bash
 yarn --cwd packages/backend add \
-  @adriandantas/plugin-service-tokens-node@file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens-node
+  @primedx/plugin-service-tokens-node@file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens-node
 
 yarn --cwd packages/backend add \
-  @adriandantas/plugin-service-tokens-backend@file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens-backend
+  @primedx/plugin-service-tokens-backend@file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens-backend
 
 yarn --cwd packages/app add \
-  @adriandantas/plugin-service-tokens@file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens
+  @primedx/plugin-service-tokens@file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens
 ```
 
 If your app needs a root `resolutions` entry so the local node package is used consistently, add it deliberately and keep any existing values intact.
