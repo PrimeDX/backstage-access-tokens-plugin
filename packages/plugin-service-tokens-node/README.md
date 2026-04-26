@@ -1,4 +1,4 @@
-# @adriandantas/plugin-service-tokens-node
+# @primedx/plugin-service-tokens-node
 
 Shared Backstage node library for service token auth and permission wiring.
 
@@ -11,14 +11,14 @@ Install this package when you need either of these integration points:
 - register `serviceTokenHandlerModule` in your backend so raw service tokens are accepted by Backstage auth
 - import the service token permission definitions into your permission policy
 
-You will typically install it together with `@adriandantas/plugin-service-tokens-backend`.
+You will typically install it together with `@primedx/plugin-service-tokens-backend`.
 
 ## Install
 
 Add the package to your Backstage backend workspace:
 
 ```bash
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-node
+yarn --cwd packages/backend add @primedx/plugin-service-tokens-node
 ```
 
 ## Minimum Working Setup
@@ -28,14 +28,14 @@ Register the auth handler module in your backend:
 ```ts
 // packages/backend/src/index.ts
 import { createBackend } from '@backstage/backend-defaults';
-import { serviceTokenHandlerModule } from '@adriandantas/plugin-service-tokens-node';
+import { serviceTokenHandlerModule } from '@primedx/plugin-service-tokens-node';
 
 const backend = createBackend();
 
 backend.add(serviceTokenHandlerModule);
 ```
 
-In the normal plugin installation flow you register this module alongside `serviceTokensPlugin` from `@adriandantas/plugin-service-tokens-backend`.
+In the normal plugin installation flow you register this module alongside `serviceTokensPlugin` from `@primedx/plugin-service-tokens-backend`.
 
 ## Permission Exports
 
@@ -67,9 +67,9 @@ Those helpers are useful for advanced integration and testing, but most adopters
 
 ## What This Package Does Not Include
 
-This package does not provide the REST API routes or persistence plugin entry point by itself. For that, install `@adriandantas/plugin-service-tokens-backend`.
+This package does not provide the REST API routes or persistence plugin entry point by itself. For that, install `@primedx/plugin-service-tokens-backend`.
 
-It also does not provide the admin UI. For that, install `@adriandantas/plugin-service-tokens` in your Backstage app package.
+It also does not provide the admin UI. For that, install `@primedx/plugin-service-tokens` in your Backstage app package.
 
 ## Learn More
 

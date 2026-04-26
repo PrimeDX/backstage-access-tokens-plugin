@@ -6,9 +6,9 @@ This file is a tracked repo document for coding agents working in this project.
 
 This repository publishes a Backstage service-token plugin workspace with three packages:
 
-- `@adriandantas/plugin-service-tokens` — frontend admin UI
-- `@adriandantas/plugin-service-tokens-backend` — backend API and persistence
-- `@adriandantas/plugin-service-tokens-node` — shared node utilities and auth handler module
+- `@primedx/plugin-service-tokens` — frontend admin UI
+- `@primedx/plugin-service-tokens-backend` — backend API and persistence
+- `@primedx/plugin-service-tokens-node` — shared node utilities and auth handler module
 
 The plugin manages long-lived, group-scoped service tokens with create, audit, and revoke flows.
 
