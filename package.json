@@ -2,7 +2,7 @@
   "name": "backstage-service-token-plugin",
   "version": "0.0.0",
   "private": true,
-  "license": "BUSL-1.1",
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "changeset": "changeset",

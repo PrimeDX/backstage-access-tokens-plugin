@@ -77,7 +77,7 @@ The plugin caches scopes alongside the token during verification. Two approaches
 The `getServiceTokenScopeResolver()` function returns a resolver bound to the same cache used during token verification. It hashes the raw token and reads scopes from the cache — **zero additional database queries**.
 
 ```ts
-import { getServiceTokenScopeResolver } from '@adriandantas/plugin-service-tokens-node';
+import { getServiceTokenScopeResolver } from '@primedx/plugin-service-tokens-node';
 
 // In your middleware or plugin code (after backend startup):
 const resolveScopes = getServiceTokenScopeResolver();
@@ -165,7 +165,7 @@ Commit this table to your Backstage app repo and review it during token audits.
 // packages/backend/src/middleware/scopeMonitor.ts
 import { createBackendModule } from '@backstage/backend-plugin-api';
 import { coreServices } from '@backstage/backend-plugin-api';
-import { getServiceTokenScopeResolver } from '@adriandantas/plugin-service-tokens-node';
+import { getServiceTokenScopeResolver } from '@primedx/plugin-service-tokens-node';
 
 /**
  * Creates Express middleware that logs scope mismatches for service tokens
@@ -227,7 +227,7 @@ Use this when you control the plugin that owns the route.
 
 ```ts
 // packages/backend/src/middleware/scopeEnforce.ts
-import { getServiceTokenScopeResolver } from '@adriandantas/plugin-service-tokens-node';
+import { getServiceTokenScopeResolver } from '@primedx/plugin-service-tokens-node';
 
 /**
  * Creates Express middleware that blocks requests from service tokens
@@ -321,7 +321,7 @@ import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
   serviceTokensRevokePermission,
-} from '@adriandantas/plugin-service-tokens-node';
+} from '@primedx/plugin-service-tokens-node';
 
 // Scope requirements per permission name
 const SCOPE_REQUIREMENTS: Record<string, string[]> = {

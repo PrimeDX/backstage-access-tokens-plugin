@@ -1,8 +1,8 @@
 {
-  "name": "@adriandantas/plugin-service-tokens-backend",
+  "name": "@primedx/plugin-service-tokens-backend",
   "version": "0.1.0",
   "description": "Backstage backend plugin for service token lifecycle management and REST APIs.",
-  "license": "BUSL-1.1",
+  "license": "Apache-2.0",
   "backstage": {
     "role": "backend-plugin",
     "pluginId": "service-tokens",
@@ -50,7 +50,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@adriandantas/plugin-service-tokens-node": "^0.1.0",
+    "@primedx/plugin-service-tokens-node": "^0.1.0",
     "@backstage/catalog-model": "^1.7.5",
     "@backstage/backend-plugin-api": "^1.8.0",
     "@backstage/plugin-permission-common": "^0.9.7",

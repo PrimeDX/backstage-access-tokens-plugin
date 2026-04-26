@@ -56,7 +56,7 @@ import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
   serviceTokensRevokePermission,
-} from '@adriandantas/plugin-service-tokens-node';
+} from '@primedx/plugin-service-tokens-node';
 import { Config } from '@backstage/config';
 
 export class ServiceTokensPermissionPolicy implements PermissionPolicy {
@@ -183,7 +183,7 @@ import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
   serviceTokensRevokePermission,
-} from '@adriandantas/plugin-service-tokens-node';
+} from '@primedx/plugin-service-tokens-node';
 
 // BEFORE — your existing policy
 class MyExistingPolicy implements PermissionPolicy {
@@ -235,7 +235,7 @@ import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
   serviceTokensRevokePermission,
-} from '@adriandantas/plugin-service-tokens-node';
+} from '@primedx/plugin-service-tokens-node';
 
 class WrappedPolicy implements PermissionPolicy {
   constructor(

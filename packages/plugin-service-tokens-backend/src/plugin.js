@@ -6,7 +6,7 @@ import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
   serviceTokensRevokePermission,
-} from '@adriandantas/plugin-service-tokens-node';
+} from '@primedx/plugin-service-tokens-node';
 import { createKnexServiceTokenDatabase } from './database.js';
 import { normalizeGroupEntityRef } from './entityRefs.js';
 import { createExpressRouter } from './expressRouter.js';

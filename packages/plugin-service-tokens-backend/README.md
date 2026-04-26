@@ -1,4 +1,4 @@
-# @adriandantas/plugin-service-tokens-backend
+# @primedx/plugin-service-tokens-backend
 
 Backstage backend plugin for the service token lifecycle API.
 
@@ -10,16 +10,16 @@ Install this package when you want your Backstage backend to issue and manage lo
 
 Use it together with:
 
-- `@adriandantas/plugin-service-tokens-node` to register the raw token auth handler and import service token permissions into your policy
-- `@adriandantas/plugin-service-tokens` if you also want the admin UI at `/admin/service-tokens`
+- `@primedx/plugin-service-tokens-node` to register the raw token auth handler and import service token permissions into your policy
+- `@primedx/plugin-service-tokens` if you also want the admin UI at `/admin/service-tokens`
 
 ## Install
 
 Add the backend plugin and its required node companion package to your Backstage backend workspace:
 
 ```bash
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-backend
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-node
+yarn --cwd packages/backend add @primedx/plugin-service-tokens-backend
+yarn --cwd packages/backend add @primedx/plugin-service-tokens-node
 ```
 
 ## Minimum Working Setup
@@ -29,8 +29,8 @@ Register both the backend plugin and the auth handler module in your backend ent
 ```ts
 // packages/backend/src/index.ts
 import { createBackend } from '@backstage/backend-defaults';
-import { serviceTokensPlugin } from '@adriandantas/plugin-service-tokens-backend';
-import { serviceTokenHandlerModule } from '@adriandantas/plugin-service-tokens-node';
+import { serviceTokensPlugin } from '@primedx/plugin-service-tokens-backend';
+import { serviceTokenHandlerModule } from '@primedx/plugin-service-tokens-node';
 
 const backend = createBackend();
 
@@ -53,7 +53,7 @@ This package expects the Backstage permission framework to be installed and your
 - `service-tokens:write`
 - `service-tokens:revoke`
 
-Those permission definitions are exported by `@adriandantas/plugin-service-tokens-node`.
+Those permission definitions are exported by `@primedx/plugin-service-tokens-node`.
 
 ## Main Export
 
@@ -72,9 +72,9 @@ Most adopters should start with `serviceTokensPlugin` and only reach for the low
 
 ## What This Package Does Not Include
 
-This package does not register the external auth handler by itself, which is why `@adriandantas/plugin-service-tokens-node` is required.
+This package does not register the external auth handler by itself, which is why `@primedx/plugin-service-tokens-node` is required.
 
-It also does not provide the frontend admin page. If you want the UI, install `@adriandantas/plugin-service-tokens` in your Backstage app package.
+It also does not provide the frontend admin page. If you want the UI, install `@primedx/plugin-service-tokens` in your Backstage app package.
 
 ## Learn More
 

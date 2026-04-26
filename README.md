@@ -5,7 +5,7 @@
 [![Node 22](https://img.shields.io/badge/node-22-brightgreen)](https://nodejs.org/)
 [![Backstage](https://img.shields.io/badge/backstage-compatible-blue)](https://backstage.io/)
 [![Packages](https://img.shields.io/badge/packages-3-informational)](#packages)
-[![License: BUSL-1.1](https://img.shields.io/badge/license-BUSL--1.1-yellow)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 ## What This Plugin Does
 
@@ -31,9 +31,9 @@ This workspace publishes three packages:
 
 | Package | Purpose |
 |---|---|
-| [`@adriandantas/plugin-service-tokens`](packages/plugin-service-tokens) | Frontend plugin that adds the admin UI |
-| [`@adriandantas/plugin-service-tokens-backend`](packages/plugin-service-tokens-backend) | Backend plugin with the REST API, persistence, and permission checks |
-| [`@adriandantas/plugin-service-tokens-node`](packages/plugin-service-tokens-node) | Shared node library with the auth handler module, permission exports, and token verification utilities |
+| [`@primedx/plugin-service-tokens`](packages/plugin-service-tokens) | Frontend plugin that adds the admin UI |
+| [`@primedx/plugin-service-tokens-backend`](packages/plugin-service-tokens-backend) | Backend plugin with the REST API, persistence, and permission checks |
+| [`@primedx/plugin-service-tokens-node`](packages/plugin-service-tokens-node) | Shared node library with the auth handler module, permission exports, and token verification utilities |
 
 ## Before You Install
 
@@ -53,17 +53,17 @@ The [Getting Started guide](docs/getting-started.md) walks through these prerequ
 Add the published packages to your Backstage app:
 
 ```bash
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-backend
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-node
-yarn --cwd packages/app add @adriandantas/plugin-service-tokens
+yarn --cwd packages/backend add @primedx/plugin-service-tokens-backend
+yarn --cwd packages/backend add @primedx/plugin-service-tokens-node
+yarn --cwd packages/app add @primedx/plugin-service-tokens
 ```
 
 ### 2. Register the backend plugin and auth handler
 
 ```ts
 // packages/backend/src/index.ts
-import { serviceTokensPlugin } from '@adriandantas/plugin-service-tokens-backend';
-import { serviceTokenHandlerModule } from '@adriandantas/plugin-service-tokens-node';
+import { serviceTokensPlugin } from '@primedx/plugin-service-tokens-backend';
+import { serviceTokenHandlerModule } from '@primedx/plugin-service-tokens-node';
 
 backend.add(serviceTokensPlugin);
 backend.add(serviceTokenHandlerModule);
@@ -74,7 +74,7 @@ backend.add(serviceTokenHandlerModule);
 ```ts
 // packages/app/src/App.tsx
 import { createApp } from '@backstage/frontend-defaults';
-import serviceTokensPlugin from '@adriandantas/plugin-service-tokens';
+import serviceTokensPlugin from '@primedx/plugin-service-tokens';
 
 const app = createApp({
   features: [serviceTokensPlugin],
@@ -97,7 +97,7 @@ import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
   serviceTokensRevokePermission,
-} from '@adriandantas/plugin-service-tokens-node';
+} from '@primedx/plugin-service-tokens-node';
 
 class ServiceTokensPermissionPolicy implements PermissionPolicy {
   constructor(private readonly config: Config) {}
@@ -249,8 +249,6 @@ If you are iterating on unpublished package changes, use the maintainer-focused 
 
 ## License
 
-Business Source License 1.1 (BUSL-1.1).
-
-Free for internal self-hosted use. Hosting this plugin, or a substantially similar managed service, for third parties requires a commercial license from the licensor.
+Apache License 2.0 (Apache-2.0).
 
 See [LICENSE](LICENSE) for full terms.

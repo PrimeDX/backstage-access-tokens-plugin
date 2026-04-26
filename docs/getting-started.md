@@ -66,9 +66,9 @@ The guest provider is enabled by default in development (`app-config.local.yaml`
 The plugin ships three published packages. Add them to your Backstage monorepo:
 
 ```bash
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-backend
-yarn --cwd packages/backend add @adriandantas/plugin-service-tokens-node
-yarn --cwd packages/app add @adriandantas/plugin-service-tokens
+yarn --cwd packages/backend add @primedx/plugin-service-tokens-backend
+yarn --cwd packages/backend add @primedx/plugin-service-tokens-node
+yarn --cwd packages/app add @primedx/plugin-service-tokens
 ```
 
 ---
@@ -80,8 +80,8 @@ Open your backend entry point and add both the plugin and the auth handler modul
 ```typescript
 // packages/backend/src/index.ts
 import { createBackend } from '@backstage/backend-defaults';
-import { serviceTokensPlugin } from '@adriandantas/plugin-service-tokens-backend';
-import { serviceTokenHandlerModule } from '@adriandantas/plugin-service-tokens-node';
+import { serviceTokensPlugin } from '@primedx/plugin-service-tokens-backend';
+import { serviceTokenHandlerModule } from '@primedx/plugin-service-tokens-node';
 
 const backend = createBackend();
 
@@ -105,7 +105,7 @@ backend.start();
 ```typescript
 // packages/app/src/App.tsx
 import { createApp } from '@backstage/frontend-defaults';
-import serviceTokensPlugin from '@adriandantas/plugin-service-tokens';
+import serviceTokensPlugin from '@primedx/plugin-service-tokens';
 
 const app = createApp({
   features: [
@@ -164,7 +164,7 @@ import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
   serviceTokensRevokePermission,
-} from '@adriandantas/plugin-service-tokens-node';
+} from '@primedx/plugin-service-tokens-node';
 import { Config } from '@backstage/config';
 
 export class ServiceTokensPermissionPolicy implements PermissionPolicy {
