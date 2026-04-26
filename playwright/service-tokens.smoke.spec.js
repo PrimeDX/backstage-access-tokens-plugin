@@ -16,6 +16,20 @@ function escapeRegex(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function parseEntityRef(entityRef) {
+  const [kindPart = '', targetPart = ''] = String(entityRef).split(':', 2);
+  const [namespacePart = 'default', namePart = ''] = targetPart.split('/', 2);
+  const kind = kindPart.toLocaleLowerCase('en-US');
+  const namespace = namespacePart || 'default';
+  const name = namePart;
+
+  if (!kind || !name) {
+    throw new Error(`Invalid entity ref: ${entityRef}`);
+  }
+
+  return { kind, namespace, name };
+}
+
 async function maybeEnterGuest(page) {
   const enterButton = page.getByRole('button', { name: /^Enter$/i });
   if (await enterButton.count()) {
@@ -169,9 +183,10 @@ async function waitForCatalogGroup(page, entityRef) {
   const timeoutMs = 180_000;
   const start = Date.now();
   const backendUrl = process.env.PLAYWRIGHT_BACKEND_URL ?? 'http://localhost:7007';
+  const { kind, namespace, name } = parseEntityRef(entityRef);
   const groupsUrlLower = `${backendUrl}/api/catalog/entities?filter=kind=group&limit=200`;
   const groupsUrlUpper = `${backendUrl}/api/catalog/entities?filter=kind=Group&limit=200`;
-  const groupByNameUrl = `${backendUrl}/api/catalog/entities/by-name/group/development/platform`;
+  const groupByNameUrl = `${backendUrl}/api/catalog/entities/by-name/${kind}/${namespace}/${name}`;
   let lastStatus = 'n/a';
   let lastRefs = [];
   let lastSnippet = '';
@@ -261,6 +276,8 @@ async function selectMaterialOption(page, _label, optionName) {
 }
 
 test('create, audit, and revoke a service token from the admin UI', async ({ page }) => {
+  const owningGroupRef = 'group:development/platform';
+  const { name: owningGroupName } = parseEntityRef(owningGroupRef);
   const tokenName = `ui-smoke-${Date.now()}`;
   const revokeReason = 'Playwright smoke revocation';
 
@@ -269,7 +286,7 @@ test('create, audit, and revoke a service token from the admin UI', async ({ pag
   await maybeEnterGuest(page);
   await waitForServiceTokensPage(page);
 
-  await waitForCatalogGroup(page, 'group:development/platform');
+  await waitForCatalogGroup(page, owningGroupRef);
   await waitForCreateTokenActionable(page);
 
   await page.getByRole('button', { name: 'Create token' }).click();
@@ -280,7 +297,7 @@ test('create, audit, and revoke a service token from the admin UI', async ({ pag
 
   await createDialog.locator('input').first().fill(tokenName);
   await createDialog.locator('textarea').first().fill('Created by the Playwright smoke test');
-  await selectMaterialOption(page, 'Owning group', 'platform');
+  await selectMaterialOption(page, 'Owning group', owningGroupName);
   await createDialog.getByRole('checkbox', { name: /catalog:read/i }).check();
   await createDialog.locator('input[type="date"]').fill(isoDate(60));
   await createDialog.getByRole('button', { name: 'Create token' }).click();
