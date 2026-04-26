@@ -37,6 +37,31 @@ GitHub Actions now owns the normal release lifecycle:
 
 This keeps versioning reviewable while still allowing hands-off publication after approval.
 
+## Local dependency preflight before PR
+
+Before opening or updating a pull request, run the local dependency audit commands from the repository root:
+
+```bash
+npm run security:changed
+```
+
+Use this for day-to-day iteration. It runs dependency auditing when lockfiles changed (`package-lock.json` or `e2e/harness/yarn.lock`) and skips when they did not.
+
+Current behavior:
+
+- `security:changed` is a diff-aware guard for `e2e/harness/yarn.lock`
+- it compares `high` / `critical` advisories in the current branch against `origin/main`
+- it fails only when new `high` / `critical` advisories are introduced
+- it skips when the harness lockfile did not change
+
+When you need a full audit regardless of lockfile diffs:
+
+```bash
+npm run security:check
+```
+
+These commands do not replace GitHub `Dependency Review`, but they shorten feedback loops by catching issues locally before PR checks run.
+
 ## CI/CD flow at a glance
 
 ```mermaid

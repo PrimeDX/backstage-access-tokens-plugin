@@ -44,7 +44,7 @@
     "@types/jest": "^30.0.0",
     "jest": "^30.2.0",
     "jsdom": "^27.1.0",
-    "node-gyp": "^10.0.0",
+    "node-gyp": "^12.3.0",
     "prettier": "^2.3.2",
     "typescript": "~5.8.0"
   },
@@ -54,7 +54,11 @@
     "@adriandantas/plugin-service-tokens-node": "file:../../packages/plugin-service-tokens-node",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "undici@npm:^5.28.2": "npm:6.24.0"
+    "undici@npm:^5.28.2": "npm:6.24.0",
+    "koa@npm:3.0.3": "npm:3.1.2",
+    "lodash@npm:~4.17.21": "npm:4.18.1",
+    "lodash@npm:~4.17.23": "npm:4.18.1",
+    "minimatch@npm:3.1.2": "npm:3.1.5"
   },
   "prettier": "@backstage/cli/config/prettier",
   "lint-staged": {

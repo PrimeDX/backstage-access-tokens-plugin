@@ -59,12 +59,21 @@ From this repository:
 cd /path/to/backstage-service-token-plugin
 npm test
 npm run pack:dry-run
+npm run security:changed
 ```
 
 Expected:
 
 - all tests pass
 - all three packages pack successfully in dry-run mode
+- if `e2e/harness/yarn.lock` changed, newly introduced `high` / `critical` advisories (compared to `origin/main`) are surfaced before PR creation
+- if lockfiles did not change, the command exits cleanly with a skip message
+
+Optional full audit:
+
+```bash
+npm run security:check
+```
 
 If this fails, fix the plugin repository before moving on to harness validation.
 
@@ -76,7 +85,8 @@ Before starting the harness, verify:
 
 - `serviceTokens.admin.userEntityRefs` grants the guest or test user the service token permissions
 - `serviceTokens.cacheTtlSeconds: 0` is set in local config if you want deterministic revocation checks
-- the catalog includes at least one group you can use for token creation, such as `group:default/platform`
+- the harness catalog seeds include `user:development/guest` and `group:development/platform` (from `examples/service-tokens-org.yaml`)
+- the catalog includes at least one group you can use for token creation, such as `group:development/platform`
 - your harness can start both backend and frontend locally
 
 Then start the harness:
@@ -140,6 +150,12 @@ Expected:
 - the audit dialog shows newest-first ordering after revoke
 
 CI now runs this path automatically in the `CI / ui-smoke` job by installing `e2e/harness` dependencies and using Playwright `webServer` to start/wait for the harness before running the same smoke command. When CI fails, download `ui-smoke-artifacts` and review `playwright-report` and `test-results` first, then check the `Run UI smoke test` step logs for Playwright `webServer` startup output.
+
+If the smoke test fails while selecting the owning group:
+
+- confirm `e2e/harness/examples/service-tokens-org.yaml` still defines `group:development/platform`
+- confirm `e2e/harness/app-config.yaml` still includes the `../../examples/service-tokens-org.yaml` catalog location
+- check harness backend logs for catalog warnings and verify `GET /api/catalog/entities?filter=kind=group&limit=200` returns `group:development/platform`
 
 ## 5. Revalidate Local `file:` Installs in a Fresh App
 
