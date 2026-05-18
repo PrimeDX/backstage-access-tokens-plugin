@@ -17,14 +17,19 @@
     "README.md",
     "src/components/AuditLogDialog.jsx",
     "src/components/CreateTokenDialog.jsx",
+    "src/components/CreateUserTokenDialog.jsx",
     "src/components/RevokeDialog.jsx",
+    "src/components/RevokeUserTokenDialog.jsx",
     "src/components/ServiceTokensFilters.jsx",
     "src/components/ServiceTokensTableView.jsx",
+    "src/components/UserTokensTableView.jsx",
     "src/helpers.js",
     "src/index.d.ts",
     "src/index.js",
     "src/routes.js",
-    "src/ServiceTokensPage.jsx"
+    "src/ServiceTokensPage.jsx",
+    "src/userTokensHelpers.js",
+    "src/UserTokensPage.jsx"
   ],
   "exports": {
     ".": "./src/index.js"

@@ -1,6 +1,6 @@
 import React from 'react';
 import { createFrontendPlugin, PageBlueprint } from '@backstage/frontend-plugin-api';
-import { rootRouteRef } from './routes.js';
+import { rootRouteRef, userTokensRouteRef } from './routes.js';
 
 const serviceTokensPage = PageBlueprint.make({
   params: {
@@ -14,14 +14,28 @@ const serviceTokensPage = PageBlueprint.make({
   },
 });
 
+const userTokensPage = PageBlueprint.make({
+  name: 'user-tokens',
+  params: {
+    path: '/settings/personal-tokens',
+    routeRef: userTokensRouteRef,
+    title: 'Personal access tokens',
+    loader: () =>
+      import('./UserTokensPage.jsx').then(module =>
+        React.createElement(module.UserTokensPage),
+      ),
+  },
+});
+
 const serviceTokensPlugin = createFrontendPlugin({
   pluginId: 'service-tokens',
   title: 'Service Tokens',
   routes: {
     root: rootRouteRef,
+    userTokens: userTokensRouteRef,
   },
-  extensions: [serviceTokensPage],
+  extensions: [serviceTokensPage, userTokensPage],
 });
 
-export { rootRouteRef, serviceTokensPlugin };
+export { rootRouteRef, userTokensRouteRef, serviceTokensPlugin };
 export default serviceTokensPlugin;
