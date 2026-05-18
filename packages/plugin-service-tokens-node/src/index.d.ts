@@ -41,6 +41,13 @@ export declare const serviceTokensPermissions: ResourcePermission<'service-token
 /** @deprecated Use serviceTokensReadPermission, serviceTokensWritePermission, or serviceTokensRevokePermission instead. */
 export declare const serviceTokensAdminPermission: ResourcePermission<'service-token'>;
 
+export declare const USER_TOKEN_RESOURCE_TYPE: 'user-token';
+
+export declare const userTokensReadPermission: ResourcePermission<'user-token'>;
+export declare const userTokensWritePermission: ResourcePermission<'user-token'>;
+export declare const userTokensRevokePermission: ResourcePermission<'user-token'>;
+export declare const userTokensPermissions: ResourcePermission<'user-token'>[];
+
 export declare function createServiceTokenHandler(options: Record<string, unknown>): Record<string, unknown>;
 
 export declare function createScopeResolver(
