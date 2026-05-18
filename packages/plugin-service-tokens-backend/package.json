@@ -34,7 +34,8 @@
     "src/tokens.js",
     "src/userTokensConfig.js",
     "src/userTokensDatabase.js",
-    "src/userTokensEncryption.js"
+    "src/userTokensEncryption.js",
+    "src/userTokensMintFlow.js"
   ],
   "exports": {
     ".": "./src/index.js"
