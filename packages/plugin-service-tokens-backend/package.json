@@ -33,6 +33,7 @@
     "src/scopes.js",
     "src/tokens.js",
     "src/userTokensConfig.js",
+    "src/userTokensDatabase.js",
     "src/userTokensEncryption.js"
   ],
   "exports": {
