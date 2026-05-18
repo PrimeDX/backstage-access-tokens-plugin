@@ -31,7 +31,9 @@
     "src/revokeToken.js",
     "src/router.js",
     "src/scopes.js",
-    "src/tokens.js"
+    "src/tokens.js",
+    "src/userTokensConfig.js",
+    "src/userTokensEncryption.js"
   ],
   "exports": {
     ".": "./src/index.js"
