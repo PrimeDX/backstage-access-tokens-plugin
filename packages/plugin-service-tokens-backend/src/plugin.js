@@ -6,12 +6,24 @@ import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
   serviceTokensRevokePermission,
+  userTokensPermissions,
+  userTokensReadPermission,
+  userTokensWritePermission,
+  userTokensRevokePermission,
 } from '@primedx/plugin-service-tokens-node';
 import { createKnexServiceTokenDatabase } from './database.js';
 import { normalizeGroupEntityRef } from './entityRefs.js';
 import { createExpressRouter } from './expressRouter.js';
 import { readServiceTokenConfig } from './config.js';
 import { applyServiceTokenMigrations } from './migrations.js';
+import {
+  missingAuthBackendFlags,
+  readUserTokensConfig,
+} from './userTokensConfig.js';
+import { createKnexUserTokensDatabase } from './userTokensDatabase.js';
+import { createMintFlowStore } from './userTokensMintFlow.js';
+import { createOauthOrchestrator } from './userTokensOauth.js';
+import { createUserTokensRouter } from './userTokensRouter.js';
 
 function generateId() {
   return crypto.randomUUID();
@@ -37,6 +49,7 @@ export const serviceTokensPlugin = createBackendPlugin({
         catalog: catalogServiceRef,
         config: coreServices.rootConfig,
         database: coreServices.database,
+        discovery: coreServices.discovery,
         httpAuth: coreServices.httpAuth,
         httpRouter: coreServices.httpRouter,
         logger: coreServices.logger,
@@ -48,6 +61,7 @@ export const serviceTokensPlugin = createBackendPlugin({
         catalog,
         config,
         database,
+        discovery,
         httpAuth,
         httpRouter,
         logger,
@@ -111,10 +125,92 @@ export const serviceTokensPlugin = createBackendPlugin({
           path: '/scopes',
           allow: 'user-cookie',
         });
+
+        // ---- User-tokens capability (optional, gated by config) ----
+        await maybeWireUserTokens({
+          client,
+          config,
+          discovery,
+          httpAuth,
+          httpRouter,
+          logger,
+          permissions,
+          permissionsRegistry,
+        });
       },
     });
   },
 });
+
+async function maybeWireUserTokens({
+  client,
+  config,
+  discovery,
+  httpAuth,
+  httpRouter,
+  logger,
+  permissions,
+  permissionsRegistry,
+}) {
+  let userTokensConfig;
+  try {
+    userTokensConfig = readUserTokensConfig(config);
+  } catch (err) {
+    logger.info(
+      `user-tokens capability not enabled: ${err.message}`,
+    );
+    return;
+  }
+  if (!userTokensConfig.enabled) {
+    logger.info('user-tokens capability disabled via serviceTokens.userTokens.enabled: false');
+    return;
+  }
+  const missing = missingAuthBackendFlags(config);
+  if (missing.length > 0) {
+    logger.warn(
+      `user-tokens capability requires auth-backend flags: ${missing.join(', ')}; ` +
+        'capability will be skipped',
+    );
+    return;
+  }
+
+  permissionsRegistry.addPermissions(userTokensPermissions);
+  const db = createKnexUserTokensDatabase({ client });
+  const mintFlowStore = createMintFlowStore();
+  const oauth = createOauthOrchestrator({
+    db,
+    logger,
+    getExternalBaseUrl: (plugin) => discovery.getExternalBaseUrl(plugin),
+  });
+
+  httpRouter.use(
+    createUserTokensRouter({
+      db,
+      mintFlowStore,
+      oauth,
+      httpAuth,
+      authorizeRead: createAuthorizeHelper(permissions, userTokensReadPermission),
+      authorizeWrite: createAuthorizeHelper(permissions, userTokensWritePermission),
+      authorizeRevoke: createAuthorizeHelper(permissions, userTokensRevokePermission),
+      encryptionKey: userTokensConfig.encryptionKey,
+      userTokensConfig,
+      getExternalBaseUrl: (plugin) => discovery.getExternalBaseUrl(plugin),
+      logger,
+    }),
+  );
+
+  for (const path of [
+    '/personal/tokens/mint',
+    '/personal/tokens/mint/callback',
+    '/personal/tokens',
+    '/personal/tokens/:id',
+    '/personal/tokens/:id/audit',
+  ]) {
+    httpRouter.addAuthPolicy({ path, allow: 'user-cookie' });
+  }
+
+  logger.info('user-tokens capability enabled at /api/service-tokens/personal/tokens');
+}
 
 function generateAuditId() {
   return crypto.randomUUID();
