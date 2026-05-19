@@ -103,27 +103,66 @@ When `/v1/token` callback arrives with `code` and `state`, the plugin:
    the ciphertext).
 6. Inserts a `user_tokens` row tying the user's metadata, `sessionId`, and
    the encrypted-token columns.
-7. Returns the raw refresh token to the user's browser exactly once,
-   per [API §1.2](./user-tokens-api.md#12--get-personaltokensmintcallback--oauth-callback).
-   The raw token is held in memory only for the duration of the
-   `postMessage` handoff.
-8. Audits the mint event in `user_token_audit_log`.
+7. Audits the mint event in `user_token_audit_log`.
+8. Returns the raw refresh token to the user's browser **exactly once
+   via a same-tab 302 redirect** to
+   `${app.baseUrl}/settings/personal-tokens#user-tokens-mint=<base64-payload>`.
+   The payload is `{ type, flowId, token, metadata }` JSON, base64url-
+   encoded. The frontend's `UserTokensPage` detects the fragment on
+   mount, decodes the payload, opens the create dialog directly in
+   result mode, then calls `history.replaceState` to clear the
+   fragment from the address bar.
 9. Discards the in-flight record.
 
-The plugin stores the refresh token only in encrypted form (see §4 threat
-model). The encryption key never enters the DB; it lives in operator
-config (`app-config.yaml` / secrets manager).
+Error paths (state mismatch, OAuth error, token-exchange failure)
+redirect to the sibling fragment
+`#user-tokens-mint-error=<base64-message>` so the user lands on the
+page with an inline `Alert` instead of a JSON 400.
 
-### 2.3 — Why a popup, not a same-tab redirect?
+The plugin stores the refresh token only in encrypted form (see §4
+threat model). The encryption key never enters the DB; it lives in
+operator config (`app-config.yaml` / secrets manager).
 
-A same-tab redirect would carry the raw token through the user's URL bar
-and browser history. The popup + `window.postMessage` pattern keeps the
-token out of those surfaces, at the cost of slightly more frontend
-complexity (popup window opener handshake).
+### 2.3 — Same-tab redirect, not a popup
 
-Operators who can't allow popups (corporate browser policy) can opt into
-the same-tab flow via a config flag we'll add only if requested; out of
-scope for v1.
+The OAuth dance runs in the same browser tab as the rest of the
+Backstage app: `window.location.href = authorizeUrl` to start it,
+then a 302 fragment-redirect on completion (above) to return.
+
+**Why not a popup?** v1 prototyped a popup + `window.postMessage`
+hand-off; verification surfaced four compounding failures:
+
+1. Backstage's default `Content-Security-Policy` is
+   `script-src 'self' 'unsafe-eval'` (no `'unsafe-inline'`). The
+   popup's inline `<script>` was silently dropped by the browser,
+   leaving the parent dialog stuck on "Awaiting authorization…"
+   forever after the user clicked Authorize. Moving the script to a
+   same-origin URL would have worked but required a separate
+   asset-serving endpoint.
+2. The frontend and backend run on different ports in any realistic
+   Backstage deployment (`:3000` vs `:7007`). `Cross-Origin-Opener-
+   Policy` strips `window.opener` across cross-origin navigations,
+   so the popup could not call `window.opener.postMessage` even if
+   its inline script had run.
+3. Popup blockers and "user closed too early" reliability concerns.
+4. The popup rendered the full Backstage app shell (sidebar, header),
+   which is jarring UX for what should be a focused approval prompt.
+
+Same-tab eliminates all four: no inline scripts (the fragment
+handler is in the page's bundled JS, which CSP `'self'` allows), no
+cross-origin opener handoff (the token arrives in the URL fragment
+of the same browsing context), no popup blockers, no popup chrome.
+
+**Trade-offs accepted**:
+
+- The consent page renders in the user's main tab. The
+  `@backstage/plugin-auth` consent extension's own styling (sidebar,
+  security-notice copy) becomes part of the main flow; this reads
+  more naturally in-context than the same chrome would in a popup.
+- The URL fragment briefly carries the token in the address bar.
+  Fragments are never sent to servers (no log leakage). The page
+  clears the fragment via `history.replaceState` on mount, so it
+  does not persist in browser history beyond the original entry.
 
 ## 3. Revocation
 
@@ -181,14 +220,14 @@ proactively revoke; it can offer a maintenance script later for cleanliness.
 
 | Threat | Mitigation |
 |---|---|
-| Refresh token captured in transit during mint | TLS terminates at Backstage; plugin never exposes the token outside the user's own browser session except via the secure popup `postMessage` path. |
-| Refresh token captured from URL/history | Popup + `postMessage` flow keeps the token out of URLs. Same-tab fallback is opt-in only. |
+| Refresh token captured in transit during mint | TLS terminates at Backstage; the token reaches the user's browser only via the same-tab 302 redirect's URL fragment and a single same-origin `history.replaceState` immediately after, so it is never logged server-side and never persisted in browser history. |
+| Refresh token leaked through the URL fragment | Fragments are never transmitted in HTTP requests, so the token does not reach server access logs or referer headers. The page clears the fragment on mount via `history.replaceState`, removing it from the address bar and from subsequent history navigation. Worst case: a user who opens devtools mid-callback can read the fragment from `window.location.hash` before the clear runs — the token is one click away from the show-once dialog at that point, so this is not a new exposure. |
 | Refresh token leaked from plugin DB | The plugin's DB stores the refresh token **encrypted with AES-256-GCM** under the operator-provided `encryptionKey`. DB exfiltration alone yields ciphertext + IV + tag; the encryption key is held in `app-config.yaml` (or an operator secret store) and is **not** in the DB. Recovering tokens requires both DB and key compromise. |
 | Encryption key leaked from operator config | Combined with DB exfiltration this yields the raw refresh tokens. Mitigation: keep `encryptionKey` in a secrets manager, rotate operationally (rotation re-encrypts all rows; out of scope for v1). |
 | Compromised plugin DB alone allows account takeover | No. The encrypted columns require the operator-held key. The `sessionId` alone (without the `<sessionId>.<randomBytes>` random tail) cannot be used to call `/refresh`. |
 | Cross-user token enumeration | All management API endpoints filter by `request.userEntityRef`. `GET /personal/tokens/:id` returns 404 (not 403) for another user's token so existence cannot be probed. |
 | In-flight mint state replay | `state` parameter is single-use; the in-flight record is deleted after callback. Out-of-band callback with an old `state` is rejected. |
-| Stale popup-message phishing | The popup `postMessage` includes the `flowId` and is keyed against an `origin` check on the frontend listener; messages with unexpected origin or unknown flowId are discarded. |
+| Fragment-payload injection from a third-party page | The fragment is only acted on by the `UserTokensPage` route's mount handler in our own bundled JS, which runs same-origin. A third party crafting a malicious URL `<frontend>/settings/personal-tokens#user-tokens-mint=...` could only show the user a fake "show-once" dialog inside the user's own Backstage tab — the token value is whatever the attacker put in the fragment, so the worst case is social-engineering a user into copying a value chosen by an attacker. The fragment payload is **not** trusted server-side: no API accepts the fragment as a credential. Treated as a phishing/UI concern, not a privilege escalation. |
 | Revocation latency / TOCTOU | Once auth-backend's `OfflineAccessService` invalidates the hash, every subsequent `/refresh` fails. There is no JWT-level revocation in v1 — short JWT lifetime (10 min default) bounds the window. |
 | Token works after the user is removed from the catalog | Auth-backend's catalog-presence check (R5) fails the next `/refresh`. JWT lifetime bounds the residual access window. |
 | Plugin-issued refresh token outlives auth-backend's `maxRotationLifetime` | Auth-backend enforces; plugin metadata expiry is advisory only. The plugin caps its own UI value at `auth-backend maxRotationLifetime` to avoid showing impossible expiries. |

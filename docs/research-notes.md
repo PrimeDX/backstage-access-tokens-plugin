@@ -501,3 +501,70 @@ The OIDC discovery doc DOES include `registration_endpoint` and
 in the plugin orchestrator resolves it. Fixed in
 [commit 07bdbed](https://github.com/PrimeDX/backstage-service-token-plugin/commit/07bdbed)
 on `feat/user-tokens`.
+
+---
+
+## Phase 4 verification results
+
+Executed on 2026-05-19 against the in-repo `e2e/harness/` running
+Backstage **1.49.1**, plugin code at branch `feat/user-tokens`
+(unit suite: 199/199 passing across the workspace).
+
+### Setup additions applied to the harness
+
+- `e2e/harness/app-config.yaml`:
+  - `auth.experimentalDynamicClientRegistration.enabled: true`
+  - `auth.experimentalRefreshToken.enabled: true`
+  - `serviceTokens.userTokens.encryptionKey: <local 32-byte base64>`
+- `e2e/harness/packages/backend/src/serviceTokensPermissionPolicyModule.ts`
+  amended to ALLOW the `user-tokens:{read,write,revoke}` permissions
+  for the calling user.
+- `e2e/harness/packages/app/src/App.tsx` adds
+  `@backstage/plugin-auth` to the `features` array so the
+  `/oauth2/authorize/:sessionId` consent route is registered.
+
+### Results — primary user stories
+
+| Story | Result | Evidence |
+|---|---|---|
+| **US-1** Mint a token | **PASS** | UI navigation lands at `/oauth2/authorize/<sessionId>` in same tab; "Authorize" returns to `/settings/personal-tokens#user-tokens-mint=…`; the show-once dialog opens automatically and renders the raw `<sessionId>.<random>` refresh token. |
+| **US-2** Use token from a script | **PASS** | `POST /api/auth/v1/token` with `grant_type=refresh_token` and the raw token returned a 495-character JWT with `sub: user:development/guest` and `ent: [user:development/guest, group:development/platform]`. `GET /api/auth/v1/userinfo` with that JWT returned the same claims. `GET /api/catalog/entities` with that JWT returned **HTTP 200** with real catalog data — proving the request is treated as a user principal end-to-end. |
+| **US-3** List my tokens | **PASS** | The token from US-1 appeared in the page table with correct name, created/expires timestamps, prefix, and `active` status. The raw refresh token was not present anywhere on the listing. |
+| **US-4** Revoke a token | **PASS** | UI revoke transitioned the row to `revoked`. The previously-working refresh-grant from US-2 then returned **HTTP 400 `invalid_grant: "Invalid refresh token"`**, proving auth-backend's `OfflineAccessService` invalidated the underlying session (not just our local row). |
+
+### Defects fixed during verification (committed to this branch)
+
+- Backstage's OIDC discovery doc is at `/api/auth/.well-known/openid-configuration`,
+  not at the origin root; orchestrator now uses the full plugin base
+  URL.
+- `auth.experimentalRefreshToken.enabled` is singular in Backstage;
+  earlier docs and the config reader used the plural form, which the
+  config loader silently ignored. Bulk-renamed.
+- The OAuth callback route must be marked `unauthenticated` at the
+  framework's `httpRouter.addAuthPolicy` because the redirect from
+  Backstage's `/v1/authorize` does not always carry the user's
+  session cookie cleanly across ports — the single-use `state`
+  parameter is the credential.
+- The mint popup was abandoned in favor of a same-tab redirect-with-
+  fragment after the inline-script `<script>` was found to be
+  dropped by Backstage's default CSP. See architecture spec §2.3.
+- Frontend dialogs imported `Alert` from `@material-ui/core`, where
+  v4 does not export it; moved to `@material-ui/lab`.
+
+### Deferred checks (recorded for tracking)
+
+- **US-5 (automatic expiry)**: pending the F.2.1 timed test in
+  Phase F of the SDD plan.
+- **Negative 3.1 (cross-user isolation)**: not executable in the
+  harness today (single guest user); deferred to a follow-up that
+  adds a second auth provider.
+- **Negative 3.2 (encryption-key mismatch)**: pending the F.2.2
+  manual test in Phase F.
+
+### Conclusion
+
+The four functional user stories pass against a live Backstage
+1.49.1 runtime. The branch meets the "ready for PR" gate stated in
+`docs/spec/user-tokens-verification.md` §4 (US-1, US-2, US-3, and
+US-4 PASS). Remaining items (US-5 + the two negative checks) are
+tracked in Phase F of the plan and are not blocking the v1 PR.
