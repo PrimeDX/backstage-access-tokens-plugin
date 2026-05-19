@@ -26,7 +26,7 @@ The architecture follows MCP's pattern verbatim:
   factory for user tokens. (Registering one would produce a service
   principal, not a user principal — see R3.)
 - This plugin does **not** sign any JWTs, store any signing keys, or
-  proxy `/api/auth/{provider}/refresh`.
+  proxy `/api/auth/v1/token`.
 - This plugin orchestrates the mint side (OAuth authorization code flow
   with DCR), captures the resulting `refresh_token` from `/v1/token`, and
   records metadata. Everything else — JWT minting, refresh-token storage,
@@ -302,8 +302,8 @@ exports and nothing else. No new external-token-handler is exported (see §1).
   `sessionId` as it rotates on each `/refresh`. They paste the original
   `refresh_token` and use it; rotation is invisible. Listing shows the
   original `sessionId` only.
-- **Refresh-call audit**: emission only on plugin-owned actions, not on
-  every `/api/auth/{provider}/refresh` call (Q-R6-a decision).
+- **Refresh-token exchange audit**: emission only on plugin-owned actions,
+  not on every `/api/auth/v1/token` call (Q-R6-a decision).
 - **Scope selection**: the OAuth flow requests fixed scopes
   (`openid offline_access`). Per-token scope selection is a future feature.
 - **CLI helper**: a small standalone `bsut` CLI to do the mint dance from
@@ -319,7 +319,7 @@ Beyond the API and DB tests in [API §6](./user-tokens-api.md#6-verification--wh
 2. **No-leak test**: prove via DB inspection after a mint that the raw
    refresh token never appears in any plugin table — only `sessionId`.
 3. **Cross-instance compatibility**: a refresh token minted via the plugin
-   must work when called against `/api/auth/{provider}/refresh` directly,
+   must work when called against `/api/auth/v1/token` directly,
    independent of whether this plugin is installed at the time of refresh.
    (Demonstrates that the plugin is truly a UX shim, not on the critical
    path of authentication.)

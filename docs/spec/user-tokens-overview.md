@@ -49,7 +49,7 @@ Acceptance:
   Backstage's `maxRotationLifetime`).
 - Submitting initiates an OAuth authorization-code flow against
   `/v1/authorize` using a plugin-registered DCR client. The flow proceeds in
-  a popup or redirect; the user may have to re-confirm consent.
+  the same browser tab; the user may have to re-confirm consent.
 - On success the plugin captures the `refresh_token` from the `/v1/token`
   JSON response, persists metadata (name, created_at, expiry, masked prefix,
   optional last_used_at) in its own table, and renders the raw token once
@@ -70,7 +70,7 @@ the refresh token for a short-lived JWT at Backstage's RFC 6749
 
 ```bash
 # Step 1 — exchange refresh token for a JWT. No client credentials required.
-JWT=$(curl -s -X POST "$BACKSTAGE_BASE_URL/v1/token" \
+JWT=$(curl -s -X POST "$BACKSTAGE_BASE_URL/api/auth/v1/token" \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d "grant_type=refresh_token&refresh_token=$REFRESH" \
   | jq -r .access_token)
@@ -95,7 +95,7 @@ The script does **not** need `client_id`, `client_secret`, or PKCE
 verifier. Backstage's `/v1/token` accepts the refresh-token grant
 without client credentials; the plugin holds those credentials only
 for the authorization-code half of the dance, which the user does
-once during mint via the browser popup.
+once during mint via the same-tab browser flow.
 
 ### US-3 — List my tokens
 
@@ -215,8 +215,8 @@ User      Browser/Frontend       Plugin Backend       auth-backend       Offline
 
 ```
 Script              auth-backend                      Catalog (or any plugin)
-  | POST /api/auth/{provider}/refresh                       |
-  | Authorization-style refresh-token                       |
+  | POST /api/auth/v1/token                                 |
+  | grant_type=refresh_token                                |
   |----------------> | validate, rotate, issue JWT          |
   | <- BackstageSignInResult (JWT)                          |
   |                  |                                      |
@@ -246,11 +246,11 @@ are resolved in this overview and inherited by the other two spec documents.
 ### Q-R6-a — Audit story for v1
 
 **Decision**: For v1, audit only the plugin-owned actions (mint, revoke,
-list). Do NOT wrap `/api/auth/{provider}/refresh` calls. Refresh usage is
-observable via auth-backend log lines, which is sufficient as a starting
+list). Do NOT wrap `/api/auth/v1/token` calls. Refresh-token exchange usage
+is observable via auth-backend log lines, which is sufficient as a starting
 point.
 
-**Rationale**: Wrapping `/refresh` would require the plugin to be a
+**Rationale**: Wrapping `/api/auth/v1/token` would require the plugin to be a
 mandatory proxy for every JWT exchange. That adds latency, a new failure
 surface, and a permissions question (the wrapper would need to know how to
 call auth-backend on the user's behalf). Per the existing service-token
@@ -264,9 +264,9 @@ a concrete need surfaces.
 plugin-specific envelope.
 
 **Rationale**: A wrapped envelope would require the plugin to proxy every
-`/refresh` call (to unwrap before forwarding), introducing the same drawbacks
+token-exchange call (to unwrap before forwarding), introducing the same drawbacks
 as the audit-wrapper above. The raw token works directly with
-`/api/auth/{provider}/refresh` — same endpoint a browser uses — so the user's
+`/api/auth/v1/token` — the standard DCR token endpoint — so the user's
 script is portable across Backstage versions and doesn't depend on this
 plugin remaining installed for it to work. Should we later want the wrapping
 behavior, the metadata table already gives us a foreign key into a per-token

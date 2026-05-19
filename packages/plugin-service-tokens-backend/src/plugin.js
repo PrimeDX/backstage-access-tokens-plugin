@@ -183,7 +183,7 @@ async function maybeWireUserTokens({
     getExternalBaseUrl: (plugin) => discovery.getExternalBaseUrl(plugin),
   });
 
-  // Frontend base URL — used to build the popup's post-mint redirect target
+  // Frontend base URL — used to build the post-mint redirect target
   // (see docs/spec/user-tokens-architecture.md §2.3).
   const appBaseUrl = config.getString('app.baseUrl');
 

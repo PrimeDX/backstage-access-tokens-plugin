@@ -217,10 +217,10 @@ export function createUserTokensRouter(options) {
         sessionId,
       });
 
-      // Redirect the popup to the frontend's settings page with the
+      // Redirect back to the frontend's settings page with the
       // payload in a URL fragment. Fragments are never sent to the
       // server (no logs), and the frontend's bundled JS (CSP-allowed)
-      // reads the fragment, postMessages the parent window, closes.
+      // reads the fragment, opens the result dialog, and clears it.
       // We deliberately avoid returning inline-script HTML here because
       // Backstage's default CSP (`script-src 'self' 'unsafe-eval'`) drops
       // inline scripts. See docs/spec/user-tokens-architecture.md §2.3.
@@ -419,4 +419,3 @@ function validateMintInput(input, config, currentTime) {
 
   return { name: trimmedName, expiresAt };
 }
-

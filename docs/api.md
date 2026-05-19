@@ -482,5 +482,3 @@ their `userEntityRef` and ownership claims — not a service principal.
   defaults). The plugin stores the original ciphertext; rotated
   versions are tracked by auth-backend's `OfflineAccessService`
   and remain accessible via the same `clientId`.
-
-The token authenticates as a `service` principal with subject `service-token:<groupEntityRef>:<tokenName>` (e.g. `service-token:group:default/platform:ci-pipeline`). The consuming plugin sees this as a service principal and can apply its own authorization logic accordingly.

@@ -21,9 +21,9 @@ export function formatUserTokenDate(value) {
  * otherwise. The page uses this to detect a post-OAuth redirect and
  * open the show-once dialog in result mode.
  *
- * Same-tab flow replaced the popup+postMessage handoff after Backstage's
- * Content-Security-Policy was found to drop inline-script-based
- * popups; see docs/spec/user-tokens-architecture.md §2.3.
+ * Same-tab flow replaced the older cross-window handoff after Backstage's
+ * Content-Security-Policy was found to drop inline-script-based responses;
+ * see docs/spec/user-tokens-architecture.md §2.3.
  *
  * @param {string} hash Either the raw URL fragment including `#` or
  *   just the encoded portion. Anything else returns null.

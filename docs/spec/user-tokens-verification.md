@@ -313,7 +313,7 @@ Likely failure modes and the first thing to check for each:
 | Discovery curl returns 404 | `auth.experimentalDynamicClientRegistration.enabled: true` is set. Restart the harness after editing. |
 | Discovery missing `registration_endpoint` | Same as above — DCR flag is read at boot only. |
 | Page returns from OAuth but dialog doesn't show the token | The redirect URL fragment may have been stripped by a strict referrer policy. Check the URL bar for `#user-tokens-mint=…` before the dialog opens; if missing, inspect the backend log for a callback that returned 500. |
-| Popup blocked | Browser-level popup blocker. Allow popups for `localhost` and retry. |
+| Create button does not navigate | Check the browser console for a failed `POST /api/service-tokens/personal/tokens/mint` request and the backend logs for the matching error. |
 | `/v1/token` returns 401 on the script call | The token was revoked or expired. Mint a fresh one. |
 | `/api/catalog/entities` returns 403 with a valid JWT | The catalog has no entities the user can see — try `/v1/userinfo` (§2.2 Step B) to confirm the JWT itself is valid. |
 

@@ -26,7 +26,7 @@ This plugin offers two complementary capabilities:
 - minted by any authenticated Backstage user from `/settings/personal-tokens`
 - backed by Backstage's standard OAuth 2.0 + Dynamic Client Registration pipeline; the resulting refresh token authenticates as the user against every Backstage backend (catalog, scaffolder, …) — see [docs/spec/user-tokens-overview.md](docs/spec/user-tokens-overview.md) for the design
 - the raw refresh token is shown once at creation time, then encrypted at rest with AES-256-GCM in the plugin DB so the plugin can later call RFC 7009 `/v1/revoke` on the user's behalf
-- requires the auth-backend flags `auth.experimentalDynamicClientRegistration.enabled` and `auth.experimentalRefreshTokens.enabled`, plus a 32-byte base64 `serviceTokens.userTokens.encryptionKey`
+- requires the auth-backend flags `auth.experimentalDynamicClientRegistration.enabled` and `auth.experimentalRefreshToken.enabled`, plus a 32-byte base64 `serviceTokens.userTokens.encryptionKey`
 - gated by separate permissions: `user-tokens:read`, `user-tokens:write`, `user-tokens:revoke` — default-open for the calling user, tightenable by policy
 
 ## What This Plugin Does Not Do

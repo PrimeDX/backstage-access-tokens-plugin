@@ -26,12 +26,12 @@ All routes require an authenticated browser session via the existing
 `httpRouter.addAuthPolicy({ allow: 'user-cookie' })` mechanism (per R7).
 Cross-session calls (e.g., from a script) are not supported for the
 management API — scripts authenticate to the data plane via
-`/api/auth/{provider}/refresh`, not via this management API.
+`/api/auth/v1/token`, not via this management API.
 
 ### 1.1 — `POST /personal/tokens/mint` — initiate mint flow
 
 Starts an OAuth authorization-code flow. Returns a redirect URL that the
-frontend opens in a popup or new tab to complete consent.
+frontend navigates to in the same browser tab to complete consent.
 
 Request body:
 
@@ -63,44 +63,51 @@ Error responses:
 
 Backstage's auth-backend redirects to this URL with `code` and `state` query
 parameters after the user consents. The plugin exchanges `code` for tokens
-at `/v1/token`, captures the `refresh_token`, persists metadata, and either:
-
-- if the original request came from a popup, returns an HTML page that
-  posts the result to the opener via `window.postMessage`, then closes; or
-- if the original request came from a top-level redirect, redirects back to
-  the settings page with a one-time fragment carrying the token (cleared
-  client-side immediately after read).
+at `/v1/token`, captures the `refresh_token`, persists metadata, and redirects
+back to the settings page with a one-time URL fragment carrying the token.
+The frontend clears the fragment client-side immediately after reading it.
 
 Request query parameters: `code`, `state` (must match a row in the in-flight
 mint-flow store).
 
-Response 200 (popup mode):
+Success response: `302 Found` to:
 
-```html
-<!doctype html>
-<html><body><script>
-  window.opener.postMessage({
-    type: 'user-tokens-mint-result',
-    flowId: '<uuid>',
-    token: '<raw refresh_token>',
-    metadata: { id, name, createdAt, expiresAt, prefix }
-  }, '<frontend origin>');
-  window.close();
-</script></body></html>
+```text
+<app.baseUrl>/settings/personal-tokens#user-tokens-mint=<base64url-json-payload>
+```
+
+Decoded success payload:
+
+```json
+{
+  "type": "user-tokens-mint-result",
+  "flowId": "<uuid>",
+  "token": "<raw refresh_token>",
+  "metadata": {
+    "id": "<uuid>",
+    "name": "my-ci-token",
+    "createdAt": "2026-05-19T12:00:00.000Z",
+    "expiresAt": "2026-06-18T12:00:00.000Z",
+    "prefix": "first-8-chars"
+  }
+}
 ```
 
 Error responses:
 
-- `400` — `state` does not match any in-flight flow.
-- `502` — `/v1/token` exchange failed (auth-backend or upstream OAuth
-  provider error). Body includes `{ "error": "...", "detail": "..." }`.
+- `302` to
+  `<app.baseUrl>/settings/personal-tokens#user-tokens-mint-error=<base64url-json-payload>`
+  when `state` does not match any in-flight flow, the OAuth provider returns
+  an error, or `/v1/token` exchange fails.
 
-The frontend listens for the `postMessage` and then renders the
-one-time-show dialog.
+The frontend reads the fragment payload and then renders the one-time-show
+dialog.
 
 **Security note**: the raw token never persists to the plugin's own DB.
-It is transmitted to the frontend via `postMessage` exactly once and then
-discarded server-side. The plugin's table only stores metadata. See
+It is transmitted to the frontend via a same-tab URL fragment exactly once
+and then discarded server-side. The plugin clears the fragment via
+`history.replaceState` after reading it. The plugin's table only stores
+metadata. See
 [architecture §4](./user-tokens-architecture.md#threat-model) for the
 threat model.
 
