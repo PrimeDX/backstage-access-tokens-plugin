@@ -201,13 +201,25 @@ async function maybeWireUserTokens({
 
   for (const path of [
     '/personal/tokens/mint',
-    '/personal/tokens/mint/callback',
     '/personal/tokens',
     '/personal/tokens/:id',
     '/personal/tokens/:id/audit',
   ]) {
     httpRouter.addAuthPolicy({ path, allow: 'user-cookie' });
   }
+
+  // The OAuth callback is hit by a browser redirect from Backstage's
+  // /v1/authorize approval flow; the request carries the single-use
+  // `state` parameter (bound in the in-flight mint-flow store to the
+  // user who initiated the mint, with a 10-minute TTL). The state IS
+  // the credential for this route — applying the framework's
+  // user-cookie policy on top would 401 the redirect before our
+  // handler can validate the state. See
+  // docs/spec/user-tokens-architecture.md §2.2.
+  httpRouter.addAuthPolicy({
+    path: '/personal/tokens/mint/callback',
+    allow: 'unauthenticated',
+  });
 
   logger.info('user-tokens capability enabled at /api/service-tokens/personal/tokens');
 }
