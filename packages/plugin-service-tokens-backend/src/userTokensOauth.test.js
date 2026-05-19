@@ -44,7 +44,7 @@ test('discoverEndpoints fetches the well-known doc and caches it', async () => {
   assert.equal(calls.length, 1);
   assert.equal(
     calls[0].url,
-    'https://example.com/.well-known/openid-configuration',
+    'https://example.com/api/auth/.well-known/openid-configuration',
   );
 
   // Second call should be cached

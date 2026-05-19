@@ -104,16 +104,16 @@ Before signing in, confirm the OIDC discovery document is published
 and the DCR endpoints are advertised:
 
 ```bash
-curl -s http://localhost:7007/.well-known/openid-configuration | jq .
+curl -s http://localhost:7007/api/auth/.well-known/openid-configuration | jq .
 ```
 
 **Pass criteria:**
 
-- `authorization_endpoint`: `http://localhost:7007/v1/authorize`
-- `token_endpoint`: `http://localhost:7007/v1/token`
-- `registration_endpoint`: `http://localhost:7007/v1/register`
+- `authorization_endpoint`: `http://localhost:7007/api/auth/v1/authorize`
+- `token_endpoint`: `http://localhost:7007/api/auth/v1/token`
+- `registration_endpoint`: `http://localhost:7007/api/auth/v1/register`
   (must be present — confirms DCR is enabled)
-- `revocation_endpoint`: `http://localhost:7007/v1/revoke`
+- `revocation_endpoint`: `http://localhost:7007/api/auth/v1/revoke`
   (must be present — same reason)
 
 Any missing field means §1.4 was applied incorrectly.
@@ -160,7 +160,7 @@ This is the load-bearing pass criterion for the v1 release.
 
 ```bash
 # Step A — exchange refresh token for a short-lived JWT
-JWT=$(curl -s -X POST http://localhost:7007/v1/token \
+JWT=$(curl -s -X POST http://localhost:7007/api/auth/v1/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d "grant_type=refresh_token&refresh_token=$RT" \
   | jq -r .access_token)
@@ -170,7 +170,7 @@ echo "JWT length: ${#JWT}"
 # exposes /v1/userinfo when DCR is enabled; it returns the user claims
 # of the bearer.
 curl -s -H "Authorization: Bearer $JWT" \
-  http://localhost:7007/v1/userinfo | jq .
+  http://localhost:7007/api/auth/v1/userinfo | jq .
 
 # Step C — confirm the JWT works against an unrelated plugin (catalog)
 curl -s -o /dev/null -w '%{http_code}\n' \
@@ -206,7 +206,7 @@ In the browser, refresh `/settings/personal-tokens`.
 Now re-run §2.2 Step A in the terminal:
 
 ```bash
-curl -s -X POST http://localhost:7007/v1/token \
+curl -s -X POST http://localhost:7007/api/auth/v1/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d "grant_type=refresh_token&refresh_token=$RT"
 ```

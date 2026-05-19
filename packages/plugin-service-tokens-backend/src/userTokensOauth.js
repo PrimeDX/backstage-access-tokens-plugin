@@ -50,14 +50,13 @@ export function createOauthOrchestrator(deps) {
     if (cachedDiscovery) return cachedDiscovery;
 
     const authBaseUrl = await getExternalBaseUrl('auth');
-    const origin = new URL(authBaseUrl).origin;
-    // Backstage publishes its OAuth/OIDC server metadata via the OIDC
-    // Discovery 1.0 well-known path; the OAuth 2.0 Authorization Server
-    // Metadata path from RFC 8414 is not mounted. The response includes
+    // Backstage publishes its OAuth/OIDC server metadata at the auth
+    // plugin's own namespace (e.g. http://host/api/auth/.well-known/
+    // openid-configuration), NOT at the origin's root. The doc includes
     // `authorization_endpoint`, `token_endpoint`, `registration_endpoint`
-    // (when DCR is enabled), and `revocation_endpoint` — all the fields
-    // this orchestrator needs.
-    const docUrl = `${origin}/.well-known/openid-configuration`;
+    // (when DCR is enabled), and `revocation_endpoint` as fully-qualified
+    // URLs — this orchestrator uses them as-is.
+    const docUrl = `${authBaseUrl}/.well-known/openid-configuration`;
 
     const response = await fetchImpl(docUrl, { headers: { Accept: 'application/json' } });
     if (!response.ok) {
