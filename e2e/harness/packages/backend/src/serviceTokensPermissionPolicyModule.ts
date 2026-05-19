@@ -14,6 +14,9 @@ import {
   serviceTokensReadPermission,
   serviceTokensWritePermission,
   serviceTokensRevokePermission,
+  userTokensReadPermission,
+  userTokensWritePermission,
+  userTokensRevokePermission,
 } from '@primedx/plugin-service-tokens-node';
 import { Config } from '@backstage/config';
 
@@ -34,6 +37,16 @@ class ServiceTokensPermissionPolicy implements PermissionPolicy {
       isPermission(request.permission, serviceTokensRevokePermission)
     ) {
       return { result: isAdmin ? AuthorizeResult.ALLOW : AuthorizeResult.DENY };
+    }
+
+    // User-tokens are self-service: any authenticated user can mint, list,
+    // and revoke their own tokens. The spec's "default-open" policy.
+    if (
+      isPermission(request.permission, userTokensReadPermission) ||
+      isPermission(request.permission, userTokensWritePermission) ||
+      isPermission(request.permission, userTokensRevokePermission)
+    ) {
+      return { result: AuthorizeResult.ALLOW };
     }
 
     return { result: AuthorizeResult.ALLOW };

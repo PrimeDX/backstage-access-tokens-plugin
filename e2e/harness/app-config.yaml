@@ -76,6 +76,13 @@ auth:
   providers:
     # See https://backstage.io/docs/auth/guest/provider
     guest: {}
+  # Required by the user-tokens capability — Backstage's DCR + refresh-token
+  # infrastructure. Without both flags the plugin logs a warning and skips
+  # wiring the /personal/tokens/* routes.
+  experimentalDynamicClientRegistration:
+    enabled: true
+  experimentalRefreshTokens:
+    enabled: true
 
 scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options
@@ -132,3 +139,8 @@ serviceTokens:
   admin:
     userEntityRefs:
       - user:development/guest
+  # User-tokens capability (see ../../docs/spec/user-tokens-verification.md).
+  # The encryptionKey below was generated locally with `openssl rand -base64 32`;
+  # rotate per environment and keep out of source control in production.
+  userTokens:
+    encryptionKey: 'IWI4PeJv3dsrHsx/eUlPiDkvf8zM7P5Xa+FKLBQiHZk='
