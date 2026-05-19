@@ -117,7 +117,11 @@ const app = createApp({
 export default app.createRoot();
 ```
 
-The plugin registers a page at `/admin/service-tokens` using `PageBlueprint`. No additional route configuration is required.
+The plugin registers the admin service-tokens page at
+`/admin/service-tokens` and, when user tokens are enabled, contributes
+a `Personal Access Tokens` tab under Backstage user settings at
+`/settings/personal-tokens`. No additional route configuration is
+required.
 
 ---
 
@@ -339,8 +343,9 @@ Open `http://localhost:3000/admin/service-tokens` in your browser. The token you
 The plugin family also offers **user-self-service personal access
 tokens** as a separate capability. Service tokens (covered above) are
 admin-managed and authenticate as a group; user tokens are minted by
-each user from `/settings/personal-tokens` and authenticate as the
-user themselves against every Backstage backend plugin.
+each user from `Settings` → `Personal Access Tokens`
+(`/settings/personal-tokens`) and authenticate as the user themselves
+against every Backstage backend plugin.
 
 User tokens are opt-in. Service-token behavior is unchanged whether
 you enable them or not.
@@ -442,7 +447,8 @@ service-tokens info user-tokens capability enabled at /api/service-tokens/person
 Then in the browser:
 
 1. Sign in to Backstage.
-2. Navigate to `/settings/personal-tokens`.
+2. Navigate to `Settings` → `Personal Access Tokens`
+   (`/settings/personal-tokens`).
 3. Click **Create token**, enter a name, click Create.
 4. The page navigates to a Backstage consent screen (same tab).
    Click Authorize.

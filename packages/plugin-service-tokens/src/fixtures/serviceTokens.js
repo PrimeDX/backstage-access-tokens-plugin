@@ -39,6 +39,36 @@ export const serviceTokenFixtures = {
   },
 };
 
+export const userTokenFixtures = {
+  active: {
+    id: 'user-token-1',
+    name: 'local-scripts',
+    prefix: 'sess-abc.',
+    status: 'active',
+    createdAt: '2026-04-01T12:00:00.000Z',
+    expiresAt: '2026-05-01T12:00:00.000Z',
+    lastUsedAt: '2026-04-03T09:30:00.000Z',
+  },
+  revoked: {
+    id: 'user-token-2',
+    name: 'old-shell-profile',
+    prefix: 'sess-def.',
+    status: 'revoked',
+    createdAt: '2026-03-01T12:00:00.000Z',
+    expiresAt: '2026-04-01T12:00:00.000Z',
+    lastUsedAt: null,
+  },
+  expired: {
+    id: 'user-token-3',
+    name: 'expired-notebook',
+    prefix: 'sess-ghi.',
+    status: 'expired',
+    createdAt: '2026-02-01T12:00:00.000Z',
+    expiresAt: '2026-03-01T12:00:00.000Z',
+    lastUsedAt: '2026-02-15T15:45:00.000Z',
+  },
+};
+
 export const scopeFixtures = [
   {
     id: 'catalog:read',

@@ -115,7 +115,7 @@ When `/v1/token` callback arrives with `code` and `state`, the plugin:
 9. Discards the in-flight record.
 
 Error paths (state mismatch, OAuth error, token-exchange failure)
-redirect to the sibling fragment
+redirect to the same settings route with
 `#user-tokens-mint-error=<base64-message>` so the user lands on the
 page with an inline `Alert` instead of a JSON 400.
 
@@ -272,7 +272,7 @@ Concrete mapping from R7:
 | Migrations | `plugin-service-tokens-backend/src/migrations.js` | Add idempotent `user_tokens` and `user_token_audit_log` table creators inside `applyServiceTokenMigrations`. |
 | In-flight mint store | new file `plugin-service-tokens-backend/src/userTokens/mintFlow.js` | In-memory `Map<state, flowRecord>` with TTL eviction. |
 | DCR client cache | new table `user_tokens_dcr_client` (single-row) | Stored in same DB; pre-registered config takes priority. |
-| Frontend page | new `plugin-service-tokens/src/UserTokensPage.jsx` plus sibling components | Registered via a new `PageBlueprint.make` in `plugin-service-tokens/src/index.js`. |
+| Frontend page | new `plugin-service-tokens/src/UserTokensPage.jsx` plus sibling components | Registered via `SubPageBlueprint.make` attached to `page:user-settings`, so it appears as the `Personal Access Tokens` tab at `/settings/personal-tokens`. |
 | Show-once dialog | new `plugin-service-tokens/src/components/CreateUserTokenDialog.jsx` | Port the dual-mode pattern from `backstage-pat-plugin/src/components/CreatePATDialog.tsx` (per R8). |
 | Routes module | new `userTokensRouteRef` in `plugin-service-tokens/src/routes.js` | Added alongside the existing `rootRouteRef`. |
 

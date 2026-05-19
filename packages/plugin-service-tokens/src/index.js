@@ -1,5 +1,11 @@
 import React from 'react';
-import { createFrontendPlugin, PageBlueprint } from '@backstage/frontend-plugin-api';
+import {
+  createFrontendPlugin,
+  NavItemBlueprint,
+  PageBlueprint,
+  SubPageBlueprint,
+} from '@backstage/frontend-plugin-api';
+import VpnKeyIcon from '@material-ui/icons/VpnKey';
 import {
   rootRouteRef,
   userTokensAuthRouteRef,
@@ -18,15 +24,29 @@ const serviceTokensPage = PageBlueprint.make({
   },
 });
 
-const userTokensPage = PageBlueprint.make({
+function ServiceTokensIcon(props) {
+  const Icon = VpnKeyIcon?.default ?? VpnKeyIcon;
+  return React.createElement(Icon, props);
+}
+
+const serviceTokensNavItem = NavItemBlueprint.make({
+  params: {
+    routeRef: rootRouteRef,
+    title: 'Service Tokens',
+    icon: ServiceTokensIcon,
+  },
+});
+
+const userTokensPage = SubPageBlueprint.make({
+  attachTo: { id: 'page:user-settings', input: 'pages' },
   name: 'user-tokens',
   params: {
-    path: '/settings/personal-tokens',
+    path: 'personal-tokens',
     routeRef: userTokensRouteRef,
-    title: 'Personal access tokens',
+    title: 'Personal Access Tokens',
     loader: () =>
       import('./UserTokensPage.jsx').then(module =>
-        React.createElement(module.UserTokensPage),
+        React.createElement(module.UserTokensSettingsTab),
       ),
   },
 });
@@ -52,7 +72,7 @@ const serviceTokensPlugin = createFrontendPlugin({
     root: rootRouteRef,
     userTokens: userTokensRouteRef,
   },
-  extensions: [serviceTokensPage, userTokensPage],
+  extensions: [serviceTokensPage, serviceTokensNavItem, userTokensPage],
 });
 
 const userTokensAuthPlugin = createFrontendPlugin({

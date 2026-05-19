@@ -302,16 +302,18 @@ router and the new permissions; no new top-level plugin is exposed.
 
 ### 3.3 — `@primedx/plugin-service-tokens`
 
-New page registered as a sibling of `serviceTokensPage`:
+New user-settings sub-page registered under Backstage's
+`page:user-settings` extension point:
 
 ```ts
-const userTokensPage = PageBlueprint.make({
+const userTokensPage = SubPageBlueprint.make({
+  attachTo: { id: 'page:user-settings', input: 'pages' },
   params: {
-    path: '/settings/personal-tokens',
+    path: 'personal-tokens',
     routeRef: userTokensRouteRef,
-    title: 'Personal access tokens',
+    title: 'Personal Access Tokens',
     loader: () => import('./UserTokensPage.jsx')
-      .then(m => React.createElement(m.UserTokensPage)),
+      .then(m => React.createElement(m.UserTokensSettingsTab)),
   },
 });
 ```
@@ -322,8 +324,9 @@ Plus:
 export { userTokensRouteRef };  // for app-side route binding
 ```
 
-The default-exported plugin's `extensions` array includes both
-`serviceTokensPage` and `userTokensPage`.
+The default-exported plugin's `extensions` array includes the admin
+`serviceTokensPage`, the admin `serviceTokensNavItem`, and the
+user-settings `userTokensPage`.
 
 ## 4. Configuration surface (`app-config.yaml`)
 

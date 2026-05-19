@@ -11,7 +11,7 @@ import { parseMintResultFragment } from './userTokensHelpers.js';
 
 const h = React.createElement;
 
-export function UserTokensPage() {
+export function UserTokensContent() {
   const discoveryApi = useApi(discoveryApiRef);
   const fetchApi = useApi(fetchApiRef);
 
@@ -142,56 +142,68 @@ export function UserTokensPage() {
   }, [baseUrl, fetchApi, revokeTarget, reload]);
 
   return h(
+    React.Fragment,
+    null,
+    mintError &&
+      h(
+        Alert,
+        {
+          severity: 'error',
+          onClose: () => setMintError(null),
+          style: { marginBottom: 12 },
+        },
+        mintError,
+      ),
+    h(
+      Box,
+      { display: 'flex', justifyContent: 'flex-end', mb: 2 },
+      h(
+        Button,
+        { variant: 'contained', color: 'primary', onClick: () => setCreateOpen(true) },
+        'Create token',
+      ),
+    ),
+    loading
+      ? h(CircularProgress, null)
+      : loadError
+      ? h('div', { style: { color: 'red' } }, `Error: ${loadError}`)
+      : h(UserTokensTableView, {
+          tokens,
+          onRevoke: token => setRevokeTarget(token),
+        }),
+    h(CreateUserTokenDialog, {
+      open: createOpen,
+      prefilledResult,
+      onSubmit: onMintSubmit,
+      onClose: onCreateClose,
+    }),
+    h(RevokeUserTokenDialog, {
+      open: !!revokeTarget,
+      token: revokeTarget,
+      revoking,
+      error: revokeError,
+      onConfirm: onRevokeConfirm,
+      onClose: () => {
+        setRevokeTarget(null);
+        setRevokeError(null);
+      },
+    }),
+  );
+}
+
+export function UserTokensSettingsTab() {
+  return h(Content, null, h(UserTokensContent));
+}
+
+export function UserTokensPage() {
+  return h(
     Page,
     { themeId: 'tool' },
     h(Header, { title: 'Personal access tokens', subtitle: 'Tokens that authenticate as you' }),
     h(
       Content,
       null,
-      mintError &&
-        h(
-          Alert,
-          {
-            severity: 'error',
-            onClose: () => setMintError(null),
-            style: { marginBottom: 12 },
-          },
-          mintError,
-        ),
-      h(
-        Box,
-        { display: 'flex', justifyContent: 'flex-end', mb: 2 },
-        h(
-          Button,
-          { variant: 'contained', color: 'primary', onClick: () => setCreateOpen(true) },
-          'Create token',
-        ),
-      ),
-      loading
-        ? h(CircularProgress, null)
-        : loadError
-        ? h('div', { style: { color: 'red' } }, `Error: ${loadError}`)
-        : h(UserTokensTableView, {
-            tokens,
-            onRevoke: token => setRevokeTarget(token),
-          }),
-      h(CreateUserTokenDialog, {
-        open: createOpen,
-        prefilledResult,
-        onSubmit: onMintSubmit,
-        onClose: onCreateClose,
-      }),
-      h(RevokeUserTokenDialog, {
-        open: !!revokeTarget,
-        token: revokeTarget,
-        revoking,
-        error: revokeError,
-        onConfirm: onRevokeConfirm,
-        onClose: () => {
-          setRevokeTarget(null);
-          setRevokeError(null);
-        },
-      }),
+      h(UserTokensContent),
     ),
   );
 }

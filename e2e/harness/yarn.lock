@@ -7978,7 +7978,7 @@ __metadata:
 
 "@primedx/plugin-service-tokens@file:../../packages/plugin-service-tokens::locator=root%40workspace%3A.":
   version: 0.1.0
-  resolution: "@primedx/plugin-service-tokens@file:../../packages/plugin-service-tokens#../../packages/plugin-service-tokens::hash=0cf758&locator=root%40workspace%3A."
+  resolution: "@primedx/plugin-service-tokens@file:../../packages/plugin-service-tokens#../../packages/plugin-service-tokens::hash=1d9d72&locator=root%40workspace%3A."
   dependencies:
     "@backstage/catalog-model": "npm:^1.7.7"
     "@backstage/core-components": "npm:^0.18.8"
@@ -7991,7 +7991,7 @@ __metadata:
     react: ^18.0.2
     react-dom: ^18.0.2
     react-router-dom: ^6.30.2
-  checksum: 10c0/fbe42434d28d222f94fc6952035dd4371a93834601cac8538edd851c1f66847d67790a9e15f60838e378001ea6127c2f76714a2e8e4893aaf1c59c3255c73806
+  checksum: 10c0/fc5e189e0075af51610876b93eb8f4e094a7ca531116990335c1edf90418fc4f4d284136bdc2c5f13950cbab8f168aba5c5ab9de961ca5915f8e9c29aaee92c4
   languageName: node
   linkType: hard
 

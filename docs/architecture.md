@@ -77,14 +77,14 @@ This package owns the REST API, the write-path database operations, and the perm
 
 ## `plugin-service-tokens` — Frontend plugin
 
-This package is a standard Backstage new-frontend-system plugin. It registers a single page at `/admin/service-tokens`.
+This package is a standard Backstage new-frontend-system plugin. It registers the admin service-token page at `/admin/service-tokens`, contributes a `Personal Access Tokens` tab to Backstage user settings at `/settings/personal-tokens`, and exports an optional consent-route feature for the user-token OAuth flow.
 
 **Key modules:**
 
 | Module | Purpose |
 |---|---|
-| `index.js` | Plugin entry point — `createFrontendPlugin` with `PageBlueprint` |
-| `routes.js` | Route definition for `/admin/service-tokens` |
+| `index.js` | Plugin entry point — `createFrontendPlugin` with `PageBlueprint` for admin service tokens, `NavItemBlueprint` for the admin sidebar item, and `SubPageBlueprint` for the user-settings PAT tab |
+| `routes.js` | Route definitions for `/admin/service-tokens`, `/settings/personal-tokens`, and `/oauth2` consent routing |
 | `ServiceTokensPage.jsx` | Top-level page component — owns all state and API calls |
 | `components/ServiceTokensTableView.jsx` | Token list table — pure presentational |
 | `components/ServiceTokensFilters.jsx` | Status + group filter bar — pure presentational |

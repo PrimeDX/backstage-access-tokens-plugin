@@ -44,7 +44,10 @@ const app = createApp({
 export default app.createRoot();
 ```
 
-The page is registered at `/admin/service-tokens`. No extra route wiring is required in the default frontend setup.
+The admin page is registered at `/admin/service-tokens`. When user
+tokens are enabled, the package also contributes a `Personal Access
+Tokens` tab to Backstage user settings at `/settings/personal-tokens`.
+No extra route wiring is required in the default frontend setup.
 If you prefer named imports, `serviceTokensPlugin` is also exported by name.
 
 For user tokens, register the companion consent feature before the main

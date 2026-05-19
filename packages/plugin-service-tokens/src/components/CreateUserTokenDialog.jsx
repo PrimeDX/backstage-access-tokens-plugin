@@ -36,6 +36,7 @@ const h = React.createElement;
  */
 export function CreateUserTokenDialog({
   open = false,
+  initialSubmitting = false,
   // When provided, the dialog opens in result mode showing this
   // token + metadata (used by the page after detecting the post-auth
   // redirect fragment). When null, the dialog opens in form mode.
@@ -45,17 +46,17 @@ export function CreateUserTokenDialog({
 }) {
   const [name, setName] = useState('');
   const [expiresAt, setExpiresAt] = useState(defaultUserTokenExpiry());
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(initialSubmitting);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!open) {
       setName('');
       setExpiresAt(defaultUserTokenExpiry());
-      setSubmitting(false);
+      setSubmitting(initialSubmitting);
       setError(null);
     }
-  }, [open]);
+  }, [initialSubmitting, open]);
 
   const nameError = name ? validateUserTokenName(name) : null;
   const expiryError = expiresAt ? validateUserTokenExpiry(expiresAt) : null;
