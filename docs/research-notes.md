@@ -5,7 +5,10 @@ These notes are the Phase 1 output for the Spec-Driven Development plan adding
 service-principal tokens. Every claim cites a primary source so that the
 specification documents downstream can be reviewed against the same evidence.
 
-Phase 1 plan reference: `/Users/adrian/.claude/plans/review-the-plan-memory-lexical-candle.md`.
+These notes were authored as the Phase 1 output of the SDD plan; the
+plan itself lives outside the repo. Read these notes top-to-bottom for
+the architectural picture, then move on to the spec documents in
+`docs/spec/`.
 
 ## R1 — MCP plugin's actual auth surface
 

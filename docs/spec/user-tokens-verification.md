@@ -79,9 +79,9 @@ serviceTokens:
 If the harness's permission policy is not yet aware of the
 `user-tokens:*` permissions, also extend
 `e2e/harness/packages/backend/src/serviceTokensPermissionPolicyModule.ts`
-to ALLOW them for the calling user. See the Phase C section of the
-verification plan in `/Users/adrian/.claude/plans/...` for the exact
-diff (this file should not contain a per-deployment diff).
+to ALLOW them for the calling user. The example diff is the one
+already applied in this repo's `e2e/harness/` — copy the same shape
+into your own host app's policy module.
 
 ### 1.5 Start the harness
 
