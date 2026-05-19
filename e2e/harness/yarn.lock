@@ -8103,7 +8103,7 @@ __metadata:
 
 "@primedx/plugin-service-tokens-backend@file:../../packages/plugin-service-tokens-backend::locator=root%40workspace%3A.":
   version: 0.1.0
-  resolution: "@primedx/plugin-service-tokens-backend@file:../../packages/plugin-service-tokens-backend#../../packages/plugin-service-tokens-backend::hash=503842&locator=root%40workspace%3A."
+  resolution: "@primedx/plugin-service-tokens-backend@file:../../packages/plugin-service-tokens-backend#../../packages/plugin-service-tokens-backend::hash=ba70da&locator=root%40workspace%3A."
   dependencies:
     "@backstage/backend-plugin-api": "npm:^1.8.0"
     "@backstage/catalog-model": "npm:^1.7.5"
@@ -8111,7 +8111,7 @@ __metadata:
     "@backstage/plugin-permission-common": "npm:^0.9.7"
     "@primedx/plugin-service-tokens-node": "npm:^0.1.0"
     express: "npm:^4.22.0"
-  checksum: 10c0/6aea8a5d8e9ed3f611200f567586bebc5a38746621db302f178a4a1019d73ad9c59e97e30e832704c3730201724cc81e1197023e59d5e23ccf4d3d2a2a9850e8
+  checksum: 10c0/73008e9eae672a1030c153ea1163fab9be7275f2d8f55ff30acdc3e5590ffbdc708bf604eb5143a410e49fab10d131dca569a5b8d33c5f65b5a4adc3ea82a27b
   languageName: node
   linkType: hard
 
@@ -8128,7 +8128,7 @@ __metadata:
 
 "@primedx/plugin-service-tokens@file:../../packages/plugin-service-tokens::locator=root%40workspace%3A.":
   version: 0.1.0
-  resolution: "@primedx/plugin-service-tokens@file:../../packages/plugin-service-tokens#../../packages/plugin-service-tokens::hash=c676de&locator=root%40workspace%3A."
+  resolution: "@primedx/plugin-service-tokens@file:../../packages/plugin-service-tokens#../../packages/plugin-service-tokens::hash=5466cc&locator=root%40workspace%3A."
   dependencies:
     "@backstage/catalog-model": "npm:^1.7.7"
     "@backstage/core-components": "npm:^0.18.8"
@@ -8141,7 +8141,7 @@ __metadata:
     react: ^18.0.2
     react-dom: ^18.0.2
     react-router-dom: ^6.30.2
-  checksum: 10c0/8ea9c9c584dcfda18b08da9fc70967c6ee3b3a7ecba3f361b04736d1405cca448a8ff7dfd342dc74bb3854104e6f691a56a8cb8e3df20ac22a89c77d1c3fb291
+  checksum: 10c0/ab2a75e3ece149fc600ca1494c4dacdc2e46b2691cee9f900d321796457412e826853a21911275c1f7a3318e1f724dc4ed7838d16ac3b57bd5511ff6eec342ba
   languageName: node
   linkType: hard
 
