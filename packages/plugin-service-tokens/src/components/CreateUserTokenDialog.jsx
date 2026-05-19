@@ -35,6 +35,11 @@ const h = React.createElement;
  */
 export function CreateUserTokenDialog({
   open = false,
+  // Origin from which the popup's HTML is served (backend origin —
+  // typically derived from discoveryApi.getBaseUrl('service-tokens') by
+  // the parent page). The popup's postMessage event.origin will match
+  // this, NOT window.location.origin which is the frontend.
+  expectedMessageOrigin,
   onSubmit, // ({ name, expiresAt }) => Promise<{ flowId, authorizeUrl }>
   onSuccess = () => {},
   onClose = () => {},
@@ -63,7 +68,10 @@ export function CreateUserTokenDialog({
     function onMessage(event) {
       if (
         !isValidMintResultMessage(event, {
-          expectedOrigin: window.location.origin,
+          // The popup is served by the BACKEND, so event.origin is the
+          // backend's origin (e.g. http://localhost:7007) — not the
+          // frontend's window.location.origin.
+          expectedOrigin: expectedMessageOrigin ?? window.location.origin,
           expectedFlowId: flowRef.current.flowId,
         })
       ) {
@@ -75,7 +83,7 @@ export function CreateUserTokenDialog({
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [open, onSuccess]);
+  }, [open, onSuccess, expectedMessageOrigin]);
 
   const nameError = name ? validateUserTokenName(name) : null;
   const expiryError = expiresAt ? validateUserTokenExpiry(expiresAt) : null;

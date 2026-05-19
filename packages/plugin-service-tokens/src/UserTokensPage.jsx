@@ -123,6 +123,11 @@ export function UserTokensPage() {
           }),
       h(CreateUserTokenDialog, {
         open: createOpen,
+        // baseUrl is the backend's plugin-namespace URL
+        // (e.g. http://localhost:7007/api/service-tokens). The mint
+        // callback's popup HTML is served from that origin, so
+        // postMessage events arrive with that origin.
+        expectedMessageOrigin: baseUrl ? new URL(baseUrl).origin : undefined,
         onSubmit: onMintSubmit,
         onSuccess: onMintSuccess,
         onClose: () => setCreateOpen(false),
