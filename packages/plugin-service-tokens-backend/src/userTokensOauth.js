@@ -31,7 +31,7 @@ const DEFAULT_RESPONSE_TYPES = ['code'];
  * @param {(target: string) => Promise<string>} deps.getExternalBaseUrl
  *   Resolver returning the publicly accessible base URL for a given plugin
  *   id. The orchestrator uses `getExternalBaseUrl('auth')` to find the
- *   auth-backend origin and reach `/.well-known/oauth-authorization-server`.
+ *   auth-backend origin and reach `/.well-known/openid-configuration`.
  * @param {typeof fetch} [deps.fetch]      Override for tests.
  * @param {() => Date} [deps.now]
  */
@@ -51,7 +51,13 @@ export function createOauthOrchestrator(deps) {
 
     const authBaseUrl = await getExternalBaseUrl('auth');
     const origin = new URL(authBaseUrl).origin;
-    const docUrl = `${origin}/.well-known/oauth-authorization-server`;
+    // Backstage publishes its OAuth/OIDC server metadata via the OIDC
+    // Discovery 1.0 well-known path; the OAuth 2.0 Authorization Server
+    // Metadata path from RFC 8414 is not mounted. The response includes
+    // `authorization_endpoint`, `token_endpoint`, `registration_endpoint`
+    // (when DCR is enabled), and `revocation_endpoint` — all the fields
+    // this orchestrator needs.
+    const docUrl = `${origin}/.well-known/openid-configuration`;
 
     const response = await fetchImpl(docUrl, { headers: { Accept: 'application/json' } });
     if (!response.ok) {
