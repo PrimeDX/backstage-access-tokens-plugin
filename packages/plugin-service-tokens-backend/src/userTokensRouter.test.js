@@ -230,10 +230,31 @@ test('POST /personal/tokens/mint happy path returns flowId, state and authorizeU
   assert.equal(mintFlowStore.size(), 1);
 });
 
-test('GET /personal/tokens/mint/callback rejects unknown state', async () => {
+test('GET /personal/tokens/mint/callback redirects with error fragment on unknown state', async () => {
   const { app } = makeRouter();
   const r = await requestJson(app, 'GET', '/personal/tokens/mint/callback?code=c&state=unknown');
-  assert.equal(r.status, 400);
+  assert.equal(r.status, 302);
+  assert.match(
+    r.headers?.location,
+    /\/settings\/personal-tokens#user-tokens-mint-error=/,
+  );
+  const encoded = r.headers.location.split('#user-tokens-mint-error=')[1];
+  const decoded = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+  assert.match(decoded.message, /unknown or expired/);
+});
+
+test('GET /personal/tokens/mint/callback redirects with error fragment when OAuth returned an error', async () => {
+  const { app } = makeRouter();
+  const r = await requestJson(
+    app,
+    'GET',
+    '/personal/tokens/mint/callback?error=access_denied',
+  );
+  assert.equal(r.status, 302);
+  assert.match(
+    r.headers?.location,
+    /\/settings\/personal-tokens#user-tokens-mint-error=/,
+  );
 });
 
 test('GET /personal/tokens/mint/callback happy path inserts row + audit, returns HTML with token', async () => {

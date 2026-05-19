@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -15,7 +15,6 @@ import FileCopyIcon from '@material-ui/icons/FileCopy';
 
 import {
   defaultUserTokenExpiry,
-  isValidMintResultMessage,
   validateUserTokenExpiry,
   validateUserTokenName,
 } from '../userTokensHelpers.js';
@@ -24,70 +23,43 @@ const h = React.createElement;
 
 /**
  * Dual-mode dialog used for the create flow:
- *   - "form" mode: collect name + optional expiry, kick off the OAuth dance.
+ *   - "form" mode: collect name + optional expiry, kick off the OAuth
+ *     dance by navigating the entire window to the authorize URL.
  *   - "result" mode: render the show-once raw refresh token with a copy
- *     button. Closing the dialog discards the token from React state.
+ *     button. Entered when the parent passes a `prefilledResult` prop —
+ *     this happens after the page reloads with a #user-tokens-mint
+ *     fragment, decoded by UserTokensPage.
  *
- * The popup window is launched by this component when the form is
- * submitted; this component also installs a `message` listener bound to
- * the active flowId so it can advance to "result" mode when the backend
- * callback posts the result.
+ * Navigation is same-tab (window.location.href). When the user returns
+ * from the OAuth dance, the page reloads, the page detects the result
+ * fragment, and opens this dialog directly in result mode.
  */
 export function CreateUserTokenDialog({
   open = false,
-  // Origin from which the popup's HTML is served (backend origin —
-  // typically derived from discoveryApi.getBaseUrl('service-tokens') by
-  // the parent page). The popup's postMessage event.origin will match
-  // this, NOT window.location.origin which is the frontend.
-  expectedMessageOrigin,
+  // When provided, the dialog opens in result mode showing this
+  // token + metadata (used by the page after detecting the post-auth
+  // redirect fragment). When null, the dialog opens in form mode.
+  prefilledResult = null,
   onSubmit, // ({ name, expiresAt }) => Promise<{ flowId, authorizeUrl }>
-  onSuccess = () => {},
   onClose = () => {},
 }) {
   const [name, setName] = useState('');
   const [expiresAt, setExpiresAt] = useState(defaultUserTokenExpiry());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [result, setResult] = useState(null); // { token, metadata }
-  const flowRef = useRef({ flowId: null, popup: null });
 
   useEffect(() => {
     if (!open) {
-      // Reset on close
       setName('');
       setExpiresAt(defaultUserTokenExpiry());
       setSubmitting(false);
       setError(null);
-      setResult(null);
-      flowRef.current = { flowId: null, popup: null };
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    function onMessage(event) {
-      if (
-        !isValidMintResultMessage(event, {
-          // The popup is served by the BACKEND, so event.origin is the
-          // backend's origin (e.g. http://localhost:7007) — not the
-          // frontend's window.location.origin.
-          expectedOrigin: expectedMessageOrigin ?? window.location.origin,
-          expectedFlowId: flowRef.current.flowId,
-        })
-      ) {
-        return;
-      }
-      setResult({ token: event.data.token, metadata: event.data.metadata });
-      setSubmitting(false);
-      onSuccess(event.data.metadata);
-    }
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, [open, onSuccess, expectedMessageOrigin]);
-
   const nameError = name ? validateUserTokenName(name) : null;
   const expiryError = expiresAt ? validateUserTokenExpiry(expiresAt) : null;
-  const canSubmit = !nameError && !expiryError && name.trim() && !submitting && !result;
+  const canSubmit = !nameError && !expiryError && name.trim() && !submitting;
 
   async function handleSubmit() {
     setError(null);
@@ -97,12 +69,14 @@ export function CreateUserTokenDialog({
         name: name.trim(),
         expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
       });
-      flowRef.current.flowId = init.flowId;
-      const popup = window.open(init.authorizeUrl, 'user-tokens-mint', 'width=540,height=720');
-      if (!popup) {
-        throw new Error('Popup was blocked. Allow popups for this site and try again.');
+      if (!init?.authorizeUrl) {
+        throw new Error('Mint endpoint did not return an authorizeUrl');
       }
-      flowRef.current.popup = popup;
+      // Same-tab navigation. The user goes through Backstage's consent
+      // page; after authorize the callback redirects the page back to
+      // /settings/personal-tokens#user-tokens-mint=<payload>, the page
+      // detects the fragment, and this dialog reopens in result mode.
+      window.location.href = init.authorizeUrl;
     } catch (err) {
       setError(err?.message ?? 'Failed to start mint flow');
       setSubmitting(false);
@@ -110,9 +84,9 @@ export function CreateUserTokenDialog({
   }
 
   async function handleCopy() {
-    if (!result?.token) return;
+    if (!prefilledResult?.token) return;
     try {
-      await navigator.clipboard.writeText(result.token);
+      await navigator.clipboard.writeText(prefilledResult.token);
     } catch {
       /* best effort */
     }
@@ -120,7 +94,7 @@ export function CreateUserTokenDialog({
 
   // ---- render ----
 
-  if (result) {
+  if (prefilledResult) {
     return h(
       Dialog,
       { open, onClose, maxWidth: 'sm', fullWidth: true },
@@ -140,7 +114,7 @@ export function CreateUserTokenDialog({
             fullWidth: true,
             variant: 'outlined',
             size: 'small',
-            value: result.token,
+            value: prefilledResult.token,
             inputProps: { readOnly: true, 'aria-label': 'token value' },
           }),
           h(
@@ -151,8 +125,13 @@ export function CreateUserTokenDialog({
         ),
         h(
           Typography,
-          { variant: 'caption', color: 'textSecondary', component: 'p', style: { marginTop: 12 } },
-          `Token "${result.metadata.name}" · expires ${result.metadata.expiresAt}`,
+          {
+            variant: 'caption',
+            color: 'textSecondary',
+            component: 'p',
+            style: { marginTop: 12 },
+          },
+          `Token "${prefilledResult.metadata.name}" · expires ${prefilledResult.metadata.expiresAt}`,
         ),
       ),
       h(
@@ -199,7 +178,7 @@ export function CreateUserTokenDialog({
         h(
           Typography,
           { variant: 'body2', color: 'textSecondary', style: { marginTop: 12 } },
-          'Authorize the request in the popup window to receive your token.',
+          'Redirecting to the authorization page…',
         ),
     ),
     h(
@@ -209,7 +188,7 @@ export function CreateUserTokenDialog({
       h(
         Button,
         { onClick: handleSubmit, color: 'primary', variant: 'contained', disabled: !canSubmit },
-        submitting ? 'Awaiting authorization…' : 'Create',
+        submitting ? 'Redirecting…' : 'Create',
       ),
     ),
   );

@@ -4,10 +4,16 @@ import assert from 'node:assert/strict';
 import {
   defaultUserTokenExpiry,
   formatUserTokenDate,
-  isValidMintResultMessage,
+  parseMintResultFragment,
   validateUserTokenExpiry,
   validateUserTokenName,
 } from './userTokensHelpers.js';
+
+function encodeFragmentPayload(payload) {
+  const json = JSON.stringify(payload);
+  // Replicate the backend's encoding (base64url, no padding).
+  return Buffer.from(json, 'utf8').toString('base64url');
+}
 
 test('formatUserTokenDate returns Never for null / undefined', () => {
   assert.equal(formatUserTokenDate(null), 'Never');
@@ -59,75 +65,51 @@ test('defaultUserTokenExpiry returns 30 days ahead in datetime-local format', ()
   assert.equal(out, '2026-06-18T12:00');
 });
 
-test('isValidMintResultMessage rejects mismatched origin', () => {
-  assert.equal(
-    isValidMintResultMessage(
-      {
-        origin: 'https://attacker.example.com',
-        data: { type: 'user-tokens-mint-result', flowId: 'F', token: 't', metadata: {} },
-      },
-      { expectedOrigin: 'https://backstage.example.com', expectedFlowId: 'F' },
-    ),
-    false,
-  );
+test('parseMintResultFragment returns null for non-matching hashes', () => {
+  assert.equal(parseMintResultFragment(null), null);
+  assert.equal(parseMintResultFragment(''), null);
+  assert.equal(parseMintResultFragment('#other-thing=foo'), null);
+  assert.equal(parseMintResultFragment('user-tokens-mint=xxx'), null);
 });
 
-test('isValidMintResultMessage rejects unexpected message type', () => {
-  assert.equal(
-    isValidMintResultMessage(
-      {
-        origin: 'https://x',
-        data: { type: 'something-else', flowId: 'F', token: 't', metadata: {} },
-      },
-      { expectedOrigin: 'https://x', expectedFlowId: 'F' },
-    ),
-    false,
-  );
+test('parseMintResultFragment returns null for malformed base64', () => {
+  assert.equal(parseMintResultFragment('#user-tokens-mint=!!!'), null);
 });
 
-test('isValidMintResultMessage rejects mismatched flowId', () => {
-  assert.equal(
-    isValidMintResultMessage(
-      {
-        origin: 'https://x',
-        data: { type: 'user-tokens-mint-result', flowId: 'wrong', token: 't', metadata: {} },
-      },
-      { expectedOrigin: 'https://x', expectedFlowId: 'F' },
-    ),
-    false,
-  );
+test('parseMintResultFragment returns null for JSON without required shape', () => {
+  const badShape = encodeFragmentPayload({ type: 'something-else', flowId: 'F' });
+  assert.equal(parseMintResultFragment(`#user-tokens-mint=${badShape}`), null);
+
+  const missingToken = encodeFragmentPayload({
+    type: 'user-tokens-mint-result',
+    flowId: 'F',
+    metadata: { id: 'x' },
+  });
+  assert.equal(parseMintResultFragment(`#user-tokens-mint=${missingToken}`), null);
+
+  const missingMetadata = encodeFragmentPayload({
+    type: 'user-tokens-mint-result',
+    flowId: 'F',
+    token: 't',
+  });
+  assert.equal(parseMintResultFragment(`#user-tokens-mint=${missingMetadata}`), null);
 });
 
-test('isValidMintResultMessage rejects missing token or metadata', () => {
-  for (const data of [
-    { type: 'user-tokens-mint-result', flowId: 'F', token: '', metadata: {} },
-    { type: 'user-tokens-mint-result', flowId: 'F', token: 't', metadata: null },
-    { type: 'user-tokens-mint-result', flowId: 'F', metadata: {} },
-  ]) {
-    assert.equal(
-      isValidMintResultMessage(
-        { origin: 'https://x', data },
-        { expectedOrigin: 'https://x', expectedFlowId: 'F' },
-      ),
-      false,
-    );
-  }
-});
-
-test('isValidMintResultMessage accepts the happy path', () => {
-  assert.equal(
-    isValidMintResultMessage(
-      {
-        origin: 'https://x',
-        data: {
-          type: 'user-tokens-mint-result',
-          flowId: 'F',
-          token: 'sess.tail',
-          metadata: { id: 'tok-1' },
-        },
-      },
-      { expectedOrigin: 'https://x', expectedFlowId: 'F' },
-    ),
-    true,
+test('parseMintResultFragment accepts a well-formed payload', () => {
+  const payload = {
+    type: 'user-tokens-mint-result',
+    flowId: 'F1',
+    token: 'sess-id.long-random',
+    metadata: {
+      id: 'tok-1',
+      name: 'my-ci',
+      createdAt: '2026-05-19T12:00:00.000Z',
+      expiresAt: '2026-06-18T12:00:00.000Z',
+      prefix: 'sess-id.',
+    },
+  };
+  const out = parseMintResultFragment(
+    `#user-tokens-mint=${encodeFragmentPayload(payload)}`,
   );
+  assert.deepEqual(out, payload);
 });

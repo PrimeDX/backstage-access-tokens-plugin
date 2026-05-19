@@ -1,21 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Button, CircularProgress } from '@material-ui/core';
+import { Alert } from '@material-ui/lab';
 import { Content, Header, Page } from '@backstage/core-components';
 import { discoveryApiRef, fetchApiRef, useApi } from '@backstage/core-plugin-api';
 
 import { CreateUserTokenDialog } from './components/CreateUserTokenDialog.jsx';
 import { RevokeUserTokenDialog } from './components/RevokeUserTokenDialog.jsx';
 import { UserTokensTableView } from './components/UserTokensTableView.jsx';
+import { parseMintResultFragment } from './userTokensHelpers.js';
 
 const h = React.createElement;
-
-/** Convert RFC 4648 base64url back to standard base64 for atob(). */
-function base64UrlToBase64(input) {
-  return input.replace(/-/g, '+').replace(/_/g, '/').padEnd(
-    input.length + ((4 - (input.length % 4)) % 4),
-    '=',
-  );
-}
 
 export function UserTokensPage() {
   const discoveryApi = useApi(discoveryApiRef);
@@ -26,9 +20,14 @@ export function UserTokensPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
+  // Non-null only after a same-tab post-OAuth redirect; opens the
+  // dialog directly in result mode with the captured token.
+  const [prefilledResult, setPrefilledResult] = useState(null);
   const [revokeTarget, setRevokeTarget] = useState(null);
   const [revoking, setRevoking] = useState(false);
   const [revokeError, setRevokeError] = useState(null);
+  // Error fragment from a failed mint (state mismatch, OAuth error).
+  const [mintError, setMintError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,32 +40,39 @@ export function UserTokensPage() {
     };
   }, [discoveryApi]);
 
-  // Popup-side handler: the backend's mint callback redirects the popup
-  // to this page with #user-tokens-mint=<base64-payload>. Decode and
-  // forward to the opener via postMessage, then close. The popup runs
-  // the same React app as the parent — this useEffect just lets the
-  // popup do its one job and disappear without rendering UI.
+  // Detect a post-OAuth redirect. The backend mint callback redirects
+  // the same browsing context to /settings/personal-tokens with either
+  //   #user-tokens-mint=<base64-payload> on success, or
+  //   #user-tokens-mint-error=<base64-detail> on failure.
+  // Decode + consume + clear the fragment so refresh doesn't replay.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = window.location.hash;
-    if (!hash.startsWith('#user-tokens-mint=')) return;
-    const encoded = hash.slice('#user-tokens-mint='.length);
-    let payload;
-    try {
-      payload = JSON.parse(atob(base64UrlToBase64(encoded)));
-    } catch (err) {
+    if (!hash) return;
+
+    const result = parseMintResultFragment(hash);
+    if (result) {
+      setPrefilledResult({ token: result.token, metadata: result.metadata });
+      setCreateOpen(true);
+      try {
+        window.history.replaceState(null, '', window.location.pathname);
+      } catch {}
       return;
     }
-    // Clear the fragment immediately so it doesn't persist in history
-    // beyond a single use.
-    try {
-      window.history.replaceState(null, '', window.location.pathname);
-    } catch {}
-    if (window.opener) {
+
+    const errorPrefix = '#user-tokens-mint-error=';
+    if (hash.startsWith(errorPrefix)) {
+      const encoded = hash.slice(errorPrefix.length);
+      let detail = 'Token creation failed.';
       try {
-        window.opener.postMessage(payload, window.location.origin);
+        const decoded = atob(encoded.replace(/-/g, '+').replace(/_/g, '/'));
+        const parsed = JSON.parse(decoded);
+        if (parsed?.message) detail = parsed.message;
       } catch {}
-      window.close();
+      setMintError(detail);
+      try {
+        window.history.replaceState(null, '', window.location.pathname);
+      } catch {}
     }
   }, []);
 
@@ -108,9 +114,10 @@ export function UserTokensPage() {
     [baseUrl, fetchApi],
   );
 
-  const onMintSuccess = useCallback(async () => {
-    await reload();
-  }, [reload]);
+  const onCreateClose = useCallback(() => {
+    setCreateOpen(false);
+    setPrefilledResult(null);
+  }, []);
 
   const onRevokeConfirm = useCallback(async () => {
     if (!revokeTarget) return;
@@ -141,6 +148,16 @@ export function UserTokensPage() {
     h(
       Content,
       null,
+      mintError &&
+        h(
+          Alert,
+          {
+            severity: 'error',
+            onClose: () => setMintError(null),
+            style: { marginBottom: 12 },
+          },
+          mintError,
+        ),
       h(
         Box,
         { display: 'flex', justifyContent: 'flex-end', mb: 2 },
@@ -160,13 +177,9 @@ export function UserTokensPage() {
           }),
       h(CreateUserTokenDialog, {
         open: createOpen,
-        // The popup redirects to this same frontend page on completion
-        // (see useEffect above), so the postMessage arrives from the
-        // frontend origin — same as window.location.origin which is
-        // the dialog's default. No expectedMessageOrigin override.
+        prefilledResult,
         onSubmit: onMintSubmit,
-        onSuccess: onMintSuccess,
-        onClose: () => setCreateOpen(false),
+        onClose: onCreateClose,
       }),
       h(RevokeUserTokenDialog, {
         open: !!revokeTarget,

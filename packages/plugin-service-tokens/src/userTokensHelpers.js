@@ -16,26 +16,47 @@ export function formatUserTokenDate(value) {
 }
 
 /**
- * Decide whether the incoming `postMessage` envelope represents a valid
- * user-tokens mint result for the in-flight flow. Returns true only if:
- *   - origin matches the current Backstage origin
- *   - type is the expected discriminator
- *   - flowId matches the one our UI started
- *   - the message carries a non-empty token + metadata
+ * Decode a `#user-tokens-mint=<base64url-payload>` fragment string and
+ * validate its shape. Returns the parsed payload on success, null
+ * otherwise. The page uses this to detect a post-OAuth redirect and
+ * open the show-once dialog in result mode.
  *
- * @param {MessageEvent} event
- * @param {{ expectedOrigin: string, expectedFlowId: string }} expectations
+ * Same-tab flow replaced the popup+postMessage handoff after Backstage's
+ * Content-Security-Policy was found to drop inline-script-based
+ * popups; see docs/spec/user-tokens-architecture.md §2.3.
+ *
+ * @param {string} hash Either the raw URL fragment including `#` or
+ *   just the encoded portion. Anything else returns null.
+ * @returns {{ type: 'user-tokens-mint-result', flowId: string, token: string,
+ *             metadata: { id: string, name: string, createdAt: string,
+ *                          expiresAt: string, prefix: string } } | null}
  */
-export function isValidMintResultMessage(event, expectations) {
-  if (!event || typeof event !== 'object') return false;
-  if (event.origin !== expectations.expectedOrigin) return false;
-  const data = event.data;
-  if (!data || typeof data !== 'object') return false;
-  if (data.type !== 'user-tokens-mint-result') return false;
-  if (data.flowId !== expectations.expectedFlowId) return false;
-  if (typeof data.token !== 'string' || data.token.length === 0) return false;
-  if (!data.metadata || typeof data.metadata !== 'object') return false;
-  return true;
+export function parseMintResultFragment(hash) {
+  if (typeof hash !== 'string' || hash.length === 0) return null;
+  const prefix = '#user-tokens-mint=';
+  const encoded = hash.startsWith(prefix) ? hash.slice(prefix.length) : null;
+  if (!encoded) return null;
+  let payload;
+  try {
+    const standard = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = standard.padEnd(
+      standard.length + ((4 - (standard.length % 4)) % 4),
+      '=',
+    );
+    payload = JSON.parse(
+      typeof atob === 'function'
+        ? atob(padded)
+        : Buffer.from(padded, 'base64').toString('utf8'),
+    );
+  } catch {
+    return null;
+  }
+  if (!payload || typeof payload !== 'object') return null;
+  if (payload.type !== 'user-tokens-mint-result') return null;
+  if (typeof payload.flowId !== 'string' || payload.flowId.length === 0) return null;
+  if (typeof payload.token !== 'string' || payload.token.length === 0) return null;
+  if (!payload.metadata || typeof payload.metadata !== 'object') return null;
+  return payload;
 }
 
 /**

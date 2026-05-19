@@ -17,7 +17,8 @@ human-supervised agent) to follow during release readiness.
 - Node 22 (the repo's `.nvmrc`)
 - yarn (canonical for this repo — see memory note)
 - `curl`, `jq`, `openssl`
-- A modern desktop browser that permits popups for `localhost`
+- A modern desktop browser (no popup permissions needed — the mint
+  flow uses same-tab navigation)
 
 ```bash
 node --version    # → v22.x
@@ -130,10 +131,12 @@ The pass criterion for each is explicit and binary.
 2. Navigate to `/settings/personal-tokens`.
 3. Click **Create token**.
 4. Enter `name: my-ci-token`. Leave expiry at the default.
-5. Click **Create**. A popup opens to the OAuth authorize URL.
-6. Approve consent if Backstage shows the session-approval screen
-   (DCR ships with a per-session approve-or-reject step).
-7. The popup closes. The dialog updates to "Token created" with a
+5. Click **Create**. The page navigates (same tab) to Backstage's
+   OAuth consent screen.
+6. Approve the session-approval prompt (DCR ships with a per-session
+   approve-or-reject step).
+7. The page navigates back to `/settings/personal-tokens` and the
+   dialog reopens automatically in "Token created" mode with a
    readonly textbox containing the raw refresh token and a copy
    button.
 
@@ -232,7 +235,7 @@ curl -s -X POST http://localhost:7007/api/service-tokens/personal/tokens/mint \
   -d '{"name":"expiry-test","expiresAt":"<ISO now+1min>"}'
 ```
 
-Complete the popup OAuth dance, then sleep for over a minute, then
+Complete the OAuth dance (same-tab), then sleep for over a minute, then
 attempt the refresh-token exchange from §2.2 Step A.
 
 **Pass criteria**:
@@ -309,7 +312,7 @@ Likely failure modes and the first thing to check for each:
 | Plugin init log line absent | `serviceTokens.userTokens.encryptionKey` is set to a 32-byte base64 string. Refusal logs are at WARN. |
 | Discovery curl returns 404 | `auth.experimentalDynamicClientRegistration.enabled: true` is set. Restart the harness after editing. |
 | Discovery missing `registration_endpoint` | Same as above — DCR flag is read at boot only. |
-| Mint dialog spins, never resolves | Browser console: look for postMessage rejected by origin mismatch. The popup-callback should be same-origin as `localhost:3000`; if not, check the `cors` block in app-config. |
+| Page returns from OAuth but dialog doesn't show the token | The redirect URL fragment may have been stripped by a strict referrer policy. Check the URL bar for `#user-tokens-mint=…` before the dialog opens; if missing, inspect the backend log for a callback that returned 500. |
 | Popup blocked | Browser-level popup blocker. Allow popups for `localhost` and retry. |
 | `/v1/token` returns 401 on the script call | The token was revoked or expired. Mint a fresh one. |
 | `/api/catalog/entities` returns 403 with a valid JWT | The catalog has no entities the user can see — try `/v1/userinfo` (§2.2 Step B) to confirm the JWT itself is valid. |

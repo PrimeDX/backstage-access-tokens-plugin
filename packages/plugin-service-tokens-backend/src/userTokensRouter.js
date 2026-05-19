@@ -153,19 +153,26 @@ export function createUserTokensRouter(options) {
 
   // ---- GET /personal/tokens/mint/callback ----
 
+  function redirectWithMintError(res, message) {
+    const payload = { message };
+    const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+    const url = `${userTokensConfig.appBaseUrl}/settings/personal-tokens#user-tokens-mint-error=${encoded}`;
+    res.redirect(302, url);
+  }
+
   router.get('/personal/tokens/mint/callback', async (req, res) => {
     const { code, state, error: oauthError } = req.query ?? {};
     if (oauthError) {
-      sendJson(res, 400, { error: 'OAuth flow returned error', detail: String(oauthError) });
+      redirectWithMintError(res, `OAuth flow returned error: ${oauthError}`);
       return;
     }
     if (typeof code !== 'string' || typeof state !== 'string') {
-      sendJson(res, 400, { error: 'Missing code or state' });
+      redirectWithMintError(res, 'OAuth callback missing code or state');
       return;
     }
     const inflight = mintFlowStore.consume(state);
     if (!inflight) {
-      sendJson(res, 400, { error: 'Unknown or expired state' });
+      redirectWithMintError(res, 'OAuth state is unknown or expired; try again');
       return;
     }
 
@@ -235,7 +242,7 @@ export function createUserTokensRouter(options) {
       res.redirect(302, redirectUrl);
     } catch (err) {
       logger?.error?.('user-tokens mint callback failed', { err: err?.message });
-      sendJson(res, 502, { error: 'Failed to complete mint flow', detail: err?.message });
+      redirectWithMintError(res, `Failed to complete mint flow: ${err?.message ?? 'unknown error'}`);
     }
   });
 
