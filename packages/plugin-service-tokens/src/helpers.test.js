@@ -49,13 +49,22 @@ test('formatRelativeTime renders future and past day values', () => {
 });
 
 test('isCreateFormValid requires all fields and at least one scope', () => {
+  // Compute a future expiry at runtime so the test does not bit-rot
+  // (the previous hardcoded '2026-05-01T00:00' value started failing
+  // once that date passed). The helper rejects past-or-now expiries
+  // by design — so the test must hand it a value strictly in the
+  // future every run.
+  const futureExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 16);
+
   assert.equal(
     isCreateFormValid({
       name: 'deploy-bot',
       description: 'Used by deployment automation',
       groupEntityRef: 'group:default/platform-team',
       scopes: ['catalog:read'],
-      expiresAt: '2026-05-01T00:00',
+      expiresAt: futureExpiry,
     }),
     true,
   );
@@ -66,7 +75,7 @@ test('isCreateFormValid requires all fields and at least one scope', () => {
       description: '',
       groupEntityRef: 'group:default/platform-team',
       scopes: ['catalog:read'],
-      expiresAt: '2026-05-01T00:00',
+      expiresAt: futureExpiry,
     }),
     false,
   );
