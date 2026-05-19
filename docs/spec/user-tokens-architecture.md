@@ -128,6 +128,10 @@ operator config (`app-config.yaml` / secrets manager).
 The OAuth dance runs in the same browser tab as the rest of the
 Backstage app: `window.location.href = authorizeUrl` to start it,
 then a 302 fragment-redirect on completion (above) to return.
+The frontend package ships `userTokensAuthPlugin`, which owns
+`/oauth2/authorize/:sessionId` for this flow and renders the consent
+step as "Create personal access token" rather than a generic
+third-party-app grant.
 
 **Why not a popup?** v1 prototyped a popup + `window.postMessage`
 hand-off; verification surfaced four compounding failures:
@@ -155,10 +159,10 @@ of the same browsing context), no popup blockers, no popup chrome.
 
 **Trade-offs accepted**:
 
-- The consent page renders in the user's main tab. The
-  `@backstage/plugin-auth` consent extension's own styling (sidebar,
-  security-notice copy) becomes part of the main flow; this reads
-  more naturally in-context than the same chrome would in a popup.
+- The consent page renders in the user's main tab, inside the normal
+  Backstage app shell. The plugin-provided page keeps the explicit
+  approve/cancel step, but phrases it around token creation for the
+  signed-in user and shows the callback as a subdued return URL.
 - The URL fragment briefly carries the token in the address bar.
   Fragments are never sent to servers (no log leakage). The page
   clears the fragment via `history.replaceState` on mount, so it

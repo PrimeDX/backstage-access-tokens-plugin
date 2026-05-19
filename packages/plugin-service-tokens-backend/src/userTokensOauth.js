@@ -108,7 +108,7 @@ export function createOauthOrchestrator(deps) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
-        client_name: 'backstage-service-token-plugin (user-tokens)',
+        client_name: 'Personal access tokens',
         redirect_uris: [callbackUrl],
         grant_types: DEFAULT_GRANT_TYPES,
         response_types: DEFAULT_RESPONSE_TYPES,

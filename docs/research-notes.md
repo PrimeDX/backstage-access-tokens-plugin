@@ -373,9 +373,9 @@ Sources:
 
 **Spec implication**: the plugin can capture the refresh token from the
 `/v1/token` JSON response immediately after the authorization-code exchange.
-This makes the OAuth-orchestration UX feasible: open a popup, complete the
-dance, plugin's callback receives the code, plugin exchanges the code for
-tokens, plugin shows the refresh token once.
+This makes the OAuth-orchestration UX feasible: send the user through the
+consent route, receive the callback code, exchange the code for tokens, and
+show the refresh token once.
 
 **Q-R5-a — Public plugin API for managing refresh tokens. RESOLVED with
 implications.** Backstage exposes **one** revocation surface to external
@@ -520,14 +520,15 @@ Backstage **1.49.1**, plugin code at branch `feat/user-tokens`
   amended to ALLOW the `user-tokens:{read,write,revoke}` permissions
   for the calling user.
 - `e2e/harness/packages/app/src/App.tsx` adds
-  `@backstage/plugin-auth` to the `features` array so the
-  `/oauth2/authorize/:sessionId` consent route is registered.
+  `userTokensAuthPlugin` from `@primedx/plugin-service-tokens` to the
+  `features` array so the `/oauth2/authorize/:sessionId` consent route
+  is registered with the personal-token consent copy.
 
 ### Results — primary user stories
 
 | Story | Result | Evidence |
 |---|---|---|
-| **US-1** Mint a token | **PASS** | UI navigation lands at `/oauth2/authorize/<sessionId>` in same tab; "Authorize" returns to `/settings/personal-tokens#user-tokens-mint=…`; the show-once dialog opens automatically and renders the raw `<sessionId>.<random>` refresh token. |
+| **US-1** Mint a token | **PASS** | UI navigation lands at `/oauth2/authorize/<sessionId>` in same tab; approving the consent page returns to `/settings/personal-tokens#user-tokens-mint=…`; the show-once dialog opens automatically and renders the raw `<sessionId>.<random>` refresh token. |
 | **US-2** Use token from a script | **PASS** | `POST /api/auth/v1/token` with `grant_type=refresh_token` and the raw token returned a 495-character JWT with `sub: user:development/guest` and `ent: [user:development/guest, group:development/platform]`. `GET /api/auth/v1/userinfo` with that JWT returned the same claims. `GET /api/catalog/entities` with that JWT returned **HTTP 200** with real catalog data — proving the request is treated as a user principal end-to-end. |
 | **US-3** List my tokens | **PASS** | The token from US-1 appeared in the page table with correct name, created/expires timestamps, prefix, and `active` status. The raw refresh token was not present anywhere on the listing. |
 | **US-4** Revoke a token | **PASS** | UI revoke transitioned the row to `revoked`. The previously-working refresh-grant from US-2 then returned **HTTP 400 `invalid_grant: "Invalid refresh token"`**, proving auth-backend's `OfflineAccessService` invalidated the underlying session (not just our local row). |

@@ -1,6 +1,10 @@
 import React from 'react';
 import { createFrontendPlugin, PageBlueprint } from '@backstage/frontend-plugin-api';
-import { rootRouteRef, userTokensRouteRef } from './routes.js';
+import {
+  rootRouteRef,
+  userTokensAuthRouteRef,
+  userTokensRouteRef,
+} from './routes.js';
 
 const serviceTokensPage = PageBlueprint.make({
   params: {
@@ -27,6 +31,20 @@ const userTokensPage = PageBlueprint.make({
   },
 });
 
+const userTokensAuthPage = PageBlueprint.make({
+  name: 'user-tokens-auth',
+  params: {
+    path: '/oauth2',
+    routeRef: userTokensAuthRouteRef,
+    title: 'Personal token authorization',
+    noHeader: true,
+    loader: () =>
+      import('./UserTokensConsentPage.jsx').then(module =>
+        React.createElement(module.UserTokensConsentRouter),
+      ),
+  },
+});
+
 const serviceTokensPlugin = createFrontendPlugin({
   pluginId: 'service-tokens',
   title: 'Service Tokens',
@@ -37,5 +55,20 @@ const serviceTokensPlugin = createFrontendPlugin({
   extensions: [serviceTokensPage, userTokensPage],
 });
 
-export { rootRouteRef, userTokensRouteRef, serviceTokensPlugin };
+const userTokensAuthPlugin = createFrontendPlugin({
+  pluginId: 'service-tokens-auth',
+  title: 'Personal Token Authorization',
+  routes: {
+    root: userTokensAuthRouteRef,
+  },
+  extensions: [userTokensAuthPage],
+});
+
+export {
+  rootRouteRef,
+  userTokensAuthRouteRef,
+  userTokensRouteRef,
+  serviceTokensPlugin,
+  userTokensAuthPlugin,
+};
 export default serviceTokensPlugin;

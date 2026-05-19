@@ -4,6 +4,11 @@ Backstage frontend plugin for the service token admin page.
 
 This package adds the `/admin/service-tokens` UI for creating, listing, auditing, and revoking service tokens. It registers the page in the new frontend system, but it does not provide the backend API or raw token auth handling on its own.
 
+It also exports `userTokensAuthPlugin`, an optional frontend feature
+that owns `/oauth2/authorize/:sessionId` for the personal access token
+mint flow. Use it when you enable user tokens so users see a focused
+"Create personal access token" consent screen.
+
 ## When To Use This Package
 
 Install this package when you want the service token admin UI in your Backstage app.
@@ -42,14 +47,32 @@ export default app.createRoot();
 The page is registered at `/admin/service-tokens`. No extra route wiring is required in the default frontend setup.
 If you prefer named imports, `serviceTokensPlugin` is also exported by name.
 
+For user tokens, register the companion consent feature before the main
+plugin:
+
+```ts
+import serviceTokensPlugin, {
+  userTokensAuthPlugin,
+} from '@primedx/plugin-service-tokens';
+
+const app = createApp({
+  features: [userTokensAuthPlugin, serviceTokensPlugin],
+});
+```
+
+Do not install another frontend feature that also registers `/oauth2`
+unless your app intentionally handles that route conflict.
+
 ## Main Export
 
 This package exports the frontend feature as:
 
 - the default export
 - `serviceTokensPlugin`
+- `userTokensAuthPlugin` for the personal-token OAuth consent route
 
-It also exports `rootRouteRef` for apps that need access to the route reference.
+It also exports `rootRouteRef`, `userTokensRouteRef`, and
+`userTokensAuthRouteRef` for apps that need access to route references.
 
 ## What This Package Does Not Include
 

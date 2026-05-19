@@ -384,24 +384,28 @@ carefully (see [Production Readiness](production-readiness.md)).
 
 ### 8.3 Wire the auth-consent plugin into the frontend
 
-The OAuth consent screen at `/oauth2/authorize/:sessionId` is
-provided by `@backstage/plugin-auth`. Add it to your app:
-
-```bash
-yarn --cwd packages/app add @backstage/plugin-auth
-```
+The OAuth consent route at `/oauth2/authorize/:sessionId` is
+provided by `userTokensAuthPlugin`, a named export from the
+frontend package. Add it alongside the main service-tokens frontend
+feature:
 
 ```ts
 // packages/app/src/App.tsx
-import authPlugin from '@backstage/plugin-auth';
+import serviceTokensPlugin, {
+  userTokensAuthPlugin,
+} from '@primedx/plugin-service-tokens';
 
 export default createApp({
-  features: [/* …, */ authPlugin],
+  features: [userTokensAuthPlugin, /* …, */ serviceTokensPlugin],
 });
 ```
 
 Without this, the mint flow's same-tab redirect to
 `/oauth2/authorize/:sessionId` hits a 404.
+
+Do not register both `userTokensAuthPlugin` and Backstage's stock
+auth-consent frontend for `/oauth2` unless your app intentionally
+handles the route conflict another way.
 
 ### 8.4 Permit the user-tokens permissions
 
@@ -486,7 +490,7 @@ If you see database errors on startup, check that `database.migrations.skip` is 
 
 The plugin logs `user-tokens capability not enabled: ...` at boot when prerequisites are missing. Check that both `auth.experimentalDynamicClientRegistration.enabled` and `auth.experimentalRefreshToken.enabled` are `true` in `app-config.yaml` and that `serviceTokens.userTokens.encryptionKey` is a base64 string that decodes to exactly 32 bytes.
 
-**Mint popup-style flow doesn't show up / nothing happens after clicking Create**
+**Mint authorization flow doesn't show up / nothing happens after clicking Create**
 
 The plugin uses **same-tab navigation** (not a popup) for the OAuth dance. Clicking Create should change the URL to `/oauth2/authorize/<sessionId>`. If it doesn't, check the browser console for a fetch error from `POST /api/service-tokens/personal/tokens/mint`.
 

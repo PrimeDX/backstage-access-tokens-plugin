@@ -170,21 +170,24 @@ serviceTokens:
     encryptionKey: '<output of `openssl rand -base64 32`>'
 ```
 
-**b.** Wire `@backstage/plugin-auth` into the frontend so the
-OAuth consent screen at `/oauth2/authorize/:sessionId` exists:
-
-```bash
-yarn --cwd packages/app add @backstage/plugin-auth
-```
+**b.** Wire the personal-token consent route into the frontend so
+`/oauth2/authorize/:sessionId` resolves to the plugin's focused
+"Create personal access token" approval screen:
 
 ```ts
 // packages/app/src/App.tsx
-import authPlugin from '@backstage/plugin-auth';
+import serviceTokensPlugin, {
+  userTokensAuthPlugin,
+} from '@primedx/plugin-service-tokens';
 
 export default createApp({
-  features: [/* …, */ authPlugin],
+  features: [userTokensAuthPlugin, /* …, */ serviceTokensPlugin],
 });
 ```
+
+Do not install both `userTokensAuthPlugin` and Backstage's stock auth
+consent frontend for `/oauth2` unless your app intentionally resolves
+that route conflict itself.
 
 **c.** Permit the user-tokens permissions in your permission policy
 (default-open: any authenticated user can manage their own tokens):

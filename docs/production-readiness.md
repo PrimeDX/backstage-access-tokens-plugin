@@ -452,7 +452,7 @@ A final checklist to run before cutting over to production traffic.
 - [ ] `serviceTokens.userTokens.encryptionKey` is 32 bytes base64, sourced from your secret manager, not committed to source control
 - [ ] `serviceTokens.userTokens.maxExpiryDays` ≤ `auth.experimentalRefreshToken.maxRotationLifetime`
 - [ ] The encryption key is backed up alongside DB backups
-- [ ] `@backstage/plugin-auth` is wired into `packages/app/src/App.tsx` so the consent route `/oauth2/authorize/:sessionId` resolves
+- [ ] `userTokensAuthPlugin` from `@primedx/plugin-service-tokens` is wired into `packages/app/src/App.tsx` so the consent route `/oauth2/authorize/:sessionId` resolves
 - [ ] The permission policy explicitly handles `user-tokens:read/write/revoke`
 
 ### Permission policy

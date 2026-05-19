@@ -28,6 +28,8 @@
     "src/index.js",
     "src/routes.js",
     "src/ServiceTokensPage.jsx",
+    "src/UserTokensConsentPage.jsx",
+    "src/userTokensConsentHelpers.js",
     "src/userTokensHelpers.js",
     "src/UserTokensPage.jsx"
   ],
