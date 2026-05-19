@@ -34,6 +34,7 @@ const userTokensConfig = {
   defaultExpiryDays: 30,
   maxExpiryDays: 365,
   dcrClient: undefined,
+  appBaseUrl: 'https://frontend.example.com',
 };
 
 function makeOauthMock(overrides = {}) {
@@ -147,6 +148,10 @@ async function requestJson(app, method, path, options = {}) {
   const contentType = res.getHeader('content-type') || '';
   return {
     status: res.statusCode,
+    headers: {
+      location: res.getHeader('location'),
+      'content-type': contentType,
+    },
     body: text && String(contentType).includes('application/json') ? JSON.parse(text) : text,
   };
 }
@@ -243,9 +248,20 @@ test('GET /personal/tokens/mint/callback happy path inserts row + audit, returns
     'GET',
     `/personal/tokens/mint/callback?code=AUTHCODE&state=${encodeURIComponent(created.state)}`,
   );
-  assert.equal(r.status, 200);
-  assert.match(r.body, /user-tokens-mint-result/);
-  assert.match(r.body, /sess-1\.long-random/);
+  // Callback now redirects to the frontend with payload in URL fragment.
+  assert.equal(r.status, 302);
+  const location = r.headers?.location;
+  assert.match(
+    location,
+    new RegExp(
+      `^https://frontend\\.example\\.com/settings/personal-tokens#user-tokens-mint=`,
+    ),
+  );
+  const encoded = location.split('#user-tokens-mint=')[1];
+  const decoded = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+  assert.equal(decoded.type, 'user-tokens-mint-result');
+  assert.equal(decoded.token, 'sess-1.long-random');
+  assert.equal(decoded.metadata.name, 'ci');
 
   // DB row exists
   const tokens = await db.listUserTokensForUser('user:default/alice');

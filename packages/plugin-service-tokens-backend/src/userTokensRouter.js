@@ -210,8 +210,13 @@ export function createUserTokensRouter(options) {
         sessionId,
       });
 
-      // Popup mode: write a tiny HTML page that posts the result to the opener.
-      // For security, the listener side must validate origin and flowId.
+      // Redirect the popup to the frontend's settings page with the
+      // payload in a URL fragment. Fragments are never sent to the
+      // server (no logs), and the frontend's bundled JS (CSP-allowed)
+      // reads the fragment, postMessages the parent window, closes.
+      // We deliberately avoid returning inline-script HTML here because
+      // Backstage's default CSP (`script-src 'self' 'unsafe-eval'`) drops
+      // inline scripts. See docs/spec/user-tokens-architecture.md §2.3.
       const metadata = {
         id,
         name: inflight.name,
@@ -219,14 +224,15 @@ export function createUserTokensRouter(options) {
         expiresAt: expiresAt.toISOString(),
         prefix,
       };
-      res
-        .status(200)
-        .set('Content-Type', 'text/html; charset=utf-8')
-        .send(renderCallbackHtml({
-          flowId: inflight.flowId,
-          token: tokens.refreshToken,
-          metadata,
-        }));
+      const payload = {
+        type: 'user-tokens-mint-result',
+        flowId: inflight.flowId,
+        token: tokens.refreshToken,
+        metadata,
+      };
+      const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+      const redirectUrl = `${userTokensConfig.appBaseUrl}/settings/personal-tokens#user-tokens-mint=${encoded}`;
+      res.redirect(302, redirectUrl);
     } catch (err) {
       logger?.error?.('user-tokens mint callback failed', { err: err?.message });
       sendJson(res, 502, { error: 'Failed to complete mint flow', detail: err?.message });
@@ -407,29 +413,3 @@ function validateMintInput(input, config, currentTime) {
   return { name: trimmedName, expiresAt };
 }
 
-function renderCallbackHtml({ flowId, token, metadata }) {
-  // Conservative HTML: no external resources, no scripts beyond a single
-  // inline postMessage. The token is rendered into the JS payload only.
-  const safeFlowId = JSON.stringify(String(flowId));
-  const safeToken = JSON.stringify(String(token));
-  const safeMetadata = JSON.stringify(metadata);
-  return `<!doctype html>
-<html><head><meta charset="utf-8"><title>Token created</title></head>
-<body>
-<p>You can close this window.</p>
-<script>
-(function () {
-  var payload = {
-    type: 'user-tokens-mint-result',
-    flowId: ${safeFlowId},
-    token: ${safeToken},
-    metadata: ${safeMetadata}
-  };
-  if (window.opener) {
-    try { window.opener.postMessage(payload, '*'); } catch (e) {}
-  }
-  window.close();
-})();
-</script>
-</body></html>`;
-}

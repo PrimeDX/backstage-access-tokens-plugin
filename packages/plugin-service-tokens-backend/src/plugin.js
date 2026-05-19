@@ -183,6 +183,10 @@ async function maybeWireUserTokens({
     getExternalBaseUrl: (plugin) => discovery.getExternalBaseUrl(plugin),
   });
 
+  // Frontend base URL — used to build the popup's post-mint redirect target
+  // (see docs/spec/user-tokens-architecture.md §2.3).
+  const appBaseUrl = config.getString('app.baseUrl');
+
   httpRouter.use(
     createUserTokensRouter({
       db,
@@ -193,7 +197,7 @@ async function maybeWireUserTokens({
       authorizeWrite: createAuthorizeHelper(permissions, userTokensWritePermission),
       authorizeRevoke: createAuthorizeHelper(permissions, userTokensRevokePermission),
       encryptionKey: userTokensConfig.encryptionKey,
-      userTokensConfig,
+      userTokensConfig: { ...userTokensConfig, appBaseUrl },
       getExternalBaseUrl: (plugin) => discovery.getExternalBaseUrl(plugin),
       logger,
     }),

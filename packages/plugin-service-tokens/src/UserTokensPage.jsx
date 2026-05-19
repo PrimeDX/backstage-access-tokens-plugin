@@ -9,6 +9,14 @@ import { UserTokensTableView } from './components/UserTokensTableView.jsx';
 
 const h = React.createElement;
 
+/** Convert RFC 4648 base64url back to standard base64 for atob(). */
+function base64UrlToBase64(input) {
+  return input.replace(/-/g, '+').replace(/_/g, '/').padEnd(
+    input.length + ((4 - (input.length % 4)) % 4),
+    '=',
+  );
+}
+
 export function UserTokensPage() {
   const discoveryApi = useApi(discoveryApiRef);
   const fetchApi = useApi(fetchApiRef);
@@ -32,6 +40,35 @@ export function UserTokensPage() {
       cancelled = true;
     };
   }, [discoveryApi]);
+
+  // Popup-side handler: the backend's mint callback redirects the popup
+  // to this page with #user-tokens-mint=<base64-payload>. Decode and
+  // forward to the opener via postMessage, then close. The popup runs
+  // the same React app as the parent — this useEffect just lets the
+  // popup do its one job and disappear without rendering UI.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (!hash.startsWith('#user-tokens-mint=')) return;
+    const encoded = hash.slice('#user-tokens-mint='.length);
+    let payload;
+    try {
+      payload = JSON.parse(atob(base64UrlToBase64(encoded)));
+    } catch (err) {
+      return;
+    }
+    // Clear the fragment immediately so it doesn't persist in history
+    // beyond a single use.
+    try {
+      window.history.replaceState(null, '', window.location.pathname);
+    } catch {}
+    if (window.opener) {
+      try {
+        window.opener.postMessage(payload, window.location.origin);
+      } catch {}
+      window.close();
+    }
+  }, []);
 
   const reload = useCallback(async () => {
     if (!baseUrl) return;
@@ -123,11 +160,10 @@ export function UserTokensPage() {
           }),
       h(CreateUserTokenDialog, {
         open: createOpen,
-        // baseUrl is the backend's plugin-namespace URL
-        // (e.g. http://localhost:7007/api/service-tokens). The mint
-        // callback's popup HTML is served from that origin, so
-        // postMessage events arrive with that origin.
-        expectedMessageOrigin: baseUrl ? new URL(baseUrl).origin : undefined,
+        // The popup redirects to this same frontend page on completion
+        // (see useEffect above), so the postMessage arrives from the
+        // frontend origin — same as window.location.origin which is
+        // the dialog's default. No expectedMessageOrigin override.
         onSubmit: onMintSubmit,
         onSuccess: onMintSuccess,
         onClose: () => setCreateOpen(false),
