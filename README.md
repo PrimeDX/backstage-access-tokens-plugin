@@ -148,6 +148,74 @@ serviceTokens:
 
 At that point the admin UI is available at `/admin/service-tokens`.
 
+### 6. (Optional) Enable user tokens
+
+Service tokens (above) are admin-managed and authenticate as a
+group. The same plugin family also offers **user-self-service
+personal access tokens** that authenticate as the user. Enable
+them with three small additions:
+
+**a.** Add two upstream auth-backend flags and an encryption key to
+`app-config.yaml`:
+
+```yaml
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: true
+  experimentalRefreshToken:
+    enabled: true
+
+serviceTokens:
+  userTokens:
+    encryptionKey: '<output of `openssl rand -base64 32`>'
+```
+
+**b.** Wire `@backstage/plugin-auth` into the frontend so the
+OAuth consent screen at `/oauth2/authorize/:sessionId` exists:
+
+```bash
+yarn --cwd packages/app add @backstage/plugin-auth
+```
+
+```ts
+// packages/app/src/App.tsx
+import authPlugin from '@backstage/plugin-auth';
+
+export default createApp({
+  features: [/* …, */ authPlugin],
+});
+```
+
+**c.** Permit the user-tokens permissions in your permission policy
+(default-open: any authenticated user can manage their own tokens):
+
+```ts
+import {
+  userTokensReadPermission,
+  userTokensWritePermission,
+  userTokensRevokePermission,
+} from '@primedx/plugin-service-tokens-node';
+
+if (
+  isPermission(request.permission, userTokensReadPermission) ||
+  isPermission(request.permission, userTokensWritePermission) ||
+  isPermission(request.permission, userTokensRevokePermission)
+) {
+  return { result: AuthorizeResult.ALLOW };
+}
+```
+
+After restarting the backend you should see this log line at boot:
+
+```
+service-tokens info user-tokens capability enabled at /api/service-tokens/personal/tokens
+```
+
+Then any authenticated user can mint, list, and revoke tokens
+from `/settings/personal-tokens`. See
+[Getting Started §Step 8](docs/getting-started.md#step-8--optional-enable-user-tokens)
+for the full walkthrough including a smoke test.
+
 ## Using a Service Token
 
 Once a token is created, use it as a bearer token against any Backstage backend API:

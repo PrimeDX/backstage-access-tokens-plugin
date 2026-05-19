@@ -166,6 +166,90 @@ The following scopes are always available regardless of configuration:
 
 ---
 
+## User tokens
+
+The plugin family also exposes a **user-self-service personal access
+token** capability under `serviceTokens.userTokens.*`. It is opt-in
+and gated by upstream Backstage auth-backend flags; service-tokens
+behavior is unchanged whether you enable it or not. See
+[Getting Started §Step 8](getting-started.md#step-8--optional-enable-user-tokens)
+for the integration walkthrough.
+
+### Required upstream `auth.*` flags
+
+Both must be `true` for the plugin to mount the `/personal/tokens/*`
+routes. With either unset the plugin logs a warning at boot and
+skips wiring; service tokens still work.
+
+```yaml
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: true
+  experimentalRefreshToken:
+    enabled: true
+```
+
+### `serviceTokens.userTokens` keys
+
+```yaml
+serviceTokens:
+  userTokens:
+    enabled: true
+    defaultExpiryDays: 30
+    maxExpiryDays: 365
+    encryptionKey: '<base64 of 32 random bytes>'
+    dcrClient:
+      clientId: '<opaque>'
+      clientSecret: '<opaque>'
+      redirectUri: '<host-app callback URL>'
+```
+
+#### `enabled` (default: `true`)
+
+Set to `false` to keep the capability dormant even though the
+upstream flags are on. Useful for operators rolling out gradually.
+
+#### `defaultExpiryDays` (default: `30`)
+
+Pre-populates the expiry input in the Create Token dialog. Users
+can still override per token within the `maxExpiryDays` cap.
+
+#### `maxExpiryDays` (default: `365`)
+
+Upper bound on user-selected expiry. Must be ≤ Backstage
+auth-backend's `maxRotationLifetime` (default 1 year), otherwise
+auth-backend itself will reject `/refresh` once the rotation
+window exceeds its limit.
+
+#### `encryptionKey` (REQUIRED, no default)
+
+Base64 of exactly 32 raw bytes. The plugin uses this key with
+AES-256-GCM to encrypt the refresh token at rest in `user_tokens`
+so it can later be presented to RFC 7009 `/v1/revoke` at
+revocation time. Generate with:
+
+```bash
+openssl rand -base64 32
+```
+
+The plugin refuses to mount the user-tokens routes if this key is
+missing or doesn't decode to 32 bytes. **Treat as a secret** —
+losing it permanently breaks UI revocation for tokens minted
+under it. See [Production Readiness](production-readiness.md) for
+rotation guidance.
+
+#### `dcrClient` (optional)
+
+If present, the plugin uses the pre-registered OAuth client instead
+of dynamically registering one via RFC 7591 on first mint. Useful
+when your OAuth deployment requires admin pre-approval of clients,
+or when you want a stable `clientId` across deploys.
+
+If absent, the plugin self-registers a client on first mint and
+caches it in the singleton `user_tokens_dcr_client` table.
+
+---
+
 ## Database configuration
 
 The plugin uses Backstage's standard database service and does not add its own top-level config key for the database connection. Use the standard `backend.database` config:

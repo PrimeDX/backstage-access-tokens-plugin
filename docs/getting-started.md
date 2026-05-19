@@ -334,6 +334,136 @@ Open `http://localhost:3000/admin/service-tokens` in your browser. The token you
 
 ---
 
+## Step 8 — (Optional) Enable user tokens
+
+The plugin family also offers **user-self-service personal access
+tokens** as a separate capability. Service tokens (covered above) are
+admin-managed and authenticate as a group; user tokens are minted by
+each user from `/settings/personal-tokens` and authenticate as the
+user themselves against every Backstage backend plugin.
+
+User tokens are opt-in. Service-token behavior is unchanged whether
+you enable them or not.
+
+### 8.1 Enable the upstream Backstage flags
+
+Add the following to `app-config.yaml`:
+
+```yaml
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: true
+  experimentalRefreshToken:
+    enabled: true
+```
+
+These enable [Dynamic Client Registration](https://www.rfc-editor.org/rfc/rfc7591)
+and [refresh tokens](https://www.rfc-editor.org/rfc/rfc6749#section-1.5)
+in `@backstage/plugin-auth-backend`. Without both flags the
+user-tokens routes log a warning at boot and stay unmounted.
+
+### 8.2 Generate an encryption key
+
+```bash
+openssl rand -base64 32
+```
+
+Paste the value into `app-config.yaml`:
+
+```yaml
+serviceTokens:
+  userTokens:
+    encryptionKey: '<base64 of 32 random bytes>'
+```
+
+The plugin uses this key to encrypt refresh tokens at rest in the
+plugin DB (AES-256-GCM). The key is needed at revocation time to
+call `/v1/revoke` with the decrypted token. Losing the key
+permanently breaks UI revocation for in-flight tokens; rotate
+carefully (see [Production Readiness](production-readiness.md)).
+
+### 8.3 Wire the auth-consent plugin into the frontend
+
+The OAuth consent screen at `/oauth2/authorize/:sessionId` is
+provided by `@backstage/plugin-auth`. Add it to your app:
+
+```bash
+yarn --cwd packages/app add @backstage/plugin-auth
+```
+
+```ts
+// packages/app/src/App.tsx
+import authPlugin from '@backstage/plugin-auth';
+
+export default createApp({
+  features: [/* …, */ authPlugin],
+});
+```
+
+Without this, the mint flow's same-tab redirect to
+`/oauth2/authorize/:sessionId` hits a 404.
+
+### 8.4 Permit the user-tokens permissions
+
+If your `PermissionPolicy` has explicit handling for service-tokens
+permissions, add a parallel block for user-tokens. The spec's
+"default-open" rule is: every authenticated user can mint, list,
+and revoke their own tokens.
+
+```ts
+import {
+  userTokensReadPermission,
+  userTokensWritePermission,
+  userTokensRevokePermission,
+} from '@primedx/plugin-service-tokens-node';
+
+// inside your PermissionPolicy.handle:
+if (
+  isPermission(request.permission, userTokensReadPermission) ||
+  isPermission(request.permission, userTokensWritePermission) ||
+  isPermission(request.permission, userTokensRevokePermission)
+) {
+  return { result: AuthorizeResult.ALLOW };
+}
+```
+
+### 8.5 Smoke-check user tokens
+
+After restarting the backend you should see this log line at boot:
+
+```
+service-tokens info user-tokens capability enabled at /api/service-tokens/personal/tokens
+```
+
+Then in the browser:
+
+1. Sign in to Backstage.
+2. Navigate to `/settings/personal-tokens`.
+3. Click **Create token**, enter a name, click Create.
+4. The page navigates to a Backstage consent screen (same tab).
+   Click Authorize.
+5. The page returns to `/settings/personal-tokens` and a dialog
+   automatically opens with the raw refresh token. Copy it.
+
+Use the token from a script:
+
+```bash
+# Exchange refresh token for a short-lived JWT
+JWT=$(curl -s -X POST "$BACKSTAGE/api/auth/v1/token" \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d "grant_type=refresh_token&refresh_token=$RT" | jq -r .access_token)
+
+# Call any Backstage API as the user
+curl -H "Authorization: Bearer $JWT" "$BACKSTAGE/api/catalog/entities" | jq length
+```
+
+The catalog returns its entities as that user — proving the
+token authenticates as a user principal end-to-end.
+
+For deeper detail see [docs/spec/user-tokens-verification.md](spec/user-tokens-verification.md).
+
+---
+
 ## Troubleshooting
 
 **`401 Unauthorized` on all API calls**
@@ -352,11 +482,19 @@ The `serviceTokenHandlerModule` uses `createRequire` to resolve Backstage intern
 
 If you see database errors on startup, check that `database.migrations.skip` is not set to `true` for the `service-tokens` plugin in your config.
 
+**User-tokens routes not mounted**
+
+The plugin logs `user-tokens capability not enabled: ...` at boot when prerequisites are missing. Check that both `auth.experimentalDynamicClientRegistration.enabled` and `auth.experimentalRefreshToken.enabled` are `true` in `app-config.yaml` and that `serviceTokens.userTokens.encryptionKey` is a base64 string that decodes to exactly 32 bytes.
+
+**Mint popup-style flow doesn't show up / nothing happens after clicking Create**
+
+The plugin uses **same-tab navigation** (not a popup) for the OAuth dance. Clicking Create should change the URL to `/oauth2/authorize/<sessionId>`. If it doesn't, check the browser console for a fetch error from `POST /api/service-tokens/personal/tokens/mint`.
+
 ---
 
 ## Next steps
 
-- [Configuration Reference](configuration.md) — tune token lifetime, cache TTL, and custom scopes
-- [REST API Reference](api.md) — integrate service tokens into your CI pipelines and scripts
+- [Configuration Reference](configuration.md) — tune token lifetime, cache TTL, custom scopes, and user-token settings
+- [REST API Reference](api.md) — integrate service tokens and user tokens into your CI pipelines and scripts
 - [Testing Guide](testing.md) — full end-to-end test walkthrough for both API and UI paths
 - [Scope Enforcement Runbook](runbooks/scope-enforcement.md) — optional guide for enforcing token scopes on specific routes

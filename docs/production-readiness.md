@@ -358,17 +358,102 @@ For auth provider setup, follow the [Backstage auth provider documentation](http
 
 ---
 
+## User tokens — operational concerns
+
+If you enabled the optional user-tokens capability
+([Getting Started §Step 8](getting-started.md#step-8--optional-enable-user-tokens),
+[Configuration §User tokens](configuration.md#user-tokens)), there
+are a few production concerns that don't apply to service tokens.
+
+### Encryption key management
+
+The plugin uses `serviceTokens.userTokens.encryptionKey` to encrypt
+refresh tokens at rest with AES-256-GCM. The same key is needed at
+revoke time to decrypt the ciphertext and present the raw token to
+RFC 7009 `/v1/revoke`.
+
+**Treat the key as a top-tier secret**, equivalent to your
+Backstage backend signing key:
+
+- Generate per environment (`openssl rand -base64 32`); never reuse
+  across environments.
+- Store in a secret manager (Vault, AWS Secrets Manager, KMS-backed
+  parameter store), not in a checked-in config file. Reference it
+  in `app-config.yaml` via Backstage's standard secret resolution
+  (`${USER_TOKENS_ENCRYPTION_KEY}`).
+- Back up the key alongside your database backups. If you restore
+  a DB backup but lose the key, revocation breaks for every row
+  whose ciphertext was encrypted under the lost key.
+
+### Key rotation
+
+The v1 plugin does not ship a rotation tool. To rotate today:
+
+1. Add the new key as a secondary variable; keep the old key.
+2. Run an out-of-band script that, for each row in `user_tokens`,
+   decrypts with the old key and re-encrypts with the new key.
+3. Atomically swap `serviceTokens.userTokens.encryptionKey` to the
+   new value. Restart the backend.
+4. Retire the old key after one rotation cycle.
+
+A first-party rotation script is a tracked follow-up.
+
+### Token-count limits
+
+The plugin does not enforce a per-user cap of its own. Upstream
+Backstage `auth.experimentalRefreshToken.maxTokensPerUser` (default
+**20**) is the operative limit — `OfflineAccessService` will reject
+new mint attempts once a user is at the cap. Communicate the limit
+to your users in onboarding docs or wire a UI affordance to remind
+them.
+
+### Refresh-token audit
+
+The plugin audits **its own** mint and revoke events
+(`user_token_audit_log`). It does NOT audit each `/api/auth/v1/token`
+exchange — that traffic is observable only through Backstage's
+standard request logging. If you need a per-exchange audit trail
+(who used which token from which IP, when), enable structured
+logging on the auth-backend or proxy `/v1/token` through your own
+audit-emitting layer.
+
+### Loss of the encryption key
+
+If the key is permanently lost:
+
+- Existing minted tokens **continue to work** for the user's
+  scripts (auth-backend itself still has the refresh-token hash).
+- The plugin **cannot revoke** them through `/v1/revoke` (it can't
+  decrypt the stored ciphertext). The UI revoke button returns a
+  5xx error and the row stays `active`.
+- Mitigation in this state: ask affected users to revoke via the
+  standard Backstage `/v1/revoke` if they still have their raw
+  token, or wait for natural expiry (default 30 days). Out-of-band
+  admin actions can also call `OfflineAccessService` revocation
+  directly — see Backstage's auth-backend admin tooling.
+
+---
+
 ## Production go-live checklist
 
 A final checklist to run before cutting over to production traffic.
 
-### Configuration
+### Configuration (service tokens)
 
 - [ ] `backend.auth.dangerouslyDisableDefaultAuthPolicy` is **not** set to `true`
 - [ ] `serviceTokens.admin.userEntityRefs` or `serviceTokens.admin.groupEntityRef` is set to a production value (not the development default)
 - [ ] `serviceTokens.maxTokenLifetimeDays` is set to a value that matches your security policy
 - [ ] `serviceTokens.cacheTtlSeconds` is set and documented as your revocation SLO
 - [ ] Database is configured to use Postgres or MySQL (not SQLite) for production
+
+### Configuration (user tokens — if enabled)
+
+- [ ] `auth.experimentalDynamicClientRegistration.enabled` and `auth.experimentalRefreshToken.enabled` are both `true`
+- [ ] `serviceTokens.userTokens.encryptionKey` is 32 bytes base64, sourced from your secret manager, not committed to source control
+- [ ] `serviceTokens.userTokens.maxExpiryDays` ≤ `auth.experimentalRefreshToken.maxRotationLifetime`
+- [ ] The encryption key is backed up alongside DB backups
+- [ ] `@backstage/plugin-auth` is wired into `packages/app/src/App.tsx` so the consent route `/oauth2/authorize/:sessionId` resolves
+- [ ] The permission policy explicitly handles `user-tokens:read/write/revoke`
 
 ### Permission policy
 

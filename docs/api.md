@@ -397,4 +397,90 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=10" \
 - An expired token returns `401 Unauthorized`.
 - A malformed or unknown token returns `401 Unauthorized`.
 
+---
+
+## Personal access token (user-tokens) endpoints
+
+These endpoints implement the **user-self-service** PAT capability.
+They are mounted under the same `service-tokens` plugin namespace
+but at the `/personal/` sub-path:
+
+| Method | Path | Auth | Permission |
+|---|---|---|---|
+| `POST` | `/api/service-tokens/personal/tokens/mint` | user session | `user-tokens:write` |
+| `GET` | `/api/service-tokens/personal/tokens/mint/callback` | none (state-bound) | — |
+| `GET` | `/api/service-tokens/personal/tokens` | user session | `user-tokens:read` |
+| `GET` | `/api/service-tokens/personal/tokens/:id` | user session | `user-tokens:read` |
+| `DELETE` | `/api/service-tokens/personal/tokens/:id` | user session | `user-tokens:revoke` |
+| `GET` | `/api/service-tokens/personal/tokens/:id/audit` | user session | `user-tokens:read` |
+
+All routes scope to the calling user. `GET /personal/tokens/:id`
+returns `404` (not `403`) for another user's id so existence cannot
+be probed across users.
+
+### Mint a token
+
+`POST /api/service-tokens/personal/tokens/mint` starts a same-tab
+OAuth flow. The dialog calls this endpoint, then navigates the
+browser to the returned `authorizeUrl`. After approval the user
+returns to `/settings/personal-tokens#user-tokens-mint=<payload>`
+and the dialog reopens automatically in result mode showing the raw
+refresh token.
+
+Request body:
+
+```json
+{ "name": "my-ci-token", "expiresAt": "2026-06-19T00:00:00.000Z" }
+```
+
+Successful response (`200`):
+
+```json
+{
+  "flowId": "abc123",
+  "authorizeUrl": "http://localhost:7007/api/auth/v1/authorize?response_type=code&...",
+  "state": "opaque-single-use-string"
+}
+```
+
+The full wire contract — including the redirect-with-fragment
+shape on the callback and the error-fragment payload — is in
+[`docs/spec/user-tokens-api.md`](spec/user-tokens-api.md).
+
+### Using a personal access token
+
+A personal access token is a Backstage **refresh token** that the
+user's script exchanges for short-lived JWTs via the standard
+RFC 6749 token endpoint exposed by `@backstage/plugin-auth-backend`
+when DCR is enabled. Two `curl` calls:
+
+```bash
+# Step 1 — exchange refresh token for a JWT (no client credentials needed)
+JWT=$(curl -s -X POST "$BACKSTAGE/api/auth/v1/token" \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d "grant_type=refresh_token&refresh_token=$RT" \
+  | jq -r .access_token)
+
+# Step 2 — call any Backstage backend API as the user
+curl -H "Authorization: Bearer $JWT" "$BACKSTAGE/api/catalog/entities"
+```
+
+The catalog, scaffolder, and every other backend plugin will see
+the request as the **user principal** that minted the token, with
+their `userEntityRef` and ownership claims — not a service principal.
+
+**Token behaviour:**
+
+- A valid, non-expired, non-revoked refresh token + a successful
+  exchange return a JWT that authenticates as the user for ~10 min
+  (the default JWT lifetime from auth-backend).
+- A revoked refresh token returns `400 invalid_grant` from
+  `/v1/token`.
+- An expired refresh token returns `400 invalid_grant`.
+- A malformed or unknown refresh token returns `400 invalid_grant`.
+- Each `/refresh` rotates the refresh token (per auth-backend
+  defaults). The plugin stores the original ciphertext; rotated
+  versions are tracked by auth-backend's `OfflineAccessService`
+  and remain accessible via the same `clientId`.
+
 The token authenticates as a `service` principal with subject `service-token:<groupEntityRef>:<tokenName>` (e.g. `service-token:group:default/platform:ci-pipeline`). The consuming plugin sees this as a service principal and can apply its own authorization logic accordingly.
