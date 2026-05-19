@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Alert,
   Button,
   Dialog,
   DialogActions,
@@ -8,6 +7,7 @@ import {
   DialogTitle,
   Typography,
 } from '@material-ui/core';
+import { Alert } from '@material-ui/lab';
 
 const h = React.createElement;
 

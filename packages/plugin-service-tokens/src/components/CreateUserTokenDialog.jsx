@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Box,
   Button,
   Dialog,
@@ -11,6 +10,7 @@ import {
   TextField,
   Typography,
 } from '@material-ui/core';
+import { Alert } from '@material-ui/lab';
 import FileCopyIcon from '@material-ui/icons/FileCopy';
 
 import {
