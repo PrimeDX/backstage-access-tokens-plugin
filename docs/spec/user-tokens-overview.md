@@ -62,17 +62,40 @@ Acceptance:
 > As an authenticated Backstage user, I can use a personal access token I
 > previously minted to call any Backstage backend API as myself.
 
-Acceptance:
+Acceptance criteria (concrete; resolved via Phase 4 research R4-V1):
 
-- Given a stored `refresh_token`, a script can `POST` to
-  `/api/auth/{provider}/refresh` (or the equivalent OIDC token-grant endpoint)
-  to exchange it for a short-lived JWT.
-- The script then calls any Backstage backend API (e.g. catalog,
-  scaffolder) with the JWT as `Authorization: Bearer ...`.
-- All downstream plugins authenticate the request as the user via
-  `httpAuth.credentials(req, { allow: ['user'] })` because the JWT was minted
-  by `TokenFactory` with the user's `sub` and `ent` claims, exactly like a
-  browser-issued session would produce.
+The user's script needs **only the raw `refresh_token`**. It exchanges
+the refresh token for a short-lived JWT at Backstage's RFC 6749
+`/v1/token` endpoint (which DCR enables) and uses the JWT as a bearer:
+
+```bash
+# Step 1 — exchange refresh token for a JWT. No client credentials required.
+JWT=$(curl -s -X POST "$BACKSTAGE_BASE_URL/v1/token" \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d "grant_type=refresh_token&refresh_token=$REFRESH" \
+  | jq -r .access_token)
+
+# Step 2 — call any Backstage backend API as the user
+curl -H "Authorization: Bearer $JWT" \
+  "$BACKSTAGE_BASE_URL/api/catalog/entities" \
+  | jq length
+```
+
+The pass criteria are:
+
+- Step 1 returns 200 with a JSON body containing a non-empty
+  `access_token`.
+- Step 2 returns 200, not 401.
+- The response is filtered by the user's ownership / permissions —
+  i.e., a probe endpoint (the verification spec includes one) returns
+  the calling user's `userEntityRef`, proving the framework treats the
+  request as a user principal, not a service principal.
+
+The script does **not** need `client_id`, `client_secret`, or PKCE
+verifier. Backstage's `/v1/token` accepts the refresh-token grant
+without client credentials; the plugin holds those credentials only
+for the authorization-code half of the dance, which the user does
+once during mint via the browser popup.
 
 ### US-3 — List my tokens
 

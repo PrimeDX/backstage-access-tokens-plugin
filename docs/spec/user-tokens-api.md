@@ -375,17 +375,30 @@ user-tokens router if either flag is unset.
 
 ## 6. Verification — what proves this spec is satisfied
 
-Implementation-time test coverage targets (Phase 4 will produce concrete
-tests):
+**Unit-level** (delivered):
 
-1. **API contract tests**: each endpoint above receives both happy-path and
-   each documented error case, asserting status code and response shape.
+1. **API contract tests**: each endpoint above receives both happy-path
+   and each documented error case, asserting status code and response
+   shape.
 2. **DB migration tests**: tables exist, indexes exist, idempotency
    verified via repeat application.
-3. **Cross-user isolation**: a token belonging to user A is invisible to
-   user B for `GET`, `DELETE`, and `audit`.
-4. **End-to-end integration**: spin up a Backstage app with the two
-   experimental flags enabled, exercise the full mint → use → revoke loop
-   against real auth-backend, real catalog (or stub).
-5. **Config-validation tests**: refusal to mount when either experimental
-   flag is unset; clean error message.
+3. **Cross-user isolation**: a token belonging to user A is invisible
+   to user B for `GET`, `DELETE`, and `audit`.
+4. **Config-validation tests**: refusal to mount when either
+   experimental flag is unset; clean error message.
+
+All four landed via the unit test suite — see `userTokensRouter.test.js`,
+`migrations.test.js`, `userTokensDatabase.test.js`,
+`userTokensConfig.test.js`.
+
+**End-to-end** (executed against `e2e/harness/`): the master procedure
+lives in [`docs/spec/user-tokens-verification.md`](./user-tokens-verification.md).
+The pass criteria for the v1 release are summarized there with binary
+yes/no outcomes per user story.
+
+In short: bring up the harness with the experimental flags + the
+encryption key, mint a token in the UI, then run the two-curl
+sequence from [overview US-2](./user-tokens-overview.md#us-2--use-a-token-from-a-script)
+and confirm 200 against a probe endpoint that returns the calling
+user's `userEntityRef`. Revoke the token from the UI; the same
+sequence then returns 401 from `/v1/token`.

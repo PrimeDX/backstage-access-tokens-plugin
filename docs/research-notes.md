@@ -435,3 +435,66 @@ decision.
 authenticated user can mint their own tokens. But should there be an
 operator-configurable per-user cap distinct from auth-backend's
 `maxTokensPerUser: 20`? Design decision.
+
+---
+
+## Phase 4 verification readiness (post-implementation research)
+
+Three additional research items investigated before the harness E2E
+verification. Each resolved against upstream Backstage source.
+
+**R4-V1 — How a user's script exchanges a refresh token for a JWT.**
+Resolved: Backstage's `/v1/token` endpoint accepts `grant_type=refresh_token`
+**without client credentials**. From
+`plugins/auth-backend/src/service/OidcRouter.ts:368–381`:
+
+> ```ts
+> const hasCredentials = req.headers.authorization?.match(...) || (bodyClientId && bodyClientSecret);
+> let authenticatedClientId: string | undefined;
+> if (hasCredentials) { /* authenticate */ }
+> const result = await this.oidc.refreshAccessToken({
+>   refreshToken,
+>   clientId: authenticatedClientId,   // optional
+> });
+> ```
+
+Client authentication is **conditional**. The refresh-token grant
+succeeds with just the refresh token. Concretely the user's script is:
+
+```bash
+JWT=$(curl -s -X POST $BACKSTAGE/v1/token \
+  -d "grant_type=refresh_token&refresh_token=$RT" | jq -r .access_token)
+curl $BACKSTAGE/api/catalog/entities -H "Authorization: Bearer $JWT"
+```
+
+No `client_id` or `client_secret` need leave the plugin's backend.
+US-2 in the overview spec can stay as described — the plugin gives
+the user the raw refresh token; nothing more.
+
+**Ancillary**: Backstage's DCR registration schema does not validate
+`token_endpoint_auth_method`. Our plugin sends `client_secret_post`
+but the value is silently ignored. Behavior is correct regardless.
+
+**R4-V2 — Guest provider + DCR compatibility.** Inconclusive from
+source. Defer to a smoke step in the harness: sign in as guest →
+attempt `GET /v1/authorize?...` and observe whether Backstage either
+redirects to consent or rejects. Captured as a procedure step in
+`docs/spec/user-tokens-verification.md`.
+
+**R4-V3 — OIDC discovery path. Bug found.** Backstage publishes the
+discovery document at `/.well-known/openid-configuration` (OIDC
+Discovery 1.0), **not** at `/.well-known/oauth-authorization-server`
+(RFC 8414). `OidcService.getConfiguration()` source confirms:
+
+> ```ts
+> ...(dcrEnabled && {
+>   registration_endpoint: `${this.baseUrl}/v1/register`,
+>   revocation_endpoint: `${this.baseUrl}/v1/revoke`,
+> })
+> ```
+
+The OIDC discovery doc DOES include `registration_endpoint` and
+`revocation_endpoint` when DCR is enabled, so a one-line URL change
+in the plugin orchestrator resolves it. Fixed in
+[commit 07bdbed](https://github.com/PrimeDX/backstage-service-token-plugin/commit/07bdbed)
+on `feat/user-tokens`.

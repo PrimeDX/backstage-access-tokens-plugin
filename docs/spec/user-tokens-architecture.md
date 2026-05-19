@@ -64,6 +64,25 @@ The plugin requests scopes `openid offline_access` per
 [research-notes.md Q-R4-a](../research-notes.md#open-questions-surfaced-by-research),
 which is what auth-backend's DCR registrar already grants by default.
 
+**Discovery path**: the orchestrator fetches the OAuth/OIDC server
+metadata from `<auth-backend-origin>/.well-known/openid-configuration`
+(OIDC Discovery 1.0). Backstage does **not** mount the RFC 8414
+`/.well-known/oauth-authorization-server` path; the OIDC variant
+includes the same fields plus `registration_endpoint` and
+`revocation_endpoint` when DCR is enabled. See
+[research-notes Phase 4 R4-V3](../research-notes.md#phase-4-verification-readiness-post-implementation-research)
+for the upstream source citation.
+
+**Auth method note**: the plugin sends
+`token_endpoint_auth_method: 'client_secret_post'` in the DCR
+registration body, but Backstage's DCR schema does not validate that
+field — it is silently ignored. As a result, `/v1/token` calls with
+`grant_type=refresh_token` succeed against the resulting client
+**without** presenting `client_id` or `client_secret`. This is the
+behavior we want: the user's script can use the raw refresh token
+directly, with no client credentials to leak. See R4-V1 in the
+research notes for the upstream code citation.
+
 ### 2.2 — In-flight mint store
 
 `POST /personal/tokens/mint` creates an in-flight record that pairs the
