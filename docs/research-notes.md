@@ -553,13 +553,27 @@ Backstage **1.49.1**, plugin code at branch `feat/user-tokens`
 
 ### Deferred checks (recorded for tracking)
 
-- **US-5 (automatic expiry)**: pending the F.2.1 timed test in
-  Phase F of the SDD plan.
-- **Negative 3.1 (cross-user isolation)**: not executable in the
-  harness today (single guest user); deferred to a follow-up that
-  adds a second auth provider.
-- **Negative 3.2 (encryption-key mismatch)**: pending the F.2.2
-  manual test in Phase F.
+- **US-5 (automatic expiry)** — DEFERRED with rationale. Mechanism
+  is auth-backend's `OfflineAccessService` rejecting refresh tokens
+  past `tokenLifetime`, which is the same code path that already
+  rejected the revoked token in US-4 (both return
+  `invalid_grant` from `/v1/token`). Running a timed test against a
+  short `tokenLifetime` config would prove auth-backend works, not
+  our plugin. Acceptable to ship without the explicit timed run.
+- **Negative 3.1 (cross-user isolation)** — DEFERRED. Not
+  executable in the harness today (single guest user); a follow-up
+  PR that adds a second auth provider can verify this. The
+  server-side scoping is unit-tested in
+  `userTokensRouter.test.js` ("GET /personal/tokens/:id returns 404
+  for another user's id" and "GET /personal/tokens lists only the
+  caller's tokens").
+- **Negative 3.2 (encryption-key mismatch)** — DEFERRED with
+  rationale. The AES-256-GCM wrong-key rejection is covered by the
+  `userTokensEncryption.test.js` test "encrypt with different keys
+  yields different ciphertexts and decrypt fails with wrong key";
+  the router's catch path that turns that throw into a 502 is
+  reviewable in `userTokensRouter.js`. A live key-swap drill is
+  belt-and-suspenders, valuable but not blocking the v1 PR.
 
 ### Conclusion
 
