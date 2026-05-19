@@ -19,7 +19,7 @@ patterns:
   service principals. Suitable for system-to-system integrations but does not
   represent any individual user.
 - **OAuth + refresh tokens** (delivered natively by `@backstage/plugin-auth-backend`
-  with `experimentalDynamicClientRegistration` and `experimentalRefreshTokens`)
+  with `experimentalDynamicClientRegistration` and `experimentalRefreshToken`)
   — produces user-principal credentials, but the UX is "configure an OAuth
   client and complete the dance from a browser." There is no friendly path
   for a user to mint, copy, label, and later revoke a long-lived credential.
@@ -275,7 +275,7 @@ envelope without a v1 breaking change.
 ### Q-design-2 — Per-user cap
 
 **Decision**: Defer to auth-backend's existing
-`auth.experimentalRefreshTokens.maxTokensPerUser` (default 20). Do not
+`auth.experimentalRefreshToken.maxTokensPerUser` (default 20). Do not
 introduce a plugin-specific cap.
 
 **Rationale**: A plugin-specific cap would only loosen what auth-backend

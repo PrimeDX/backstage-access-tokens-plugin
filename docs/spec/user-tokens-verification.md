@@ -67,7 +67,7 @@ value should already be set by the harness.
 auth:
   experimentalDynamicClientRegistration:
     enabled: true
-  experimentalRefreshTokens:
+  experimentalRefreshToken:
     enabled: true
 
 serviceTokens:

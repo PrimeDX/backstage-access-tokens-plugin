@@ -138,7 +138,7 @@ test('missingAuthBackendFlags returns both flags when neither is set', () => {
   const missing = missingAuthBackendFlags(config);
   assert.deepEqual(missing.sort(), [
     'auth.experimentalDynamicClientRegistration.enabled',
-    'auth.experimentalRefreshTokens.enabled',
+    'auth.experimentalRefreshToken.enabled',
   ]);
 });
 
@@ -146,7 +146,7 @@ test('missingAuthBackendFlags returns empty when both flags are true', () => {
   const config = makeConfig({
     auth: {
       experimentalDynamicClientRegistration: { enabled: true },
-      experimentalRefreshTokens: { enabled: true },
+      experimentalRefreshToken: { enabled: true },
     },
   });
   assert.deepEqual(missingAuthBackendFlags(config), []);
@@ -156,10 +156,10 @@ test('missingAuthBackendFlags returns the one missing flag', () => {
   const config = makeConfig({
     auth: {
       experimentalDynamicClientRegistration: { enabled: true },
-      experimentalRefreshTokens: { enabled: false },
+      experimentalRefreshToken: { enabled: false },
     },
   });
   assert.deepEqual(missingAuthBackendFlags(config), [
-    'auth.experimentalRefreshTokens.enabled',
+    'auth.experimentalRefreshToken.enabled',
   ]);
 });

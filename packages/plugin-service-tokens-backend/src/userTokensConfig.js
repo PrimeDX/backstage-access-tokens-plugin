@@ -96,8 +96,8 @@ export function missingAuthBackendFlags(rootConfig) {
   ) {
     missing.push('auth.experimentalDynamicClientRegistration.enabled');
   }
-  if (rootConfig?.getOptionalBoolean?.('auth.experimentalRefreshTokens.enabled') !== true) {
-    missing.push('auth.experimentalRefreshTokens.enabled');
+  if (rootConfig?.getOptionalBoolean?.('auth.experimentalRefreshToken.enabled') !== true) {
+    missing.push('auth.experimentalRefreshToken.enabled');
   }
   return missing;
 }

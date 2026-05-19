@@ -81,7 +81,7 @@ auth:
   # wiring the /personal/tokens/* routes.
   experimentalDynamicClientRegistration:
     enabled: true
-  experimentalRefreshTokens:
+  experimentalRefreshToken:
     enabled: true
 
 scaffolder:

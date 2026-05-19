@@ -38,7 +38,7 @@ to extract the user principal. There is no special MCP-only auth machinery.
 
 **Finding**: Two configuration flags gate the refresh-token machinery:
 
-- `auth.experimentalRefreshTokens.enabled` activates the `OfflineAccessService`
+- `auth.experimentalRefreshToken.enabled` activates the `OfflineAccessService`
   in auth-backend, which manages refresh-token issuance, rotation, storage in
   `OfflineSessionDatabase`, and revocation.
 - `auth.experimentalDynamicClientRegistration.enabled` activates RFC 7591
@@ -62,7 +62,7 @@ issues a new one. The user must still exist in the catalog at refresh time
 call gives a working PAT-equivalent without inventing a new bearer scheme.
 
 **Sources**:
-- `plugins/auth-backend/config.d.ts` — `experimentalRefreshTokens.enabled`,
+- `plugins/auth-backend/config.d.ts` — `experimentalRefreshToken.enabled`,
   `tokenLifetime`, `maxRotationLifetime`, `maxTokensPerUser`.
 - `plugins/auth-backend/config.d.ts` — `experimentalDynamicClientRegistration.enabled`,
   `allowedRedirectUriPatterns`.

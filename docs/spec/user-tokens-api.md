@@ -351,7 +351,7 @@ In addition the plugin requires the operator to have set:
 auth:
   experimentalDynamicClientRegistration:
     enabled: true
-  experimentalRefreshTokens:
+  experimentalRefreshToken:
     enabled: true
     # tokenLifetime, maxRotationLifetime, maxTokensPerUser left at defaults
     # unless the operator chooses otherwise

@@ -12,7 +12,7 @@ import { deriveCodeChallenge } from './userTokensMintFlow.js';
  *
  * Hard requirements (validated elsewhere in the plugin):
  *   - `auth.experimentalDynamicClientRegistration.enabled: true`
- *   - `auth.experimentalRefreshTokens.enabled: true`
+ *   - `auth.experimentalRefreshToken.enabled: true`
  *
  * This module is HTTP-side glue; persistence is delegated to the database
  * (for the DCR client cache) and the mint-flow store (for in-flight state).
