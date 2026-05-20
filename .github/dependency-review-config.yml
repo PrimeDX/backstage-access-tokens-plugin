@@ -94,9 +94,9 @@ allow-dependencies-licenses:
   - pkg:npm/@isomorphic-git/pgp-plugin
   - pkg:npm/@material-ui/core
   - pkg:npm/@material-ui/icons
-  - pkg:npm/@primedx/plugin-service-tokens
-  - pkg:npm/@primedx/plugin-service-tokens-backend
-  - pkg:npm/@primedx/plugin-service-tokens-node
+  - pkg:npm/@primedx/plugin-access-tokens
+  - pkg:npm/@primedx/plugin-access-tokens-backend
+  - pkg:npm/@primedx/plugin-access-tokens-node
   - pkg:npm/@react-aria/toolbar
   - pkg:npm/@react-stately/autocomplete
   - pkg:npm/@remixicon/react
