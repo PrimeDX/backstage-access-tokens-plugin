@@ -4,6 +4,7 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -20,25 +21,34 @@ jobs:
     outputs:
       should_publish: ${{ steps.guard.outputs.should_publish }}
       reason: ${{ steps.guard.outputs.reason }}
+      release_ref: ${{ steps.guard.outputs.release_ref }}
 
     steps:
       - name: Checkout merged release commit
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Confirm this merge is the reviewed release PR
         id: guard
         env:
           GITHUB_EVENT_PULL_REQUEST_TITLE: ${{ github.event.pull_request.title }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          RELEASE_REF: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
         run: |
-          RESULT=$(node scripts/is-release-pr-merge.mjs)
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            RESULT=$(node -e "process.stdout.write(JSON.stringify({ shouldPublish: true, reason: 'Manual publish dispatch.', releaseRef: process.env.RELEASE_REF }, null, 2));")
+          else
+            RESULT=$(node scripts/is-release-pr-merge.mjs)
+          fi
           echo "$RESULT"
           SHOULD_PUBLISH=$(node -e "const fs = require('node:fs'); const data = JSON.parse(fs.readFileSync(0, 'utf8')); process.stdout.write(String(data.shouldPublish));" <<<"$RESULT")
           REASON=$(node -e "const fs = require('node:fs'); const data = JSON.parse(fs.readFileSync(0, 'utf8')); process.stdout.write(data.reason);" <<<"$RESULT")
+          RELEASE_REF=$(node -e "const fs = require('node:fs'); const data = JSON.parse(fs.readFileSync(0, 'utf8')); process.stdout.write(data.releaseRef ?? process.env.RELEASE_REF);" <<<"$RESULT")
           echo "should_publish=$SHOULD_PUBLISH" >> "$GITHUB_OUTPUT"
           echo "reason=$REASON" >> "$GITHUB_OUTPUT"
+          echo "release_ref=$RELEASE_REF" >> "$GITHUB_OUTPUT"
 
       - name: Skip ordinary merged pull requests
         if: steps.guard.outputs.should_publish != 'true'
@@ -54,7 +64,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ needs.release-guard.outputs.release_ref }}
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v6
@@ -81,6 +91,7 @@ jobs:
     if: needs.release-guard.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     steps:
@@ -88,7 +99,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ needs.release-guard.outputs.release_ref }}
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v6
@@ -101,19 +112,24 @@ jobs:
         run: yarn install --immutable
 
       - name: Skip publish when NPM_TOKEN is not configured
-        if: env.NODE_AUTH_TOKEN == ''
+        if: env.NPM_TOKEN == ''
         run: echo "NPM_TOKEN is not configured; skipping npm publish."
 
+      - name: Verify npm authentication
+        if: env.NPM_TOKEN != ''
+        run: npm whoami --registry=https://registry.npmjs.org
+
       - name: Publish changed packages to npm
-        if: env.NODE_AUTH_TOKEN != ''
+        if: env.NPM_TOKEN != ''
         id: changesets
         uses: changesets/action@v1
         with:
           publish: npx changeset publish --provenance
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ env.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ env.NODE_AUTH_TOKEN }}
 
       - name: Push release tags
-        if: env.NODE_AUTH_TOKEN != '' && steps.changesets.outputs.published == 'true'
+        if: env.NPM_TOKEN != '' && steps.changesets.outputs.published == 'true'
         run: git push origin --tags
