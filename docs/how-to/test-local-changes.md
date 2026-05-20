@@ -1,0 +1,229 @@
+# Test Local Package Changes
+
+Audience: maintainers working on unpublished changes to this plugin.
+
+Use this guide when you need fast, repeatable verification in a local Backstage harness before publishing new package versions.
+
+By the end of this guide you should be able to answer:
+
+- does the plugin still work in a real Backstage app
+- do local `file:` installs still behave correctly
+- does the primary create -> audit -> revoke flow still work end to end
+
+For the adopter experience, use the [Tutorial](../tutorials/build-a-backstage-app.md) or [Getting Started](install.md). For the broader post-install validation path, use the [Testing Guide](test.md).
+
+## What This Guide Covers
+
+- validating this repository before integration
+- maintaining a reusable local Backstage harness
+- running the API smoke path with `scripts/test-api.sh`
+- running the Playwright UI smoke path
+- revalidating local `file:` installs in a fresh app when needed
+
+The canonical behavior for this guide matches:
+
+- [REST API Reference](../reference/rest-api.md)
+- [Testing Guide](test.md)
+- [Contract Decisions](../reference/contract-decisions.md)
+
+## Prerequisites
+
+- Node 22
+- Yarn
+- `jq`
+- `curl`
+- this plugin repository cloned locally
+- a local Backstage harness app that you can start and reconfigure
+
+Check the toolchain:
+
+```bash
+node --version
+yarn --version
+jq --version
+curl --version | head -n 1
+```
+
+If you use `nvm`:
+
+```bash
+source ~/.nvm/nvm.sh
+nvm use 22
+```
+
+## 1. Verify This Repo First
+
+From this repository:
+
+```bash
+cd /path/to/backstage-access-tokens-plugin
+npm test
+npm run pack:dry-run
+npm run security:ci
+npm run security:changed
+```
+
+Expected:
+
+- all tests pass
+- all three packages pack successfully in dry-run mode
+- `security:publishable` blocks on newly introduced `moderate+` advisories in publishable dependencies versus `origin/main`
+- `security:harness` blocks on `high` / `critical` advisories in `e2e/harness`
+- if `e2e/harness/yarn.lock` changed, newly introduced `high` / `critical` advisories (compared to `origin/main`) are surfaced before PR creation
+- if lockfiles did not change, the command exits cleanly with a skip message
+
+Optional full audit:
+
+```bash
+npm run security:check
+```
+
+If this fails, fix the plugin repository before moving on to harness validation.
+
+## 2. Prepare a Reusable Local Harness
+
+Use any local Backstage app that you can restart quickly and modify safely. The harness should be configured to match the documented contract.
+
+Before starting the harness, verify:
+
+- `accessTokens.service.admin.userEntityRefs` grants the guest or test user the service token permissions
+- `accessTokens.service.cacheTtlSeconds: 0` is set in local config if you want deterministic revocation checks
+- the harness catalog seeds include `user:development/guest` and `group:development/platform` (from `examples/access-tokens-org.yaml`)
+- the catalog includes at least one group you can use for token creation, such as `group:development/platform`
+- your harness can start both backend and frontend locally
+
+Then start the harness:
+
+```bash
+cd /path/to/your-backstage-app
+yarn start
+```
+
+Expected:
+
+- frontend serves on `http://localhost:3000`
+- backend serves on `http://localhost:7007`
+- startup completes without plugin registration or permission-policy errors
+
+## 3. Run the API Smoke Path
+
+With the harness running, execute the repository API smoke script:
+
+```bash
+cd /path/to/backstage-access-tokens-plugin
+npm run test:api-script -- http://localhost:7007
+```
+
+Expected:
+
+- guest token acquisition succeeds
+- scope listing succeeds
+- token creation returns `201` with a one-time `rawToken`
+- the raw token authenticates against the Catalog API
+- audit responses use `{ "events": [...] }`
+- revoke returns `204`
+- revoked raw tokens are rejected with `401`
+- unauthenticated create is rejected with `401`
+
+If this path fails, treat it as a contract, config, or harness issue before debugging Playwright.
+
+## 4. Run the Playwright UI Smoke Path
+
+With the harness already running:
+
+```bash
+cd /path/to/backstage-access-tokens-plugin
+PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke
+```
+
+Optional headed run:
+
+```bash
+PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke:headed
+```
+
+Expected:
+
+- the page loads
+- the create dialog succeeds for a unique token
+- the success dialog shows a raw token once
+- the audit dialog shows `created`
+- revoke succeeds
+- the table shows `Revoked`
+- the audit dialog shows newest-first ordering after revoke
+
+CI now runs this path automatically in the `CI / ui-smoke` job by installing `e2e/harness` dependencies and using Playwright `webServer` to start/wait for the harness before running the same smoke command. `CI / security-publishable` and `CI / security-harness` run alongside this flow as required gates. When CI fails, download `ui-smoke-artifacts` and review `playwright-report` and `test-results` first, then check the `Run UI smoke test` step logs for Playwright `webServer` startup output.
+
+If the smoke test fails while selecting the owning group:
+
+- confirm `e2e/harness/examples/access-tokens-org.yaml` still defines `group:development/platform`
+- confirm `e2e/harness/app-config.yaml` still includes the `../../examples/access-tokens-org.yaml` catalog location
+- check harness backend logs for catalog warnings and verify `GET /api/catalog/entities?filter=kind=group&limit=200` returns `group:development/platform`
+
+## 5. Revalidate Local `file:` Installs in a Fresh App
+
+Use this path when you want to prove unpublished package changes still work in a newly scaffolded Backstage app.
+
+Create a fresh app:
+
+```bash
+source ~/.nvm/nvm.sh
+nvm use 22
+cd /tmp
+npx @backstage/create-app@latest
+```
+
+Move into the app and install dependencies:
+
+```bash
+cd /tmp/service-token-dev-test
+yarn install
+```
+
+Then install the plugin packages from local folders:
+
+```bash
+yarn --cwd packages/backend add \
+  @primedx/plugin-access-tokens-node@file:/path/to/backstage-access-tokens-plugin/packages/plugin-access-tokens-node
+
+yarn --cwd packages/backend add \
+  @primedx/plugin-access-tokens-backend@file:/path/to/backstage-access-tokens-plugin/packages/plugin-access-tokens-backend
+
+yarn --cwd packages/app add \
+  @primedx/plugin-access-tokens@file:/path/to/backstage-access-tokens-plugin/packages/plugin-access-tokens
+```
+
+If your app needs a root `resolutions` entry so the local node package is used consistently, add it deliberately and keep any existing values intact.
+
+After install, wire the app to match the documented tutorial contract:
+
+- register the backend plugin
+- register the service token auth handler module
+- register the frontend plugin in `createApp({ features: [...] })`
+- configure admin users and, if needed, `accessTokens.service.cacheTtlSeconds: 0` for deterministic revocation checks
+
+Then run the same API and UI smoke paths.
+
+## 6. What to Record When Something Fails
+
+Capture enough detail to tell whether the issue belongs to this repository, the harness app, or the local installation flow:
+
+- the exact command that failed
+- backend and frontend logs
+- whether the failure reproduced in the reusable harness, a fresh app, or both
+- whether the mismatch is in behavior, docs, or packaging
+- whether the failure affects the public contract in [Contract Decisions](../reference/contract-decisions.md)
+
+## Recommended Maintainer Loop
+
+For day-to-day iteration:
+
+1. Make the plugin change in this repository.
+2. Run `npm test`.
+3. Run `npm run pack:dry-run` if package contents may have changed.
+4. Refresh the local harness dependencies if you are using local `file:` installs.
+5. Start or restart the harness.
+6. Run `npm run test:api-script -- http://localhost:7007`.
+7. Run `PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke`.
+
+That sequence gives quick confidence in both the public contract and the primary admin UI flow before release work begins.

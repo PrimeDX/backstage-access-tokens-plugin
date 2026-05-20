@@ -1,39 +1,56 @@
-# Backstage Service Token Plugin Docs
+# Backstage Access Tokens Plugin Documentation
 
-These docs are organized by audience so adopters can move quickly, while maintainers still have a clear place for internal workflows.
+These docs are organized with the Diataxis framework: tutorials for learning,
+how-to guides for practical tasks, reference docs for exact contracts, and
+explanation docs for design context. The `spec/` directory is a separate
+agent-oriented knowledge base for project architecture and implementation.
 
-## Start Here
+## Choose Your Path
 
-Choose the path that matches your job:
+- New to the plugin and want a complete local walkthrough? Start with
+  [Build a Backstage App](tutorials/build-a-backstage-app.md).
+- Already have a Backstage app? Follow [Install in an Existing App](how-to/install.md).
+- Need to validate a deployment? Use [Test the Plugin](how-to/test.md).
+- Preparing for production? Read [Production Readiness](how-to/production.md).
+- Integrating automation or clients? Use the [REST API Reference](reference/rest-api.md).
+- Tuning behavior? Use the [Configuration Reference](reference/configuration.md).
+- Contributing or maintaining the repo? See [Architecture](explanation/architecture.md),
+  [Test Local Changes](how-to/test-local-changes.md), and
+  [Contribute with Git](how-to/contribute-with-git.md).
+- Catching up as an agent or maintainer? Start with the [Spec Knowledge Base](spec/index.md).
 
-- [Tutorial](tutorial.md) for the full from-scratch experience in a new Backstage app
-- [Getting Started](getting-started.md) to install the plugin into an existing Backstage app
-- [Configuration Reference](configuration.md) to tune behavior and policy inputs
-- [REST API Reference](api.md) to integrate against the token management endpoints
-- [Testing Guide](testing.md) to validate the plugin after installation
-- [Production Readiness](production-readiness.md) to harden the setup for real environments
+## Tutorials
 
-## Adopters and Operators
+- [Build a Backstage App with Access Token Support](tutorials/build-a-backstage-app.md)
 
-- [Tutorial](tutorial.md)
-- [Getting Started](getting-started.md)
-- [Configuration Reference](configuration.md)
-- [REST API Reference](api.md)
-- [Testing Guide](testing.md)
-- [Production Readiness](production-readiness.md)
-- [Scope Enforcement Runbook](runbooks/scope-enforcement.md)
+## How-To Guides
 
-## Contributors and Advanced Readers
+- [Install in an Existing Backstage App](how-to/install.md)
+- [Test the Plugin](how-to/test.md)
+- [Test Local Package Changes](how-to/test-local-changes.md)
+- [Prepare for Production](how-to/production.md)
+- [Enforce Service Token Scopes](how-to/enforce-scopes.md)
+- [Contribute with Git](how-to/contribute-with-git.md)
+- [Release to npm](how-to/release.md)
 
-- [Architecture](architecture.md)
-- [Contract Decisions](contract-decisions.md)
+## Reference
 
-`Contract Decisions` is the canonical reference for stable public behavior when code, tests, and documentation have previously drifted.
+- [REST API Reference](reference/rest-api.md)
+- [Configuration Reference](reference/configuration.md)
+- [Contract Decisions](reference/contract-decisions.md)
 
-## Maintainers
+`Contract Decisions` is the canonical reference for stable public behavior when
+code, tests, and documentation have previously drifted.
 
-- [Developer Test Guide](developer-test-guide.md)
-- [Git Workflow](git-workflow.md)
-- [Release Guide](releasing.md)
+## Explanation
 
-These docs are intentionally maintainer-oriented. They cover unpublished package testing, local file-based verification, branch and pull request conventions, and npm release workflow rather than the adopter install story.
+- [Architecture](explanation/architecture.md)
+
+## Spec Knowledge Base
+
+- [Spec Index](spec/index.md)
+- [User Personal Access Tokens Overview](spec/user-tokens-overview.md)
+- [User Personal Access Tokens API and Schema](spec/user-tokens-api.md)
+- [User Personal Access Tokens Architecture](spec/user-tokens-architecture.md)
+- [User Personal Access Tokens Verification](spec/user-tokens-verification.md)
+- [Research Notes](spec/research-notes.md)

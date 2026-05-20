@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# test-api.sh — Runs Part 10 API tests (A1–A8) against a running Backstage instance
+# test-api.sh — Runs API smoke tests against a running Backstage instance
 # Usage: bash test-api.sh [base_url]
 # Default base URL: http://localhost:7007
 
 set -euo pipefail
 
 BASE="${1:-http://localhost:7007}"
-REVOKE_WAIT_SECONDS="${SERVICE_TOKENS_REVOKE_WAIT_SECONDS:-65}"
-REVOKE_POLL_INTERVAL_SECONDS="${SERVICE_TOKENS_REVOKE_POLL_INTERVAL_SECONDS:-5}"
+REVOKE_WAIT_SECONDS="${ACCESS_TOKENS_REVOKE_WAIT_SECONDS:-65}"
+REVOKE_POLL_INTERVAL_SECONDS="${ACCESS_TOKENS_REVOKE_POLL_INTERVAL_SECONDS:-5}"
 PASS=0
 FAIL=0
 
@@ -76,9 +76,9 @@ fi
 
 # ── Step A2 — List scopes ─────────────────────────────────────────────────────
 header "Step A2 — List available scopes"
-info "GET $BASE/api/service-tokens/scopes"
+info "GET $BASE/api/access-tokens/service/scopes"
 
-resp=$(http GET "$BASE/api/service-tokens/scopes" \
+resp=$(http GET "$BASE/api/access-tokens/service/scopes" \
   -H "Authorization: Bearer $TOKEN")
 code=$(status_of "$resp")
 body=$(body_of "$resp")
@@ -91,15 +91,15 @@ fi
 # ── Step A3 — Create a service token ─────────────────────────────────────────
 header "Step A3 — Create a service token"
 TOKEN_NAME="test-token-$(date +%s)"
-info "POST $BASE/api/service-tokens  (name: $TOKEN_NAME)"
+info "POST $BASE/api/access-tokens/service  (name: $TOKEN_NAME)"
 
-resp=$(http POST "$BASE/api/service-tokens" \
+resp=$(http POST "$BASE/api/access-tokens/service" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
     \"name\": \"$TOKEN_NAME\",
     \"description\": \"Created by test-api.sh\",
-    \"groupEntityRef\": \"group:default/platform\",
+    \"groupEntityRef\": \"group:development/platform\",
     \"scopes\": [\"catalog:read\"],
     \"expiresInDays\": 1
   }")
@@ -137,9 +137,9 @@ fi
 
 # ── Step A5 — Inspect audit log ───────────────────────────────────────────────
 header "Step A5 — Inspect the audit log"
-info "GET $BASE/api/service-tokens/$TOKEN_ID/audit"
+info "GET $BASE/api/access-tokens/service/$TOKEN_ID/audit"
 
-resp=$(http GET "$BASE/api/service-tokens/$TOKEN_ID/audit" \
+resp=$(http GET "$BASE/api/access-tokens/service/$TOKEN_ID/audit" \
   -H "Authorization: Bearer $TOKEN")
 code=$(status_of "$resp")
 body=$(body_of "$resp")
@@ -153,9 +153,9 @@ fi
 
 # ── Step A6 — Revoke the token ────────────────────────────────────────────────
 header "Step A6 — Revoke the token"
-info "DELETE $BASE/api/service-tokens/$TOKEN_ID"
+info "DELETE $BASE/api/access-tokens/service/$TOKEN_ID"
 
-resp=$(http DELETE "$BASE/api/service-tokens/$TOKEN_ID" \
+resp=$(http DELETE "$BASE/api/access-tokens/service/$TOKEN_ID" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"reason": "test-api.sh revocation test"}')
@@ -167,7 +167,7 @@ assert_status "A6 — revoke token" "204" "$code"
 header "Step A7 — Revoked token is rejected after revocation"
 info "GET $BASE/api/catalog/entities?limit=1  (with revoked raw token)"
 info "Polling up to ${REVOKE_WAIT_SECONDS}s for revocation to take effect"
-info "Tutorial/dev-guide path sets serviceTokens.cacheTtlSeconds: 0 for immediate rejection"
+info "Tutorial/dev-guide path sets accessTokens.service.cacheTtlSeconds: 0 for immediate rejection"
 
 a7_passed=false
 max_attempts=$(( REVOKE_WAIT_SECONDS / REVOKE_POLL_INTERVAL_SECONDS + 1 ))
@@ -189,19 +189,29 @@ if $a7_passed; then
   pass "A7 — revoked token rejected (HTTP 401)"
 else
   fail "A7 — revoked token still accepted after ${REVOKE_WAIT_SECONDS}s — expected HTTP 401, got HTTP $code"
-  fail "     Hint: set serviceTokens.cacheTtlSeconds: 0 in your dev config for deterministic immediate revocation checks"
+  fail "     Hint: set accessTokens.service.cacheTtlSeconds: 0 in your dev config for deterministic immediate revocation checks"
 fi
 
 # ── Step A8 — Unauthenticated request → 401 ──────────────────────────────────
 header "Step A8 — Unauthenticated request is rejected"
-info "POST $BASE/api/service-tokens  (no Authorization header)"
+info "POST $BASE/api/access-tokens/service  (no Authorization header)"
 
-resp=$(http POST "$BASE/api/service-tokens" \
+resp=$(http POST "$BASE/api/access-tokens/service" \
   -H "Content-Type: application/json" \
-  -d '{"name":"should-fail","groupEntityRef":"group:default/platform","scopes":["catalog:read"]}')
+  -d '{"name":"should-fail","groupEntityRef":"group:development/platform","scopes":["catalog:read"]}')
 code=$(status_of "$resp")
 
 assert_status "A8 — unauthenticated request rejected" "401" "$code"
+
+# ── Step A9 — Old service-token API path is not kept ─────────────────────────
+header "Step A9 — Old API path is not kept as an alias"
+info "GET $BASE/api/service-tokens/scopes"
+
+resp=$(http GET "$BASE/api/service-tokens/scopes" \
+  -H "Authorization: Bearer $TOKEN")
+code=$(status_of "$resp")
+
+assert_status "A9 — old /api/service-tokens path rejected" "404" "$code"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo

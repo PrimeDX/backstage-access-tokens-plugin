@@ -1,4 +1,4 @@
-# Contributing to backstage-service-token-plugin
+# Contributing to backstage-access-tokens-plugin
 
 Thanks for your interest in contributing.
 
@@ -10,7 +10,7 @@ Thanks for your interest in contributing.
 ## Local setup
 
 ```bash
-cd /path/to/backstage-service-token-plugin
+cd /path/to/backstage-access-tokens-plugin
 nvm install 22
 nvm use 22
 yarn install
@@ -80,7 +80,7 @@ The Changeset rule is intentionally narrow. A Changeset is required when a PR mo
 - `packages/*/README.md`
 - source or `.d.ts` files that are included in the package `files` list
 
-Docs, workflows, tests, stories, fixtures, and other non-published repo files do not need a Changeset. The detailed release contract lives in `docs/releasing.md`; keep that document authoritative if this workflow changes again.
+Docs, workflows, tests, stories, fixtures, and other non-published repo files do not need a Changeset. The detailed release contract lives in `docs/how-to/release.md`; keep that document authoritative if this workflow changes again.
 
 `AGENTS.md` is an intentional tracked repo document for coding agents and should remain in version control.
 
