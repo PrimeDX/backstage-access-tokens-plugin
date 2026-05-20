@@ -5,6 +5,7 @@ import { decryptRefreshToken, encryptRefreshToken } from './userTokensEncryption
 
 const require = createRequire(import.meta.url);
 const express = require('express');
+const { rateLimit } = require('express-rate-limit');
 
 /**
  * Express router mounted under the access-tokens plugin namespace at
@@ -51,6 +52,19 @@ export function createUserTokensRouter(options) {
   const now = options.now ?? (() => new Date());
 
   const router = express.Router();
+
+  // Defense-in-depth for the personal-access-token surface (credential
+  // issuance and management). Operators should still rate-limit at the
+  // reverse proxy in production.
+  router.use(
+    rateLimit({
+      windowMs: 60_000,
+      limit: 60,
+      standardHeaders: 'draft-7',
+      legacyHeaders: false,
+    }),
+  );
+
   const jsonParser = express.json();
   router.use((req, res, next) => {
     // Tests set req.body directly; production traffic still parses normally.
@@ -161,6 +175,9 @@ export function createUserTokensRouter(options) {
   }
 
   router.get('/personal/mint/callback', async (req, res) => {
+    // codeql[js/sensitive-get-query] OAuth 2.0 authorization-code redirect
+    // per RFC 6749 §4.1.2; `state` is single-use and validated against the
+    // in-flight store immediately below before any other use.
     const { code, state, error: oauthError } = req.query ?? {};
     if (oauthError) {
       redirectWithMintError(res, `OAuth flow returned error: ${oauthError}`);

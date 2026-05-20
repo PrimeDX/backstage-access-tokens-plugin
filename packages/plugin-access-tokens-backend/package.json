@@ -61,7 +61,8 @@
     "@backstage/backend-plugin-api": "^1.8.0",
     "@backstage/plugin-permission-common": "^0.9.7",
     "@backstage/plugin-catalog-node": "^2.0.0",
-    "express": "^4.22.0"
+    "express": "^4.22.0",
+    "express-rate-limit": "^7.4.0"
   },
   "scripts": {
     "test": "node --test src/**/*.test.js"
