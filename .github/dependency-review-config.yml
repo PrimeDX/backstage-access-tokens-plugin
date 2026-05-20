@@ -13,13 +13,6 @@ allow-ghsas:
   - GHSA-rmvr-2pp2-xj38 # Temporary: tracked in issue #23
   - GHSA-v9jr-rg53-9pgp # Temporary: tracked in issue #23
   - GHSA-xx4v-prfh-6cgc # Temporary: tracked in issue #23
-  - GHSA-6785-pvv7-mvg7 # Temporary: harness-only vm2 via typescript-json-schema, mirrored in e2e/harness/.yarnrc.yml
-  - GHSA-hw58-p9xv-2mjh # Temporary: harness-only vm2 via typescript-json-schema, mirrored in e2e/harness/.yarnrc.yml
-  - GHSA-947f-4v7f-x2v8 # Temporary: harness-only vm2 via typescript-json-schema, mirrored in e2e/harness/.yarnrc.yml
-  - GHSA-vwrp-x96c-mhwq # Temporary: harness-only vm2 via typescript-json-schema, mirrored in e2e/harness/.yarnrc.yml
-  - GHSA-47x8-96vw-5wg6 # Temporary: harness-only vm2 via typescript-json-schema, mirrored in e2e/harness/.yarnrc.yml
-  - GHSA-qcp4-v2jj-fjx8 # Temporary: harness-only vm2 via typescript-json-schema, mirrored in e2e/harness/.yarnrc.yml
-  - GHSA-248r-7h7q-cr24 # Temporary: harness-only vm2 via typescript-json-schema, mirrored in e2e/harness/.yarnrc.yml
 allow-licenses:
   - MIT
   - Apache-2.0
