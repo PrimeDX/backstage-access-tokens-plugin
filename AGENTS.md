@@ -49,6 +49,7 @@ Treat these as locked unless the public contract is intentionally changed across
 - Add or update JSDoc where exported behavior, interfaces, or non-obvious logic need durable explanation
 - Keep commits reviewable and grouped by change type
 - Use Conventional Commits
+- Do not add `Co-Authored-By` trailers, "Generated with…" lines, 🤖 markers, or any other AI/tool attestation in commit messages, PR descriptions, code comments, or documentation
 - Do not casually rewrite `docs/reference/contract-decisions.md`; only change it when the intended public contract changes
 - When creating plans, prefer iterative and incremental steps that establish truth before building on later work
 
