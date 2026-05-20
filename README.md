@@ -39,10 +39,6 @@ Service token scopes are metadata only. They are stored, displayed, and exposed 
 
 If you need strict scope enforcement, implement those checks in the consuming plugin or permission policy. For personal access tokens, the plugin coordinates the mint flow, stores encrypted refresh tokens for later revocation, and manages token metadata. For service tokens, it handles issuance, hashing at rest, verification, expiry, revocation, audit logging, and admin authorization around token management.
 
-## Breaking Rename
-
-This release renames the project from service-token-specific naming to **Access Tokens**. The old package names, `/api/service-tokens` routes, `serviceTokens.*` config keys, and `service-tokens:*` / `user-tokens:*` permissions are not kept as runtime aliases. Existing adopters must update imports, configuration, permission policies, and API clients during the migration.
-
 ## Packages
 
 This workspace publishes three packages:

@@ -116,7 +116,7 @@ It does not require a Changeset for:
 - Branch protection on `main` so CI must pass before merge
 - Required status checks on pull requests: `CI / verify`, `CI / security-publishable`, `CI / security-harness`, `CI / ui-smoke`, `Changeset Required`, and `CodeQL`
 - `NPM_TOKEN` configured in repository or organization GitHub Actions secrets
-- npm package ownership configured for the `@adriandantas` scope
+- npm package ownership configured for the `@primedx` scope
 - GitHub code scanning enabled so CodeQL results are visible in the Security tab
 
 The publish workflow uses npm provenance via `changeset publish --provenance`, so it also requires GitHub Actions OIDC support.
@@ -152,7 +152,7 @@ Troubleshooting notes:
 Before dispatching the workflow, confirm the target harness:
 
 - is reachable from GitHub Actions at the supplied `base_url`
-- has the service token plugin installed and the admin route available
+- has the access tokens plugin installed and the admin route available
 - includes catalog data and auth/permission configuration needed for the create, audit, and revoke path
 - uses `accessTokens.service.cacheTtlSeconds: 0` when you need deterministic revoked-token rejection timing during the smoke flow
 

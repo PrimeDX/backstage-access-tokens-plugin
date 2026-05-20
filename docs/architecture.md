@@ -2,7 +2,7 @@
 
 Audience: contributors and advanced readers who need the internal design, not the install story.
 
-This document describes the internal design of the service token plugin — how the three packages fit together, how a token is created and verified, and the key design decisions that shaped the implementation.
+This document describes the internal design of the access tokens plugin — how the three packages fit together, how a token is created and verified, and the key design decisions that shaped the implementation.
 
 ---
 

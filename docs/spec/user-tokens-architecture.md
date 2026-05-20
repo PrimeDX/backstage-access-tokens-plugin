@@ -5,7 +5,7 @@
 [API](./user-tokens-api.md), [research](../research-notes.md).
 **Scope**: Implementation-shaping decisions — how the plugin orchestrates
 Backstage's native OAuth flow, where it stores state, which seams in the
-existing service-token-plugin codebase it extends, and the threat model.
+existing access-tokens plugin codebase it extends, and the threat model.
 
 This document does NOT pin every internal function signature. It pins the
 **architectural** choices that constrain implementation. Phase 4 will turn
@@ -247,7 +247,7 @@ Three new permissions are declared (per [API §3.1](./user-tokens-api.md#31--pri
 
 Each plugin-owned endpoint gates on the corresponding permission via the
 same `createAuthorizeHelper(permissions, permission)` pattern the existing
-service-token plugin uses (per R7).
+access-tokens plugin uses for service tokens (per R7).
 
 **Default policy contribution**: the plugin ships a default policy that
 returns `ALLOW` for the calling user when:

@@ -1,8 +1,8 @@
 # @primedx/plugin-access-tokens
 
-Backstage frontend plugin for the service token admin page.
+Backstage frontend plugin for access token administration.
 
-This package adds the `/admin/access-tokens` UI for creating, listing, auditing, and revoking service tokens. It registers the page in the new frontend system, but it does not provide the backend API or raw token auth handling on its own.
+This package adds the `/admin/access-tokens` UI for creating, listing, auditing, and revoking service tokens. It also contributes the personal access token user-settings route and OAuth consent feature when that capability is enabled. It registers these routes in the new frontend system, but it does not provide the backend API or raw token auth handling on its own.
 
 It also exports `personalAccessTokensAuthPlugin`, an optional frontend feature
 that owns `/oauth2/authorize/:sessionId` for the personal access token
@@ -16,7 +16,7 @@ as an API bearer token.
 
 ## When To Use This Package
 
-Install this package when you want the service token admin UI in your Backstage app.
+Install this package when you want access token management UI in your Backstage app.
 
 Use it together with:
 

@@ -2,7 +2,7 @@
 
 Shared Backstage node library for service token auth and permission wiring.
 
-This package is the backend-facing companion to the service token plugin. Most adopters use it to register the external auth handler that accepts raw service tokens and to import the permission definitions used by a Backstage permission policy.
+This package is the backend-facing companion to the access tokens plugin. Most adopters use it to register the external auth handler that accepts raw service tokens and to import the permission definitions used by a Backstage permission policy.
 
 ## When To Use This Package
 

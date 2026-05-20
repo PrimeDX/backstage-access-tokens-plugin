@@ -25,7 +25,7 @@ Most teams move through three stages. Start at Stage 1 and advance only when you
 Before adding any enforcement code:
 
 - Backstage new backend system running with the **default auth policy enabled** (do not set `backend.auth.dangerouslyDisableDefaultAuthPolicy: true` in production).
-- Service token plugin installed and tokens authenticating as a `service` principal with `subject = service-token:<groupEntityRef>:<tokenName>` (e.g. `service-token:group:default/platform:ci-pipeline`).
+- Access tokens plugin installed and service tokens authenticating as a `service` principal with `subject = service-token:<groupEntityRef>:<tokenName>` (e.g. `service-token:group:default/platform:ci-pipeline`).
 - Permission framework wired (`@backstage/plugin-permission-backend`) if using Pattern B.
 
 **Important distinction:** Backstage's default auth policy already ensures every request is **authenticated** (valid token, not revoked, not expired). This runbook is about **authorization** — whether the authenticated token's scopes permit the specific action.

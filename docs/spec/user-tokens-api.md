@@ -369,14 +369,7 @@ auth:
 The plugin's `init()` logs a clear error and refuses to mount the
 personal-access-token router if either flag is unset.
 
-## 5. Breaking Rename
-
-This migration does not keep the old service-token package names,
-`/api/service-tokens` paths, `serviceTokens.*` config keys, or old
-permission names as runtime aliases. Existing service-token and PAT data
-is preserved by table-renaming migrations.
-
-## 6. Verification — what proves this spec is satisfied
+## 5. Verification — what proves this spec is satisfied
 
 **Unit-level** (delivered):
 

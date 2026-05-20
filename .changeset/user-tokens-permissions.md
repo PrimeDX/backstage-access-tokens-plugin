@@ -1,5 +1,5 @@
 ---
-'@primedx/plugin-service-tokens-node': minor
+'@primedx/plugin-access-tokens-node': minor
 ---
 
-Add user-token permissions (`user-tokens:read`, `user-tokens:write`, `user-tokens:revoke`) and the `USER_TOKEN_RESOURCE_TYPE` constant, scaffolding the upcoming user-self-service personal access token capability. Service-token permissions are unchanged.
+Add personal-access-token permissions (`access-tokens:user:read`, `access-tokens:user:write`, `access-tokens:user:revoke`) and the user-token resource type constant, scaffolding the upcoming user-self-service personal access token capability. Service-token permissions are unchanged.

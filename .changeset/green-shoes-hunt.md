@@ -1,7 +1,7 @@
 ---
-'@primedx/plugin-service-tokens-backend': patch
-'@primedx/plugin-service-tokens-node': patch
-'@primedx/plugin-service-tokens': patch
+'@primedx/plugin-access-tokens-backend': patch
+'@primedx/plugin-access-tokens-node': patch
+'@primedx/plugin-access-tokens': patch
 ---
 
-Rename package scope from @adriandantas to @primedx across manifests, imports, and documentation before first publish.
+Align package manifests, imports, and documentation on the final access-tokens package names before first publish.

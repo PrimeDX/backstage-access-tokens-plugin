@@ -281,7 +281,7 @@ provides.
   `CreateTokenDialog.jsx` (which targets admins) and matches the PAT mental
   model end users expect.
 - Action: lift the show-once UX into a new `CreatePersonalTokenDialog.jsx`
-  inside the service-token-plugin frontend, adapting to the project's
+  inside the access-tokens plugin frontend, adapting to the project's
   conventions (MUI imports, `.jsx` extension, prop shape that fits the new
   API).
 

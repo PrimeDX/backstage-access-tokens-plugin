@@ -1,4 +1,4 @@
-# Contributing to backstage-service-token-plugin
+# Contributing to backstage-access-tokens-plugin
 
 Thanks for your interest in contributing.
 
@@ -10,7 +10,7 @@ Thanks for your interest in contributing.
 ## Local setup
 
 ```bash
-cd /path/to/backstage-service-token-plugin
+cd /path/to/backstage-access-tokens-plugin
 nvm install 22
 nvm use 22
 yarn install

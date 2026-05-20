@@ -1,7 +1,7 @@
 {
   "name": "@primedx/plugin-access-tokens-backend",
   "version": "0.1.0",
-  "description": "Backstage backend plugin for service token lifecycle management and REST APIs.",
+  "description": "Backstage backend plugin for access token lifecycle APIs.",
   "license": "Apache-2.0",
   "backstage": {
     "role": "backend-plugin",

@@ -1,12 +1,12 @@
 # @primedx/plugin-access-tokens-backend
 
-Backstage backend plugin for the service token lifecycle API.
+Backstage backend plugin for access token lifecycle APIs.
 
-This package provides the `/api/access-tokens/service` REST API, token persistence and migrations, scope catalogue assembly, and permission-gated create, read, audit, and revoke routes.
+This package provides the `/api/access-tokens/service` REST API for service tokens and the optional `/api/access-tokens/personal` capability for user-managed personal access tokens. It owns token persistence and migrations, scope catalogue assembly, and permission-gated create, read, audit, and revoke routes.
 
 ## When To Use This Package
 
-Install this package when you want your Backstage backend to issue and manage long-lived, group-scoped service tokens.
+Install this package when you want your Backstage backend to issue and manage long-lived, group-scoped service tokens and optionally support user-managed personal access tokens.
 
 Use it together with:
 
@@ -42,7 +42,7 @@ backend.start();
 
 Why both registrations matter:
 
-- `accessTokensPlugin` serves the `/api/access-tokens/service` routes and manages storage
+- `accessTokensPlugin` serves the access token routes and manages storage
 - `serviceAccessTokenHandlerModule` makes raw service tokens authenticate successfully through Backstage's auth layer
 
 ## Permissions

@@ -4,7 +4,7 @@ Audience: platform engineers preparing the plugin for production Backstage envir
 
 Use this guide after installation is working and you are ready to harden policy, cache behavior, and operational practices.
 
-This guide covers what you need to verify, configure, and decide before running the service token plugin in a production Backstage deployment. It assumes you have already completed the [Getting Started](getting-started.md) walkthrough.
+This guide covers what you need to verify, configure, and decide before running the access tokens plugin in a production Backstage deployment. It assumes you have already completed the [Getting Started](getting-started.md) walkthrough.
 
 ---
 

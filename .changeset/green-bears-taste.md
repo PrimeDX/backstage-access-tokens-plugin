@@ -1,7 +1,7 @@
 ---
-'@adriandantas/plugin-service-tokens-backend': patch
-'@adriandantas/plugin-service-tokens-node': patch
-'@adriandantas/plugin-service-tokens': patch
+'@primedx/plugin-access-tokens-backend': patch
+'@primedx/plugin-access-tokens-node': patch
+'@primedx/plugin-access-tokens': patch
 ---
 
 Refresh package README guidance for npm consumers with clearer install context,

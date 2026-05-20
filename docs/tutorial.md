@@ -10,7 +10,7 @@ Use this guide when you want to experience the full setup journey from scaffoldi
 By the end of this tutorial you will have:
 
 - A **Backstage developer portal** running locally, scaffolded from scratch
-- The **service token plugin** installed and wired into both the backend and frontend
+- The **access tokens plugin** installed and wired into both the backend and frontend
 - An **admin UI** at `/admin/access-tokens` where you can create and manage tokens
 - A **machine-readable service token** that authenticates against the Backstage Catalog API
 - **Proof it all works** — via both `curl` and the browser
@@ -85,7 +85,7 @@ Stop the dev server (`Ctrl+C`) before continuing.
 
 *~2 minutes*
 
-The service token plugin ships as three npm packages:
+The access tokens plugin ships as three npm packages:
 
 | Package | Role |
 |---|---|
@@ -119,7 +119,7 @@ You should see no errors. If you see peer dependency warnings, they are safe to 
 
 Open `packages/backend/src/index.ts`. You will see a file that already includes `plugin-permission-backend` and `plugin-permission-backend-module-allow-all-policy` from the scaffold.
 
-Add the service token plugin and auth handler module imports at the top, then register them **after** the existing permission lines:
+Add the access tokens backend plugin and service token auth handler module imports at the top, then register them **after** the existing permission lines:
 
 ```typescript
 import { createBackend } from '@backstage/backend-defaults';
@@ -135,7 +135,7 @@ backend.add(import('@backstage/plugin-permission-backend'));
 // NOTE: keep the allow-all policy for now; we will replace it in Part 5
 backend.add(import('@backstage/plugin-permission-backend-module-allow-all-policy'));
 
-// Service token plugin — REST API and token database
+// Access tokens backend plugin — REST API and token database
 backend.add(import('@primedx/plugin-access-tokens-backend'));
 
 // Auth handler — makes raw service tokens accepted by Backstage's auth layer
@@ -167,7 +167,7 @@ You should see `Backend listening on :7007` with no import errors. Stop it (`Ctr
 
 *~2 minutes*
 
-Open `packages/app/src/App.tsx` and add the service token plugin to the `features` array:
+Open `packages/app/src/App.tsx` and add the access tokens plugin to the `features` array:
 
 ```typescript
 import { createApp } from '@backstage/frontend-defaults';
@@ -336,7 +336,7 @@ accessTokens:
         - user:development/guest   # the default dev user — replace in production
 ```
 
-> **Why `backend.auth.externalAccess`?** Backstage's auth layer only invokes external token handlers that are listed in this config. The `backstage-service-access-token` entry tells Backstage to route unrecognised tokens through the service token plugin's verifier. Without it, raw tokens are rejected with `Illegal token` even though the plugin is installed.
+> **Why `backend.auth.externalAccess`?** Backstage's auth layer only invokes external token handlers that are listed in this config. The `backstage-service-access-token` entry tells Backstage to route unrecognised tokens through the access tokens plugin's service token verifier. Without it, raw tokens are rejected with `Illegal token` even though the plugin is installed.
 
 > ⚠️ **Production note:** Replace `user:development/guest` with the entity refs of your actual admin users (e.g. `user:default/alice`) in production.
 
