@@ -161,7 +161,7 @@ Before dispatching the workflow, confirm the target harness:
 For normal releases, the maintainer workflow is:
 
 1. Merge feature and fix PRs that include their Changesets.
-2. Review the generated `Version Packages` PR for version bumps, internal dependency updates, and changelog accuracy.
+2. Review the generated `Version Packages` PR for version bumps, internal dependency updates, changelog accuracy, and harness lockfile freshness.
 3. Merge the release PR.
 4. Confirm the `Publish` workflow succeeds and the packages appear on npm.
 
@@ -186,6 +186,17 @@ Version the packages and changelog:
 npx changeset version
 ```
 
+Refresh the harness `file:` package snapshots after versioning:
+
+```bash
+cd e2e/harness
+yarn install
+yarn install --immutable
+cd ../..
+```
+
+Changesets updates package versions and internal dependency ranges in `packages/plugin-access-tokens*/package.json`. The harness consumes those packages through Yarn `file:` dependencies, so `e2e/harness/yarn.lock` must be refreshed after versioning. If it is stale, `CI / ui-smoke` fails before Playwright starts because `cd e2e/harness && yarn install --immutable` detects changed package hashes or versions.
+
 Review the resulting package versions, changelog updates, and published package contents:
 
 ```bash
@@ -195,6 +206,7 @@ npm run pack:dry-run
 Before publishing, confirm documentation and compatibility guardrails for this release:
 
 - Auth/authz behavior changes are documented (including enforced vs metadata-only semantics)
+- `e2e/harness/yarn.lock` reflects any release PR package version bumps and passes `cd e2e/harness && yarn install --immutable`
 - Security-significant or breaking changes include migration notes and operator actions
 - Public API or integration pattern changes are called out in release notes/changelogs
 - Open security findings from `Dependency Review` and `CodeQL` are triaged before release

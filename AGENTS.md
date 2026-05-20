@@ -75,6 +75,16 @@ Use a local Backstage integration harness for end-to-end validation. For recomme
 
 The harness consumes this repo's packages through Yarn `file:` dependencies, which are copied into `e2e/harness/node_modules/@primedx/*` rather than live-symlinked. After changing any `packages/plugin-access-tokens*` package, run `yarn install` from `e2e/harness` before starting the harness or running harness-based validation. This refreshes the copied package snapshots and the harness lockfile hash so manual testing and Playwright/API smoke tests exercise the current source.
 
+This also applies to Changesets version bumps. If `npx changeset version` or the `Version Packages` release PR changes any `packages/plugin-access-tokens*/package.json` version or internal dependency range, refresh `e2e/harness/yarn.lock` with:
+
+```bash
+cd e2e/harness
+yarn install
+yarn install --immutable
+```
+
+Commit the resulting harness lockfile changes with the release/versioning work. Otherwise `CI / ui-smoke` will fail during `Install harness dependencies` because the immutable harness install detects stale `file:` package hashes.
+
 If a change is not meaningfully tested, call that out explicitly rather than implying confidence.
 
 ## Pull Requests
