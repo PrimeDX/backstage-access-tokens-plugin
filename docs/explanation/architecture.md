@@ -1,4 +1,4 @@
-# Architecture
+# Architecture Explained
 
 Audience: contributors and advanced readers who need the internal design, not the install story.
 
@@ -248,7 +248,7 @@ However, Backstage's `ExternalTokenHandler.verifyToken()` return type is `{ subj
 
 To bridge this gap, the plugin provides two mechanisms for consumers to access scopes:
 
-1. **`getServiceTokenScopeResolver()`** — returns a function bound to the verification cache. Pass the raw token from the `Authorization` header and get back the scopes array. Zero-cost, no DB queries. Best for route-level middleware (Pattern A in the [Scope Enforcement Runbook](runbooks/scope-enforcement.md)).
+1. **`getServiceTokenScopeResolver()`** — returns a function bound to the verification cache. Pass the raw token from the `Authorization` header and get back the scopes array. Zero-cost, no DB queries. Best for route-level middleware (Pattern A in the [Scope Enforcement Runbook](../how-to/enforce-scopes.md)).
 
 2. **Direct database read** — parse the subject (`service-token:<group>:<name>`) to extract the group and token name, then query the `service_access_tokens` table. Required for permission policy integration (Pattern B) where the raw token is not available.
 
@@ -273,4 +273,4 @@ The frontend package follows two conventions that differ from typical Backstage 
 - **UI component tests** use Storybook — each component has a dedicated story file covering all meaningful states.
 - **Integration tests** are run against a local Backstage harness app that installs the plugin packages and exercises the documented API and UI flows.
 
-See [Testing Guide](testing.md) for the full end-to-end test walkthrough.
+See [Testing Guide](../how-to/test.md) for the full end-to-end test walkthrough.

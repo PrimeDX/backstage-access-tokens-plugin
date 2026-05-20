@@ -1,4 +1,4 @@
-# Developer Test Guide
+# Test Local Package Changes
 
 Audience: maintainers working on unpublished changes to this plugin.
 
@@ -10,7 +10,7 @@ By the end of this guide you should be able to answer:
 - do local `file:` installs still behave correctly
 - does the primary create -> audit -> revoke flow still work end to end
 
-For the adopter experience, use the [Tutorial](tutorial.md) or [Getting Started](getting-started.md). For the broader post-install validation path, use the [Testing Guide](testing.md).
+For the adopter experience, use the [Tutorial](../tutorials/build-a-backstage-app.md) or [Getting Started](install.md). For the broader post-install validation path, use the [Testing Guide](test.md).
 
 ## What This Guide Covers
 
@@ -22,9 +22,9 @@ For the adopter experience, use the [Tutorial](tutorial.md) or [Getting Started]
 
 The canonical behavior for this guide matches:
 
-- [REST API Reference](api.md)
-- [Testing Guide](testing.md)
-- [Contract Decisions](contract-decisions.md)
+- [REST API Reference](../reference/rest-api.md)
+- [Testing Guide](test.md)
+- [Contract Decisions](../reference/contract-decisions.md)
 
 ## Prerequisites
 
@@ -212,7 +212,7 @@ Capture enough detail to tell whether the issue belongs to this repository, the 
 - backend and frontend logs
 - whether the failure reproduced in the reusable harness, a fresh app, or both
 - whether the mismatch is in behavior, docs, or packaging
-- whether the failure affects the public contract in [Contract Decisions](contract-decisions.md)
+- whether the failure affects the public contract in [Contract Decisions](../reference/contract-decisions.md)
 
 ## Recommended Maintainer Loop
 

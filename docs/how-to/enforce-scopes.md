@@ -1,4 +1,4 @@
-# Scope Enforcement Runbook (Optional)
+# Enforce Service Token Scopes
 
 This runbook helps teams decide **when and how** to enforce service token scopes in their Backstage deployment.
 

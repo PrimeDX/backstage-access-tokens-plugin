@@ -1,8 +1,8 @@
-# Testing the Service Token Plugin
+# Test the Access Tokens Plugin
 
 Audience: adopters and operators validating an installed plugin in a local or pre-production Backstage environment.
 
-Use this guide to confirm the plugin works end to end after installation. For unpublished package work or local `file:` installs, use the maintainer-focused [Developer Test Guide](developer-test-guide.md).
+Use this guide to confirm the plugin works end to end after installation. For unpublished package work or local `file:` installs, use the maintainer-focused [Developer Test Guide](test-local-changes.md).
 
 By the end of this guide you should be able to verify:
 

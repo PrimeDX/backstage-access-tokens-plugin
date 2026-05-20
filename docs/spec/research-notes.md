@@ -396,7 +396,7 @@ Specifically:
   is not a per-token revocation API for arbitrary stored sessions.
 
 **Spec implication (LOAD-BEARING)**: The architecture document's
-[§3.2 revocation Path A / Path B / Path C analysis](spec/user-tokens-architecture.md#32--q-r5-a-residual)
+[§3.2 revocation Path A / Path B / Path C analysis](user-tokens-architecture.md#32-revocation-mechanism-path-b-post-spike)
 needs to be revised. Path A (direct service-ref consumption) is **not
 viable** — no such ref exists. Path B (HTTP self-call) **is** viable, but
 requires the plugin to possess the raw refresh token at revocation time,

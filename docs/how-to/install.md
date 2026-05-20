@@ -1,4 +1,4 @@
-# Getting Started
+# Install in an Existing Backstage App
 
 Audience: platform engineers wiring the plugin into an existing Backstage app.
 
@@ -148,7 +148,7 @@ All three are `ResourcePermission<'service-token'>`, which means they are compat
 
 Scope-level authorization remains consumer-driven: if you need route-level enforcement for token scopes, implement checks in the plugins/policies that own those routes.
 
-For an optional operator-oriented implementation baseline, see the [Scope Enforcement Runbook](runbooks/scope-enforcement.md).
+For an optional operator-oriented implementation baseline, see the [Scope Enforcement Runbook](enforce-scopes.md).
 
 Create (or update) your permission policy:
 
@@ -260,7 +260,7 @@ accessTokens:
 
 This grants the service token permissions to the listed users. Users not in this list will receive `403 Forbidden` when accessing any service token endpoint.
 
-For all available configuration options, see the [Configuration Reference](configuration.md).
+For all available configuration options, see the [Configuration Reference](../reference/configuration.md).
 
 ---
 
@@ -388,7 +388,7 @@ The plugin uses this key to encrypt refresh tokens at rest in the
 plugin DB (AES-256-GCM). The key is needed at revocation time to
 call `/v1/revoke` with the decrypted token. Losing the key
 permanently breaks UI revocation for in-flight tokens; rotate
-carefully (see [Production Readiness](production-readiness.md)).
+carefully (see [Production Readiness](production.md)).
 
 ### 8.3 Wire the auth-consent plugin into the frontend
 
@@ -477,7 +477,7 @@ curl -H "Authorization: Bearer $ACCESS_TOKEN" "$BACKSTAGE/api/catalog/entities" 
 The catalog returns its entities as that user — proving the
 returned API token authenticates as a user principal end-to-end.
 
-For deeper detail see [docs/spec/user-tokens-verification.md](spec/user-tokens-verification.md).
+For deeper detail see [docs/spec/user-tokens-verification.md](../spec/user-tokens-verification.md).
 
 ---
 
@@ -511,7 +511,7 @@ The plugin uses **same-tab navigation** (not a popup) for the OAuth dance. Click
 
 ## Next steps
 
-- [Configuration Reference](configuration.md) — tune token lifetime, cache TTL, custom scopes, and user-token settings
-- [REST API Reference](api.md) — integrate service tokens and personal access tokens into external clients and automation
-- [Testing Guide](testing.md) — full end-to-end test walkthrough for both API and UI paths
-- [Scope Enforcement Runbook](runbooks/scope-enforcement.md) — optional guide for enforcing token scopes on specific routes
+- [Configuration Reference](../reference/configuration.md) — tune token lifetime, cache TTL, custom scopes, and user-token settings
+- [REST API Reference](../reference/rest-api.md) — integrate service tokens and personal access tokens into external clients and automation
+- [Testing Guide](test.md) — full end-to-end test walkthrough for both API and UI paths
+- [Scope Enforcement Runbook](enforce-scopes.md) — optional guide for enforcing token scopes on specific routes

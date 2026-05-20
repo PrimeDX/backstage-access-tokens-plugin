@@ -3,7 +3,7 @@
 **Status**: Draft — Phase 4 of Spec-Driven Development plan
 **Companion documents**: [overview](./user-tokens-overview.md),
 [API](./user-tokens-api.md), [architecture](./user-tokens-architecture.md),
-[research](../research-notes.md).
+[research](./research-notes.md).
 **Scope**: The exact procedure to run against the local `e2e/harness/`
 Backstage 1.49 app to prove the personal-access-token capability is working
 software. Pass criteria are binary; a single failure blocks the PR.
@@ -280,7 +280,7 @@ verification runs work.)
 
 ## 4. Result capture
 
-Record the run's outcome in `docs/research-notes.md` under a new
+Record the run's outcome in `docs/spec/research-notes.md` under a new
 "Phase 4 verification results" section, with this template:
 
 ```

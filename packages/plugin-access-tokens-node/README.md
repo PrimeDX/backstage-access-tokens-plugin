@@ -74,6 +74,6 @@ It also does not provide the admin UI. For that, install `@primedx/plugin-access
 ## Learn More
 
 - [Root README](../../README.md) for the full package overview
-- [Getting Started](../../docs/getting-started.md) for backend and policy wiring
-- [REST API Reference](../../docs/api.md) for the backend contract this module supports
-- [Testing Guide](../../docs/testing.md) for post-install validation
+- [Install in an Existing App](../../docs/how-to/install.md) for backend and policy wiring
+- [REST API Reference](../../docs/reference/rest-api.md) for the backend contract this module supports
+- [Test the Plugin](../../docs/how-to/test.md) for post-install validation

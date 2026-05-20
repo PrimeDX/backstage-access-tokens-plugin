@@ -58,7 +58,7 @@ This plugin expects a Backstage app that already uses:
 - the default auth policy enabled
 - the Backstage permission framework for admin authorization
 
-The [Getting Started guide](docs/getting-started.md) walks through these prerequisites in detail for an existing Backstage app. The [Tutorial](docs/tutorial.md) covers the full from-scratch experience.
+The [install guide](docs/how-to/install.md) walks through these prerequisites in detail for an existing Backstage app. The [tutorial](docs/tutorials/build-a-backstage-app.md) covers the full from-scratch experience.
 
 ## Quick Start
 
@@ -186,10 +186,10 @@ Do not install both `personalAccessTokensAuthPlugin` and Backstage's stock auth 
 After restarting the backend you should see this log line at boot:
 
 ```
-access-tokens info personal access tokens capability enabled at /api/access-tokens/personal
+access-tokens info personal-access-token capability enabled at /api/access-tokens/personal
 ```
 
-Then any authenticated user can mint, list, and revoke tokens from `Settings` → `Personal Access Tokens` (`/settings/personal-tokens`). See [Getting Started §Step 8](docs/getting-started.md#step-8--optional-enable-user-tokens) for the full walkthrough including a smoke test.
+Then any authenticated user can mint, list, and revoke tokens from `Settings` → `Personal Access Tokens` (`/settings/personal-tokens`). See [Install §Step 8](docs/how-to/install.md#step-8-optional-enable-personal-access-tokens) for the full walkthrough including a smoke test.
 
 ### 6. Configure service-token administrators
 
@@ -266,17 +266,17 @@ Start here based on what you are trying to do:
 | Doc | Audience | Purpose |
 |---|---|---|
 | [Documentation Home](docs/index.md) | Everyone | Entry point and reading guide |
-| [Tutorial](docs/tutorial.md) | Evaluator or new adopter | End-to-end install in a fresh Backstage app |
-| [Getting Started](docs/getting-started.md) | Platform engineer | Integrate the plugin into an existing Backstage app |
-| [Configuration Reference](docs/configuration.md) | Platform engineer | Configure token TTL, scopes, and admin access |
-| [REST API Reference](docs/api.md) | Integrator | Request and response contracts for every endpoint |
-| [Testing Guide](docs/testing.md) | Adopter or operator | Validate the plugin through API, UI, and smoke checks |
-| [Production Readiness](docs/production-readiness.md) | Platform engineer | Hardening guidance for auth, policy, and operations |
-| [Architecture](docs/architecture.md) | Contributor | Internal design and package responsibilities |
-| [Contract Decisions](docs/contract-decisions.md) | Contributor or reviewer | Canonical public behavior that should stay stable |
-| [Developer Test Guide](docs/developer-test-guide.md) | Maintainer | Fast repeatable verification for unpublished changes |
-| [Git Workflow](docs/git-workflow.md) | Maintainer or contributor | Branching and pull request conventions for this repository |
-| [Release Guide](docs/releasing.md) | Maintainer | Changesets and npm publishing workflow |
+| [Tutorial](docs/tutorials/build-a-backstage-app.md) | Evaluator or new adopter | End-to-end install in a fresh Backstage app |
+| [Install in an Existing App](docs/how-to/install.md) | Platform engineer | Integrate the plugin into an existing Backstage app |
+| [Configuration Reference](docs/reference/configuration.md) | Platform engineer | Configure token TTL, scopes, and admin access |
+| [REST API Reference](docs/reference/rest-api.md) | Integrator | Request and response contracts for every endpoint |
+| [Test the Plugin](docs/how-to/test.md) | Adopter or operator | Validate the plugin through API, UI, and smoke checks |
+| [Prepare for Production](docs/how-to/production.md) | Platform engineer | Hardening guidance for auth, policy, and operations |
+| [Architecture Explained](docs/explanation/architecture.md) | Contributor | Internal design and package responsibilities |
+| [Contract Decisions](docs/reference/contract-decisions.md) | Contributor or reviewer | Canonical public behavior that should stay stable |
+| [Test Local Package Changes](docs/how-to/test-local-changes.md) | Maintainer | Fast repeatable verification for unpublished changes |
+| [Contribute with Git](docs/how-to/contribute-with-git.md) | Maintainer or contributor | Branching and pull request conventions for this repository |
+| [Release to npm](docs/how-to/release.md) | Maintainer | Changesets and npm publishing workflow |
 
 ## Package READMEs
 
@@ -346,7 +346,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution standards and the pull r
 
 `AGENTS.md` is also tracked in this repository to define expectations for coding agents working on the project.
 
-If you are iterating on unpublished package changes, use the maintainer-focused [Developer Test Guide](docs/developer-test-guide.md).
+If you are iterating on unpublished package changes, use the maintainer-focused [local package testing guide](docs/how-to/test-local-changes.md).
 
 ## License
 

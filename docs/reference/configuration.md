@@ -116,7 +116,7 @@ accessTokens:
 
 > **Important:** The default value (`user:development/guest`) is intentionally permissive for local development. Always set an explicit list in production.
 
-The permission check is delegated to your Backstage permission policy. The config value is read by the policy implementation — see [Getting Started](getting-started.md) for the reference policy in Step 4.
+The permission check is delegated to your Backstage permission policy. The config value is read by the policy implementation — see [Install in an Existing App](../how-to/install.md) for the reference policy in Step 4.
 
 > **Migration note:** Older examples used a single `access-tokens.admin` permission. The current plugin uses three granular permissions instead. If you still check only `serviceAccessTokensReadPermission`, users will have read access only until you update your policy.
 
@@ -178,7 +178,7 @@ The plugin family also exposes a **user-self-service personal access
 token** capability under `accessTokens.personal.*`. It is opt-in
 and gated by upstream Backstage auth-backend flags; access-tokens
 behavior is unchanged whether you enable it or not. See
-[Getting Started §Step 8](getting-started.md#step-8--optional-enable-user-tokens)
+[Install §Step 8](../how-to/install.md#step-8-optional-enable-personal-access-tokens)
 for the integration walkthrough.
 
 ### Required upstream `auth.*` flags
@@ -241,7 +241,7 @@ openssl rand -base64 32
 The plugin refuses to mount the personal-access-token routes if this key is
 missing or doesn't decode to 32 bytes. **Treat as a secret** —
 losing it permanently breaks UI revocation for tokens minted
-under it. See [Production Readiness](production-readiness.md) for
+under it. See [Prepare for Production](../how-to/production.md) for
 rotation guidance.
 
 #### `dcrClient` (optional)

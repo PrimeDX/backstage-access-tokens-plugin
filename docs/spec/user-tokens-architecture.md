@@ -2,7 +2,7 @@
 
 **Status**: Draft — Phase 2 of Spec-Driven Development plan
 **Companion documents**: [overview](./user-tokens-overview.md),
-[API](./user-tokens-api.md), [research](../research-notes.md).
+[API](./user-tokens-api.md), [research](./research-notes.md).
 **Scope**: Implementation-shaping decisions — how the plugin orchestrates
 Backstage's native OAuth flow, where it stores state, which seams in the
 existing access-tokens plugin codebase it extends, and the threat model.
@@ -54,14 +54,14 @@ on first use, then caches the `client_id`/`client_secret` in its own table
 (`personal_access_tokens_dcr_client`, see §6). On subsequent mints it reuses the same
 client. The redirect URI is the plugin's own callback endpoint
 (`/api/access-tokens/personal/mint/callback`, per
-[API §1.2](./user-tokens-api.md#12--get-personaltokensmintcallback--oauth-callback)).
+[API §1.2](./user-tokens-api.md#12-get-personalmintcallback-oauth-callback)).
 
 Operators who prefer a pre-registered client can configure one via
 `accessTokens.personal.dcrClient` (per [API §4](./user-tokens-api.md#4-configuration-surface-app-configyaml)).
 In that case DCR registration is skipped.
 
 The plugin requests scopes `openid offline_access` per
-[research-notes.md Q-R4-a](../research-notes.md#open-questions-surfaced-by-research),
+[research-notes.md Q-R4-a](./research-notes.md#open-questions-surfaced-by-research),
 which is what auth-backend's DCR registrar already grants by default.
 
 **Discovery path**: the orchestrator fetches the OAuth/OIDC server
@@ -70,7 +70,7 @@ metadata from `<auth-backend-origin>/.well-known/openid-configuration`
 `/.well-known/oauth-authorization-server` path; the OIDC variant
 includes the same fields plus `registration_endpoint` and
 `revocation_endpoint` when DCR is enabled. See
-[research-notes Phase 4 R4-V3](../research-notes.md#phase-4-verification-readiness-post-implementation-research)
+[research-notes Phase 4 R4-V3](./research-notes.md#phase-4-verification-readiness-post-implementation-research)
 for the upstream source citation.
 
 **Auth method note**: the plugin sends
@@ -239,7 +239,7 @@ proactively revoke; it can offer a maintenance script later for cleanliness.
 
 ## 5. Permission framework integration
 
-Three new permissions are declared (per [API §3.1](./user-tokens-api.md#31--primedxplugin-access-tokens-node)):
+Three new permissions are declared (per [API §3.1](./user-tokens-api.md#31-primedxplugin-access-tokens-node)):
 
 - `access-tokens:user:read`
 - `access-tokens:user:write`
@@ -316,7 +316,7 @@ exports and nothing else. No new external-token-handler is exported (see §1).
 
 ## 9. Verification — what proves this architecture is right
 
-Beyond the API and DB tests in [API §6](./user-tokens-api.md#6-verification--what-proves-this-spec-is-satisfied):
+Beyond the API and DB tests in [API §6](./user-tokens-api.md#5-verification-what-proves-this-spec-is-satisfied):
 
 1. **Principal-type test**: in an integration test, mint a token, exchange
    it for a JWT, call a probe endpoint that asserts

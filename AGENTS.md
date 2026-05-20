@@ -17,10 +17,10 @@ The plugin manages Personal Access Tokens and long-lived, group-scoped service t
 Read these first before making behavior changes:
 
 1. `README.md`
-2. `docs/contract-decisions.md`
-3. `docs/api.md`
-4. `docs/testing.md`
-5. `docs/developer-test-guide.md`
+2. `docs/reference/contract-decisions.md`
+3. `docs/reference/rest-api.md`
+4. `docs/how-to/test.md`
+5. `docs/how-to/test-local-changes.md`
 
 When docs, tests, and implementation diverge, align changes to the canonical contract rather than preserving accidental drift.
 
@@ -49,12 +49,12 @@ Treat these as locked unless the public contract is intentionally changed across
 - Add or update JSDoc where exported behavior, interfaces, or non-obvious logic need durable explanation
 - Keep commits reviewable and grouped by change type
 - Use Conventional Commits
-- Do not casually rewrite `docs/contract-decisions.md`; only change it when the intended public contract changes
+- Do not casually rewrite `docs/reference/contract-decisions.md`; only change it when the intended public contract changes
 - When creating plans, prefer iterative and incremental steps that establish truth before building on later work
 
 ## Branch Naming
 
-- For this repository, agents should use the same branch naming pattern documented in `docs/git-workflow.md`: `<type>/<short-topic>`
+- For this repository, agents should use the same branch naming pattern documented in `docs/how-to/contribute-with-git.md`: `<type>/<short-topic>`
 - Do not prepend tool-specific prefixes such as `codex/` to agent-created branches in this repository
 - Match branch topics to one reviewable change, for example `docs/fix-api-reference` or `fix/revoke-ttl-docs`
 - If the user provides a branch name, follow the user's choice
@@ -68,7 +68,7 @@ When relevant to the change, also use:
 - `scripts/test-api.sh` for API and auth smoke validation
 - `npm run test:ui-smoke` for the primary admin UI create → audit → revoke path
 
-Use a local Backstage integration harness for end-to-end validation. For recommended harness characteristics and maintainer workflow, follow `docs/developer-test-guide.md`.
+Use a local Backstage integration harness for end-to-end validation. For recommended harness characteristics and maintainer workflow, follow `docs/how-to/test-local-changes.md`.
 
 ## Harness Local Package Refresh
 

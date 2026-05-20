@@ -1,4 +1,4 @@
-# Git Workflow
+# Contribute with Git
 
 Audience: maintainers and contributors making changes in this repository.
 
@@ -47,11 +47,11 @@ Keep pull requests focused and easy to review:
 
 If a change touches auth, permissions, audit fields, revoke behavior, or installation wiring, verify the implementation still matches the canonical docs:
 
-- [README](../README.md)
-- [Contract Decisions](contract-decisions.md)
-- [REST API Reference](api.md)
-- [Testing Guide](testing.md)
-- [Developer Test Guide](developer-test-guide.md)
+- [README](../../README.md)
+- [Contract Decisions](../reference/contract-decisions.md)
+- [REST API Reference](../reference/rest-api.md)
+- [Testing Guide](test.md)
+- [Developer Test Guide](test-local-changes.md)
 
 ## Keeping Branches Current
 

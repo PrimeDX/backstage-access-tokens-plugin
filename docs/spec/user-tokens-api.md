@@ -2,7 +2,7 @@
 
 **Status**: Draft — Phase 2 of Spec-Driven Development plan
 **Companion documents**: [overview](./user-tokens-overview.md),
-[architecture](./user-tokens-architecture.md), [research](../research-notes.md).
+[architecture](./user-tokens-architecture.md), [research](./research-notes.md).
 **Scope**: HTTP API contract, DB schema, public TypeScript exports, and
 `app-config.yaml` surface for the user-token capability.
 
@@ -19,7 +19,7 @@ namespaced under `/personal`, while service-token routes are namespaced
 under `/service`.
 
 Full path examples assume Backstage's standard `/api/<plugin-id>` prefix:
-`POST /api/access-tokens/personal`.
+`POST /api/access-tokens/personal/mint`.
 
 All routes require an authenticated browser session via the existing
 `httpRouter.addAuthPolicy({ allow: 'user-cookie' })` mechanism (per R7).
@@ -107,7 +107,7 @@ It is transmitted to the frontend via a same-tab URL fragment exactly once
 and then discarded server-side. The plugin clears the fragment via
 `history.replaceState` after reading it. The plugin's table only stores
 metadata. See
-[architecture §4](./user-tokens-architecture.md#threat-model) for the
+[architecture §4](./user-tokens-architecture.md#4-threat-model) for the
 threat model.
 
 ### 1.3 — `GET /personal` — list my tokens
@@ -146,7 +146,7 @@ user (do not distinguish — privacy invariant).
 
 Revokes a token. Issues the revocation against `OfflineAccessService` via
 whatever auth-backend mechanism is accessible to the plugin (architecture
-will pin the exact API; see [Q-R5-a residual](./user-tokens-architecture.md#q-r5-a-residual)),
+will pin the exact API; see [Q-R5-a residual](./user-tokens-architecture.md#32-revocation-mechanism-path-b-post-spike)),
 then marks the metadata row as revoked.
 
 Response: `204 No Content`.
@@ -394,7 +394,7 @@ yes/no outcomes per user story.
 
 In short: bring up the harness with the experimental flags + the
 encryption key, mint a token in the UI, then run the two-curl
-sequence from [overview US-2](./user-tokens-overview.md#us-2--use-a-token-from-an-integration)
+sequence from [overview US-2](./user-tokens-overview.md#us-2-use-a-token-from-an-integration)
 and confirm 200 against a probe endpoint that returns the calling
 user's `userEntityRef`. Revoke the token from the UI; the same
 sequence then returns 401 from `/v1/token`.

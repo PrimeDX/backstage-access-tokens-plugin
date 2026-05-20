@@ -1,23 +1,32 @@
-site_name: Backstage Service Token Plugin
-site_description: Documentation for the Backstage Service Token Plugin — lifecycle management for machine-to-machine service tokens.
+site_name: Backstage Access Tokens Plugin
+site_description: Documentation for the Backstage Access Tokens Plugin — lifecycle management for personal access tokens and service tokens.
 docs_dir: docs
 
 nav:
   - Home: index.md
-  - Tutorial: tutorial.md
-  - Getting Started: getting-started.md
-  - Configuration: configuration.md
-  - REST API: api.md
-  - Architecture: architecture.md
-  - Testing: testing.md
-  - Production Readiness: production-readiness.md
-  - Runbooks:
-      - Scope Enforcement: runbooks/scope-enforcement.md
+  - Tutorials:
+      - Build a Backstage App: tutorials/build-a-backstage-app.md
+  - How-To Guides:
+      - Install in an Existing App: how-to/install.md
+      - Test the Plugin: how-to/test.md
+      - Test Local Package Changes: how-to/test-local-changes.md
+      - Prepare for Production: how-to/production.md
+      - Enforce Service Token Scopes: how-to/enforce-scopes.md
+      - Contribute with Git: how-to/contribute-with-git.md
+      - Release to npm: how-to/release.md
   - Reference:
-      - Contract Decisions: contract-decisions.md
+      - REST API: reference/rest-api.md
+      - Configuration: reference/configuration.md
+      - Contract Decisions: reference/contract-decisions.md
+  - Explanation:
+      - Architecture: explanation/architecture.md
   - Maintainers:
-      - Developer Test Guide: developer-test-guide.md
-      - Releasing: releasing.md
+      - Spec Knowledge Base: spec/index.md
+      - User Tokens Overview: spec/user-tokens-overview.md
+      - User Tokens API and Schema: spec/user-tokens-api.md
+      - User Tokens Architecture: spec/user-tokens-architecture.md
+      - User Tokens Verification: spec/user-tokens-verification.md
+      - Research Notes: spec/research-notes.md
 
 theme:
   name: material

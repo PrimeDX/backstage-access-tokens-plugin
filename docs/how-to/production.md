@@ -1,10 +1,10 @@
-# Production Readiness Guide
+# Prepare for Production
 
 Audience: platform engineers preparing the plugin for production Backstage environments.
 
 Use this guide after installation is working and you are ready to harden policy, cache behavior, and operational practices.
 
-This guide covers what you need to verify, configure, and decide before running the access tokens plugin in a production Backstage deployment. It assumes you have already completed the [Getting Started](getting-started.md) walkthrough.
+This guide covers what you need to verify, configure, and decide before running the access tokens plugin in a production Backstage deployment. It assumes you have already completed the [Install in an Existing App](install.md) walkthrough.
 
 ---
 
@@ -19,7 +19,7 @@ Run through this before going live. Each item links to the relevant section belo
 - [ ] `accessTokens.service.cacheTtlSeconds` is tuned to match your revocation SLO (see [Cache TTL and revocation SLO](#cache-ttl-and-revocation-slo))
 - [ ] `accessTokens.service.maxTokenLifetimeDays` is set to a value appropriate for your security policy
 - [ ] Audit log retention is understood and covered by your logging infrastructure (see [Audit log retention](#audit-log-retention))
-- [ ] At least one smoke test has been run against the production backend (see [Getting Started](getting-started.md) for the smoke-test flow in Step 7)
+- [ ] At least one smoke test has been run against the production backend (see [Install in an Existing App](install.md) for the smoke-test flow in Step 7)
 
 ---
 
@@ -363,8 +363,8 @@ For auth provider setup, follow the [Backstage auth provider documentation](http
 ## Personal access tokens — operational concerns
 
 If you enabled the optional personal-access-token capability
-([Getting Started §Step 8](getting-started.md#step-8--optional-enable-user-tokens),
-[Configuration §Personal access tokens](configuration.md#user-tokens)), there
+([Install §Step 8](install.md#step-8-optional-enable-personal-access-tokens),
+[Configuration §Personal access tokens](../reference/configuration.md#personal-access-tokens)), there
 are a few production concerns that don't apply to service tokens.
 
 ### Encryption key management

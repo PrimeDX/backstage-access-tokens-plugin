@@ -1,4 +1,4 @@
-# Releasing to npm
+# Release to npm
 
 Audience: maintainers publishing new package versions from this repository.
 

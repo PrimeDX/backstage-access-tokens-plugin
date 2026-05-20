@@ -79,7 +79,7 @@ Returns the list of available scopes that can be assigned to a token.
 }
 ```
 
-Custom scopes defined in `app-config.yaml` are appended to this list. See [Configuration Reference — accessTokens.service.scopes](configuration.md#servicetokensscopes).
+Custom scopes defined in `app-config.yaml` are appended to this list. See [Configuration Reference — accessTokens.service.scopes](configuration.md#accesstokensservicescopes).
 
 ---
 
@@ -447,7 +447,7 @@ Successful response (`200`):
 
 The full wire contract — including the redirect-with-fragment
 shape on the callback and the error-fragment payload — is in
-[`docs/spec/user-tokens-api.md`](spec/user-tokens-api.md).
+[`docs/spec/user-tokens-api.md`](../spec/user-tokens-api.md).
 
 ### Using a personal access token
 

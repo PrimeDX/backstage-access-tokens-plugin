@@ -622,8 +622,8 @@ rm packages/backend/tmp/access-tokens.sqlite
 
 ## What's next
 
-- **[Configuration Reference](configuration.md)** — tune token lifetime, cache TTL, and add custom scopes
-- **[REST API Reference](api.md)** — integrate service tokens into CI pipelines
-- **[Production Readiness Guide](production-readiness.md)** — group-based admin access, policy merging, audit log retention
-- **[Architecture](architecture.md)** — understand how token verification works under the hood
-- **[Scope Enforcement Runbook](runbooks/scope-enforcement.md)** — enforce token scopes on specific routes in your own plugins
+- **[Configuration Reference](../reference/configuration.md)** — tune token lifetime, cache TTL, and add custom scopes
+- **[REST API Reference](../reference/rest-api.md)** — integrate service tokens into CI pipelines
+- **[Production Readiness Guide](../how-to/production.md)** — group-based admin access, policy merging, audit log retention
+- **[Architecture](../explanation/architecture.md)** — understand how token verification works under the hood
+- **[Scope Enforcement Runbook](../how-to/enforce-scopes.md)** — enforce token scopes on specific routes in your own plugins

@@ -79,6 +79,6 @@ It also does not provide the frontend admin page. If you want the UI, install `@
 ## Learn More
 
 - [Root README](../../README.md) for the installation overview
-- [Getting Started](../../docs/getting-started.md) for the supported integration flow
-- [REST API Reference](../../docs/api.md) for route contracts and response shapes
-- [Testing Guide](../../docs/testing.md) for post-install validation
+- [Install in an Existing App](../../docs/how-to/install.md) for the supported integration flow
+- [REST API Reference](../../docs/reference/rest-api.md) for route contracts and response shapes
+- [Test the Plugin](../../docs/how-to/test.md) for post-install validation

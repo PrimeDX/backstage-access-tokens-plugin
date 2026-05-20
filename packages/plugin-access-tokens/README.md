@@ -98,6 +98,6 @@ To make the page functional, wire the backend and node packages into your Backst
 ## Learn More
 
 - [Root README](../../README.md) for the package overview and install order
-- [Getting Started](../../docs/getting-started.md) for full frontend and backend wiring
-- [REST API Reference](../../docs/api.md) for the backend contract this UI consumes
-- [Testing Guide](../../docs/testing.md) for post-install validation
+- [Install in an Existing App](../../docs/how-to/install.md) for full frontend and backend wiring
+- [REST API Reference](../../docs/reference/rest-api.md) for the backend contract this UI consumes
+- [Test the Plugin](../../docs/how-to/test.md) for post-install validation

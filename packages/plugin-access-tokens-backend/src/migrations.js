@@ -84,7 +84,7 @@ export async function applyServiceTokenMigrations(client) {
 
   // personal_access_token_audit_log — events for user-token lifecycle. Mirrors the
   // service_access_token_audit_log shape (id, tokenId, event, actor, metadata,
-  // occurredAt) per docs/contract-decisions.md.
+  // occurredAt) per docs/reference/contract-decisions.md.
   const hasUserAuditTable = await client.schema.hasTable('personal_access_token_audit_log');
   if (!hasUserAuditTable) {
     await client.schema.createTable('personal_access_token_audit_log', table => {

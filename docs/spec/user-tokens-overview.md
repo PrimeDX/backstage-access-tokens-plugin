@@ -3,7 +3,7 @@
 **Status**: Draft — Phase 2 of Spec-Driven Development plan
 **Scope**: Add a user-token capability to this plugin family alongside the
 existing service-token capability.
-**Source of architectural facts**: [`../research-notes.md`](../research-notes.md).
+**Source of architectural facts**: [`./research-notes.md`](./research-notes.md).
 
 ## Problem statement
 
@@ -122,7 +122,7 @@ Acceptance:
 
 - A revoke action on each row triggers a confirmation dialog. Confirming
   invalidates the refresh token (the plugin invokes auth-backend's
-  revocation API — see [API spec §revocation](./user-tokens-api.md#revocation)).
+  revocation API — see [API spec §revocation](./user-tokens-api.md#15-delete-personalid-revoke)).
 - The revoked token can no longer be exchanged for a JWT at the next
   `/refresh` call.
 - The token remains visible in the user's list (marked revoked) for
@@ -173,12 +173,12 @@ Concretely:
 
 - A DCR-registered plugin-owned OAuth client mints refresh tokens through
   `/v1/authorize` → `/v1/token` (RFC 6749 / RFC 7591 compliant) — confirmed
-  in [research-notes Q-R4-a](../research-notes.md#open-questions-surfaced-by-research).
+  in [research-notes Q-R4-a](./research-notes.md#open-questions-surfaced-by-research).
 - The plugin maintains a metadata table (`personal_access_tokens`) for the UX (name,
   expiry, prefix, last used). The actual token validity and rotation live in
   `OfflineSessionDatabase` owned by `@backstage/plugin-auth-backend`
   (research R5).
-- Revocation is delegated to auth-backend. (See [Architecture §3](./user-tokens-architecture.md#revocation)
+- Revocation is delegated to auth-backend. (See [Architecture §3](./user-tokens-architecture.md#3-revocation)
   for the precise mechanism, including the residual-risk note on
   Q-R5-a.)
 
@@ -196,7 +196,7 @@ User      Browser/Frontend       Plugin Backend       auth-backend       Offline
   |              |                       |                  |                  |
   | click "Create token"                 |                  |                  |
   |------------> |                       |                  |                  |
-  |              | POST /api/access-tokens/personal (name, expiry)     |                  |
+  |              | POST /api/access-tokens/personal/mint (name, expiry)|                  |
   |              |---------------------> |                  |                  |
   |              |                       | start OAuth (DCR client)            |
   |              |                       |----------------> |                  |
@@ -237,7 +237,7 @@ Plugin -> auth-backend: invoke OfflineAccessService revocation by session id
 auth-backend -> DB: hash invalidated; next /refresh fails
 ```
 
-(See [Architecture §3 — Revocation](./user-tokens-architecture.md#revocation)
+(See [Architecture §3 — Revocation](./user-tokens-architecture.md#3-revocation)
 for the exact API call, including the open question Q-R5-a residual risk.)
 
 ## Open design decisions (resolved here)
@@ -304,5 +304,5 @@ A v1 implementation is "done" when:
 5. The plugin's audit log records mint, list, and revoke actions for the
    acting user.
 
-Phase 4 (implementation) will produce a `docs/testing.md` companion to this
+Phase 4 (implementation) will produce a `docs/how-to/test.md` companion to this
 overview.
