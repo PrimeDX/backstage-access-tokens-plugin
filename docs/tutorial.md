@@ -11,7 +11,7 @@ By the end of this tutorial you will have:
 
 - A **Backstage developer portal** running locally, scaffolded from scratch
 - The **service token plugin** installed and wired into both the backend and frontend
-- An **admin UI** at `/admin/service-tokens` where you can create and manage tokens
+- An **admin UI** at `/admin/access-tokens` where you can create and manage tokens
 - A **machine-readable service token** that authenticates against the Backstage Catalog API
 - **Proof it all works** — via both `curl` and the browser
 
@@ -89,16 +89,16 @@ The service token plugin ships as three npm packages:
 
 | Package | Role |
 |---|---|
-| `@primedx/plugin-service-tokens-backend` | REST API, database, permission enforcement |
-| `@primedx/plugin-service-tokens-node` | Shared auth handler — makes raw tokens accepted by Backstage |
-| `@primedx/plugin-service-tokens` | Frontend admin UI |
+| `@primedx/plugin-access-tokens-backend` | REST API, database, permission enforcement |
+| `@primedx/plugin-access-tokens-node` | Shared auth handler — makes raw tokens accepted by Backstage |
+| `@primedx/plugin-access-tokens` | Frontend admin UI |
 
 Install them into the correct workspaces:
 
 ```bash
-yarn --cwd packages/backend add @primedx/plugin-service-tokens-backend
-yarn --cwd packages/backend add @primedx/plugin-service-tokens-node
-yarn --cwd packages/app add @primedx/plugin-service-tokens
+yarn --cwd packages/backend add @primedx/plugin-access-tokens-backend
+yarn --cwd packages/backend add @primedx/plugin-access-tokens-node
+yarn --cwd packages/app add @primedx/plugin-access-tokens
 ```
 
 ### ✅ Checkpoint 2
@@ -136,18 +136,18 @@ backend.add(import('@backstage/plugin-permission-backend'));
 backend.add(import('@backstage/plugin-permission-backend-module-allow-all-policy'));
 
 // Service token plugin — REST API and token database
-backend.add(import('@primedx/plugin-service-tokens-backend'));
+backend.add(import('@primedx/plugin-access-tokens-backend'));
 
 // Auth handler — makes raw service tokens accepted by Backstage's auth layer
-backend.add(import('@primedx/plugin-service-tokens-node'));
+backend.add(import('@primedx/plugin-access-tokens-node'));
 
 backend.start();
 ```
 
 **Why two registrations?**
 
-- `serviceTokensPlugin` provides the REST API at `/api/service-tokens` and manages the token database.
-- `serviceTokenHandlerModule` registers the `backstage-service-token` external auth handler with Backstage's `core.auth` service. This is what makes raw service tokens accepted as valid credentials on *any* backend route — not just the service token API.
+- `accessTokensPlugin` provides the REST API at `/api/access-tokens/service` and manages the token database.
+- `serviceAccessTokenHandlerModule` registers the `backstage-service-access-token` external auth handler with Backstage's `core.auth` service. This is what makes raw service tokens accepted as valid credentials on *any* backend route — not just the service token API.
 
 > ⚠️ **Do not add `plugin-permission-backend` a second time.** A fresh Backstage scaffold already includes it. Adding it twice causes a startup crash: *"ExtensionPoint with ID 'permission.policy' is already registered"*.
 
@@ -171,19 +171,19 @@ Open `packages/app/src/App.tsx` and add the service token plugin to the `feature
 
 ```typescript
 import { createApp } from '@backstage/frontend-defaults';
-import serviceTokensPlugin from '@primedx/plugin-service-tokens';
+import accessTokensPlugin from '@primedx/plugin-access-tokens';
 
 const app = createApp({
   features: [
     // ... your other plugins ...
-    serviceTokensPlugin,
+    accessTokensPlugin,
   ],
 });
 
 export default app.createRoot();
 ```
 
-The plugin registers a page at `/admin/service-tokens` using Backstage's `PageBlueprint`. No additional route configuration is needed.
+The plugin registers a page at `/admin/access-tokens` using Backstage's `PageBlueprint`. No additional route configuration is needed.
 
 ### ✅ Checkpoint 4
 
@@ -205,9 +205,9 @@ The plugin enforces three granular permissions on its API endpoints:
 
 | Permission | What it gates |
 |---|---|
-| `service-tokens:read` | List tokens, get details, view audit logs, list scopes |
-| `service-tokens:write` | Create tokens |
-| `service-tokens:revoke` | Revoke tokens |
+| `access-tokens:service:read` | List tokens, get details, view audit logs, list scopes |
+| `access-tokens:service:write` | Create tokens |
+| `access-tokens:service:revoke` | Revoke tokens |
 
 > ⚠️ **If you already have a permission policy** in your app, do not create a new one — Backstage supports only one active policy at a time. Instead, add the service token permission checks to your existing `handle` method and skip to the "Register the policy" step below.
 
@@ -228,7 +228,7 @@ import {
 } from '@backstage/plugin-permission-node';
 import { Config } from '@backstage/config';
 
-export class ServiceTokensPermissionPolicy implements PermissionPolicy {
+export class AccessTokensPermissionPolicy implements PermissionPolicy {
   constructor(private readonly config: Config) {}
 
   async handle(
@@ -236,22 +236,22 @@ export class ServiceTokensPermissionPolicy implements PermissionPolicy {
     user?: PolicyQueryUser,
   ): Promise<PolicyDecision> {
     const {
-      serviceTokensReadPermission,
-      serviceTokensWritePermission,
-      serviceTokensRevokePermission,
-    } = await import('@primedx/plugin-service-tokens-node');
+      serviceAccessTokensReadPermission,
+      serviceAccessTokensWritePermission,
+      serviceAccessTokensRevokePermission,
+    } = await import('@primedx/plugin-access-tokens-node');
 
     const adminRefs =
       this.config.getOptionalStringArray(
-        'serviceTokens.admin.userEntityRefs',
+        'accessTokens.service.admin.userEntityRefs',
       ) ?? [];
 
     const isAdmin = adminRefs.includes(user?.info.userEntityRef ?? '');
 
     if (
-      isPermission(request.permission, serviceTokensReadPermission) ||
-      isPermission(request.permission, serviceTokensWritePermission) ||
-      isPermission(request.permission, serviceTokensRevokePermission)
+      isPermission(request.permission, serviceAccessTokensReadPermission) ||
+      isPermission(request.permission, serviceAccessTokensWritePermission) ||
+      isPermission(request.permission, serviceAccessTokensRevokePermission)
     ) {
       return { result: isAdmin ? AuthorizeResult.ALLOW : AuthorizeResult.DENY };
     }
@@ -279,7 +279,7 @@ Your updated `index.ts` should look like this:
 import { createBackend } from '@backstage/backend-defaults';
 import { createBackendModule, coreServices } from '@backstage/backend-plugin-api';
 import { policyExtensionPoint } from '@backstage/plugin-permission-node/alpha';
-import { ServiceTokensPermissionPolicy } from './serviceTokensPermissionPolicy';
+import { AccessTokensPermissionPolicy } from './serviceTokensPermissionPolicy';
 
 const backend = createBackend();
 
@@ -289,13 +289,13 @@ const backend = createBackend();
 backend.add(import('@backstage/plugin-permission-backend'));
 // NOTE: the allow-all line has been REMOVED and replaced by permissionModuleServiceTokens below
 
-backend.add(import('@primedx/plugin-service-tokens-backend'));
-backend.add(import('@primedx/plugin-service-tokens-node'));
+backend.add(import('@primedx/plugin-access-tokens-backend'));
+backend.add(import('@primedx/plugin-access-tokens-node'));
 
 // Permission policy — grants service token permissions to users listed in config
 const permissionModuleServiceTokens = createBackendModule({
   pluginId: 'permission',
-  moduleId: 'service-tokens-policy',
+  moduleId: 'access-tokens-policy',
   register(reg) {
     reg.registerInit({
       deps: {
@@ -303,7 +303,7 @@ const permissionModuleServiceTokens = createBackendModule({
         config: coreServices.rootConfig,
       },
       async init({ policy, config }) {
-        policy.setPolicy(new ServiceTokensPermissionPolicy(config));
+        policy.setPolicy(new AccessTokensPermissionPolicy(config));
       },
     });
   },
@@ -326,16 +326,17 @@ backend.start();
 backend:
   auth:
     externalAccess:
-      - type: backstage-service-token
+      - type: backstage-service-access-token
         options: {}
 
-serviceTokens:
-  admin:
-    userEntityRefs:
-      - user:development/guest   # the default dev user — replace in production
+accessTokens:
+  service:
+    admin:
+      userEntityRefs:
+        - user:development/guest   # the default dev user — replace in production
 ```
 
-> **Why `backend.auth.externalAccess`?** Backstage's auth layer only invokes external token handlers that are listed in this config. The `backstage-service-token` entry tells Backstage to route unrecognised tokens through the service token plugin's verifier. Without it, raw tokens are rejected with `Illegal token` even though the plugin is installed.
+> **Why `backend.auth.externalAccess`?** Backstage's auth layer only invokes external token handlers that are listed in this config. The `backstage-service-access-token` entry tells Backstage to route unrecognised tokens through the service token plugin's verifier. Without it, raw tokens are rejected with `Illegal token` even though the plugin is installed.
 
 > ⚠️ **Production note:** Replace `user:development/guest` with the entity refs of your actual admin users (e.g. `user:default/alice`) in production.
 
@@ -345,11 +346,12 @@ serviceTokens:
 backend:
   database:
     plugin:
-      service-tokens:
-        connection: 'packages/backend/tmp/service-tokens.sqlite'
+      access-tokens:
+        connection: 'packages/backend/tmp/access-tokens.sqlite'
 
-serviceTokens:
-  cacheTtlSeconds: 0
+accessTokens:
+  service:
+    cacheTtlSeconds: 0
 ```
 
 > **Note:** `app-config.local.yaml` is gitignored by default. It is the right place for dev-only overrides. Backstage resolves relative SQLite paths from the project root, and `packages/backend/tmp/` is the conventional location.
@@ -409,7 +411,7 @@ Wait for both lines:
 
 ### ✅ Checkpoint 5
 
-Open `http://localhost:3000/admin/service-tokens`. The page should load with a "Service Tokens" header, filter bar, and **Create token** button. No 401 or 403 error.
+Open `http://localhost:3000/admin/access-tokens`. The page should load with a "Service Tokens" header, filter bar, and **Create token** button. No 401 or 403 error.
 
 ---
 
@@ -459,14 +461,14 @@ echo "TOKEN=$TOKEN"
 ### Step A2 — List available scopes
 
 ```bash
-curl -s http://localhost:7007/api/service-tokens/scopes \
+curl -s http://localhost:7007/api/access-tokens/service/scopes \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
 ### Step A3 — Create a service token
 
 ```bash
-RESPONSE=$(curl -s -X POST http://localhost:7007/api/service-tokens \
+RESPONSE=$(curl -s -X POST http://localhost:7007/api/access-tokens/service \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -497,14 +499,14 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
 ### Step A5 — Inspect the audit log
 
 ```bash
-curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID/audit \
+curl -s http://localhost:7007/api/access-tokens/service/$TOKEN_ID/audit \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
 ### Step A6 — Revoke the token
 
 ```bash
-curl -s -X DELETE http://localhost:7007/api/service-tokens/$TOKEN_ID \
+curl -s -X DELETE http://localhost:7007/api/access-tokens/service/$TOKEN_ID \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"reason": "tutorial revocation test"}' \
@@ -521,14 +523,14 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
   -w "\nHTTP status: %{http_code}\n"
 ```
 
-**Expected:** `HTTP status: 401` immediately in this tutorial, because Part 6 sets `serviceTokens.cacheTtlSeconds: 0`.
+**Expected:** `HTTP status: 401` immediately in this tutorial, because Part 6 sets `accessTokens.service.cacheTtlSeconds: 0`.
 
 ### Step A8 — Test permission enforcement
 
 **Unauthenticated (should get 401):**
 
 ```bash
-curl -s -X POST http://localhost:7007/api/service-tokens \
+curl -s -X POST http://localhost:7007/api/access-tokens/service \
   -H "Content-Type: application/json" \
   -d '{"name":"should-fail","groupEntityRef":"group:default/platform","scopes":["catalog:read"]}' \
   -w "\nHTTP status: %{http_code}\n"
@@ -553,7 +555,7 @@ Make sure `yarn start` is running.
 
 ### Step B1 — Navigate to the page
 
-Open `http://localhost:3000/admin/service-tokens`. Expected: "Service Tokens" header, filter bar, **Create token** button, empty table.
+Open `http://localhost:3000/admin/access-tokens`. Expected: "Service Tokens" header, filter bar, **Create token** button, empty table.
 
 ### Step B2 — Create a token
 
@@ -583,7 +585,7 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
   -w "\nHTTP status: %{http_code}\n"
 ```
 
-**Expected:** `HTTP status: 401` immediately in this tutorial, because Part 6 sets `serviceTokens.cacheTtlSeconds: 0`.
+**Expected:** `HTTP status: 401` immediately in this tutorial, because Part 6 sets `accessTokens.service.cacheTtlSeconds: 0`.
 
 ### Step B7 — Confirm revocation in the audit log
 
@@ -596,7 +598,7 @@ Click **Audit** again. Expected: two rows in newest-first order — `revoked` wi
 ## Cleanup
 
 ```bash
-rm packages/backend/tmp/service-tokens.sqlite
+rm packages/backend/tmp/access-tokens.sqlite
 ```
 
 ---
@@ -606,15 +608,15 @@ rm packages/backend/tmp/service-tokens.sqlite
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `401 Unauthorized` on all API calls | Guest token expired | Re-run the `guest/refresh` curl command |
-| `403 Forbidden` on all API calls | User not in `serviceTokens.admin.userEntityRefs` | Add `user:development/guest` to `app-config.yaml` and restart |
+| `403 Forbidden` on all API calls | User not in `accessTokens.service.admin.userEntityRefs` | Add `user:development/guest` to `app-config.yaml` and restart |
 | `groupEntityRef must reference an existing Group entity` | Tutorial group not in catalog | Complete Part 7, verify `catalog.locations`, restart backend |
 | Catalog group query returns `[]` | No `Group` entities loaded | Add `platform` group to `examples/org.yaml`, restart backend |
-| Raw token still works after revocation | Token is cached | For this tutorial, confirm `serviceTokens.cacheTtlSeconds: 0` is present in `app-config.local.yaml`; otherwise wait up to the configured TTL |
+| Raw token still works after revocation | Token is cached | For this tutorial, confirm `accessTokens.service.cacheTtlSeconds: 0` is present in `app-config.local.yaml`; otherwise wait up to the configured TTL |
 | `ExtensionPoint with ID 'permission.policy' is already registered` | Two policy modules registered at once | Remove `plugin-permission-backend-module-allow-all-policy` from `index.ts` |
 | `No policy module installed!` | Allow-all was removed but no replacement added | Add `permissionModuleServiceTokens` to `index.ts` (Part 5) |
 | Frontend shows 403 on page load | Permission policy not registered | Confirm `permissionModuleServiceTokens` is in `index.ts` and backend was restarted |
 | `Cannot find module` errors | Plugin not installed in workspace | Run `yarn --cwd packages/backend add @primedx/...` |
-| Migrations not running | `database.migrations.skip: true` in config | Remove that config key for the `service-tokens` plugin |
+| Migrations not running | `database.migrations.skip: true` in config | Remove that config key for the `access-tokens` plugin |
 
 ---
 

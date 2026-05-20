@@ -39,7 +39,7 @@ sequenceDiagram
     participant Caller
     participant Backstage as Backstage Backend
     participant Handler as serviceTokenHandler
-    participant DB as service_tokens DB
+    participant DB as service_access_tokens DB
     participant AuthPolicy as Default Auth Policy
     participant Enforce as Your Enforcement Code
 
@@ -77,7 +77,7 @@ The plugin caches scopes alongside the token during verification. Two approaches
 The `getServiceTokenScopeResolver()` function returns a resolver bound to the same cache used during token verification. It hashes the raw token and reads scopes from the cache — **zero additional database queries**.
 
 ```ts
-import { getServiceTokenScopeResolver } from '@primedx/plugin-service-tokens-node';
+import { getServiceTokenScopeResolver } from '@primedx/plugin-access-tokens-node';
 
 // In your middleware or plugin code (after backend startup):
 const resolveScopes = getServiceTokenScopeResolver();
@@ -90,7 +90,7 @@ const scopes = resolveScopes?.(rawToken) ?? [];
 ```
 
 **Requirements:**
-- The `serviceTokenHandlerModule` must be registered in your backend (it initializes the resolver).
+- The `serviceAccessTokenHandlerModule` must be registered in your backend (it initializes the resolver).
 - The token must have already been verified by Backstage's auth layer (which happens automatically for any authenticated request).
 - The resolver returns `null` before the module factory has run (i.e., during startup). Always use optional chaining: `resolveScopes?.(rawToken)`.
 
@@ -115,7 +115,7 @@ async function resolveTokenScopesBySubject(
   const parsed = parseSubject(subject);
   if (!parsed) return [];
 
-  const row = await db('service_tokens')
+  const row = await db('service_access_tokens')
     .where({
       group_entity_ref: parsed.groupEntityRef,
       name: parsed.tokenName,
@@ -165,7 +165,7 @@ Commit this table to your Backstage app repo and review it during token audits.
 // packages/backend/src/middleware/scopeMonitor.ts
 import { createBackendModule } from '@backstage/backend-plugin-api';
 import { coreServices } from '@backstage/backend-plugin-api';
-import { getServiceTokenScopeResolver } from '@primedx/plugin-service-tokens-node';
+import { getServiceTokenScopeResolver } from '@primedx/plugin-access-tokens-node';
 
 /**
  * Creates Express middleware that logs scope mismatches for service tokens
@@ -227,7 +227,7 @@ Use this when you control the plugin that owns the route.
 
 ```ts
 // packages/backend/src/middleware/scopeEnforce.ts
-import { getServiceTokenScopeResolver } from '@primedx/plugin-service-tokens-node';
+import { getServiceTokenScopeResolver } from '@primedx/plugin-access-tokens-node';
 
 /**
  * Creates Express middleware that blocks requests from service tokens
@@ -318,10 +318,10 @@ import {
 } from '@backstage/plugin-permission-node';
 import { policyExtensionPoint } from '@backstage/plugin-permission-node/alpha';
 import {
-  serviceTokensReadPermission,
-  serviceTokensWritePermission,
-  serviceTokensRevokePermission,
-} from '@primedx/plugin-service-tokens-node';
+  serviceAccessTokensReadPermission,
+  serviceAccessTokensWritePermission,
+  serviceAccessTokensRevokePermission,
+} from '@primedx/plugin-access-tokens-node';
 
 // Scope requirements per permission name
 const SCOPE_REQUIREMENTS: Record<string, string[]> = {
@@ -349,13 +349,13 @@ class ScopeAwarePermissionPolicy implements PermissionPolicy {
   ): Promise<PolicyDecision> {
     // Always enforce service token management permissions
     if (
-      isPermission(request.permission, serviceTokensReadPermission) ||
-      isPermission(request.permission, serviceTokensWritePermission) ||
-      isPermission(request.permission, serviceTokensRevokePermission)
+      isPermission(request.permission, serviceAccessTokensReadPermission) ||
+      isPermission(request.permission, serviceAccessTokensWritePermission) ||
+      isPermission(request.permission, serviceAccessTokensRevokePermission)
     ) {
       const adminRefs =
         this.config.getOptionalStringArray(
-          'serviceTokens.admin.userEntityRefs',
+          'accessTokens.service.admin.userEntityRefs',
         ) ?? [];
       return adminRefs.includes(user?.info.userEntityRef ?? '')
         ? { result: AuthorizeResult.ALLOW }
@@ -377,7 +377,7 @@ class ScopeAwarePermissionPolicy implements PermissionPolicy {
     }
 
     // Resolve scopes from the database using the parsed subject
-    const row = await this.db('service_tokens')
+    const row = await this.db('service_access_tokens')
       .where({
         group_entity_ref: parsed.groupEntityRef,
         name: parsed.tokenName,
@@ -440,7 +440,7 @@ Promote a route from monitor → soft → hard only after zero mismatches in the
 Revoked tokens are rejected after the cache TTL expires. Document your SLO:
 
 ```
-Revocation SLO = serviceTokens.cacheTtlSeconds (default: 60s)
+Revocation SLO = accessTokens.service.cacheTtlSeconds (default: 60s)
 ```
 
 If you need faster revocation, lower `cacheTtlSeconds` (at the cost of more DB reads).
@@ -468,7 +468,7 @@ For emergency access when a token with insufficient scopes is needed:
 
 If a token is compromised:
 
-1. Revoke immediately via the admin UI or `DELETE /api/service-tokens/:id`.
+1. Revoke immediately via the admin UI or `DELETE /api/access-tokens/service/:id`.
 2. The token is rejected after `cacheTtlSeconds` seconds on all replicas.
 3. Review the audit log for the token's usage history.
 4. Create a replacement token with tighter scopes if needed.

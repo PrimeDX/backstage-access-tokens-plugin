@@ -1,0 +1,50 @@
+{
+  "name": "@primedx/plugin-access-tokens-node",
+  "version": "0.1.0",
+  "description": "Backstage node library and external auth handler module for service token verification.",
+  "license": "Apache-2.0",
+  "backstage": {
+    "role": "node-library"
+  },
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "files": [
+    "README.md",
+    "src/cache.js",
+    "src/config.js",
+    "src/constants.js",
+    "src/database.js",
+    "src/index.d.ts",
+    "src/index.js",
+    "src/module.js",
+    "src/permission.js",
+    "src/primitives.js",
+    "src/serviceTokenHandler.js",
+    "src/verifyToken.js"
+  ],
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "author": "Adrian Dantas",
+  "keywords": [
+    "backstage",
+    "backstage-plugin",
+    "access-tokens",
+    "node-library"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@backstage/backend-defaults": "^0.16.0",
+    "@backstage/backend-plugin-api": "^1.8.0",
+    "@backstage/plugin-permission-common": "^0.9.7"
+  },
+  "scripts": {
+    "test": "node --test src/**/*.test.js"
+  }
+}

@@ -13,22 +13,21 @@ service factories, how the OAuth orchestration plugs in) live in
 
 ## 1. HTTP API
 
-All endpoints are mounted under the existing service-tokens plugin's HTTP
-router at the plugin-id-derived prefix. The plugin name remains
-`service-tokens` for backward compatibility; user-token routes are
-namespaced under `/personal/` to avoid colliding with the existing
-service-token routes.
+All endpoints are mounted under the `access-tokens` plugin's HTTP
+router at the plugin-id-derived prefix. Personal-access-token routes are
+namespaced under `/personal`, while service-token routes are namespaced
+under `/service`.
 
 Full path examples assume Backstage's standard `/api/<plugin-id>` prefix:
-`POST /api/service-tokens/personal/tokens`.
+`POST /api/access-tokens/personal`.
 
 All routes require an authenticated browser session via the existing
 `httpRouter.addAuthPolicy({ allow: 'user-cookie' })` mechanism (per R7).
-Cross-session calls (e.g., from a script) are not supported for the
-management API — scripts authenticate to the data plane via
+Cross-session calls (e.g., from external integrations) are not supported for the
+management API — integrations authenticate to the data plane via
 `/api/auth/v1/token`, not via this management API.
 
-### 1.1 — `POST /personal/tokens/mint` — initiate mint flow
+### 1.1 — `POST /personal/mint` — initiate mint flow
 
 Starts an OAuth authorization-code flow. Returns a redirect URL that the
 frontend navigates to in the same browser tab to complete consent.
@@ -59,7 +58,7 @@ Error responses:
   or beyond `maxRotationLifetime`.
 - `401` — caller is not a user principal.
 
-### 1.2 — `GET /personal/tokens/mint/callback` — OAuth callback
+### 1.2 — `GET /personal/mint/callback` — OAuth callback
 
 Backstage's auth-backend redirects to this URL with `code` and `state` query
 parameters after the user consents. The plugin exchanges `code` for tokens
@@ -73,14 +72,14 @@ mint-flow store).
 Success response: `302 Found` to:
 
 ```text
-<app.baseUrl>/settings/personal-tokens#user-tokens-mint=<base64url-json-payload>
+<app.baseUrl>/settings/personal-tokens#personal-access-tokens-mint=<base64url-json-payload>
 ```
 
 Decoded success payload:
 
 ```json
 {
-  "type": "user-tokens-mint-result",
+  "type": "personal-access-tokens-mint-result",
   "flowId": "<uuid>",
   "token": "<raw refresh_token>",
   "metadata": {
@@ -96,7 +95,7 @@ Decoded success payload:
 Error responses:
 
 - `302` to
-  `<app.baseUrl>/settings/personal-tokens#user-tokens-mint-error=<base64url-json-payload>`
+  `<app.baseUrl>/settings/personal-tokens#personal-access-tokens-mint-error=<base64url-json-payload>`
   when `state` does not match any in-flight flow, the OAuth provider returns
   an error, or `/v1/token` exchange fails.
 
@@ -111,7 +110,7 @@ metadata. See
 [architecture §4](./user-tokens-architecture.md#threat-model) for the
 threat model.
 
-### 1.3 — `GET /personal/tokens` — list my tokens
+### 1.3 — `GET /personal` — list my tokens
 
 Returns the calling user's tokens, ordered by `createdAt` descending.
 
@@ -137,13 +136,13 @@ Error responses:
 
 - `401` — caller is not a user principal.
 
-### 1.4 — `GET /personal/tokens/:id` — get one token
+### 1.4 — `GET /personal/:id` — get one token
 
 Returns one row, scoped to the calling user. Same shape as the `tokens[]`
 entry above. Returns `404` if the id does not exist or belongs to another
 user (do not distinguish — privacy invariant).
 
-### 1.5 — `DELETE /personal/tokens/:id` — revoke
+### 1.5 — `DELETE /personal/:id` — revoke
 
 Revokes a token. Issues the revocation against `OfflineAccessService` via
 whatever auth-backend mechanism is accessible to the plugin (architecture
@@ -159,7 +158,7 @@ Error responses:
   marked revoked, and the caller may retry. Body includes the underlying
   error.
 
-### 1.6 — `GET /personal/tokens/:id/audit` — token audit log
+### 1.6 — `GET /personal/:id/audit` — token audit log
 
 Returns audit events for one of the calling user's tokens (creation,
 revocation, listing). Returns `404` if the token id does not exist or
@@ -191,13 +190,13 @@ Response 200:
 ## 2. Database schema
 
 Two new tables in the plugin's existing database, alongside the existing
-`service_tokens` and `service_token_audit_log` tables. Migrations are
+`service_access_tokens` and `service_access_token_audit_log` tables. Migrations are
 additive only — no changes to existing tables.
 
-### 2.1 — `user_tokens`
+### 2.1 — `personal_access_tokens`
 
 ```sql
-CREATE TABLE user_tokens (
+CREATE TABLE personal_access_tokens (
   id                       varchar(36)  PRIMARY KEY,
   name                     varchar(100) NOT NULL,
   user_entity_ref          varchar(255) NOT NULL,
@@ -218,9 +217,9 @@ CREATE TABLE user_tokens (
   last_used_at             timestamp    NULL,
   revoked_at               timestamp    NULL,
   UNIQUE (user_entity_ref, name),
-  INDEX idx_user_tokens_user (user_entity_ref),
-  INDEX idx_user_tokens_session (session_id),
-  INDEX idx_user_tokens_expires (expires_at)
+  INDEX idx_personal_access_tokens_user (user_entity_ref),
+  INDEX idx_personal_access_tokens_session (session_id),
+  INDEX idx_personal_access_tokens_expires (expires_at)
 );
 ```
 
@@ -235,18 +234,18 @@ Field notes:
 - `encrypted_token` / `encrypted_token_iv` / `encrypted_token_tag`: the
   AES-256-GCM ciphertext of the raw refresh token, plus its 12-byte IV
   and 16-byte authentication tag. The encryption key is
-  `serviceTokens.userTokens.encryptionKey` (32 raw bytes, base64-encoded
+  `accessTokens.personal.encryptionKey` (32 raw bytes, base64-encoded
   in `app-config.yaml`). The plugin **refuses to mount** if the key is
   missing or not 32 bytes after decoding. Once a token is revoked
   successfully, the three columns are set to NULL so the ciphertext is
   not retained beyond its usefulness.
 
-### 2.2 — `user_token_audit_log`
+### 2.2 — `personal_access_token_audit_log`
 
 ```sql
-CREATE TABLE user_token_audit_log (
+CREATE TABLE personal_access_token_audit_log (
   id           varchar(36)  PRIMARY KEY,
-  token_id     varchar(36)  NOT NULL REFERENCES user_tokens(id),
+  token_id     varchar(36)  NOT NULL REFERENCES personal_access_tokens(id),
   event        varchar(50)  NOT NULL,
   actor        varchar(255) NULL,
   metadata     text         NULL,
@@ -256,18 +255,18 @@ CREATE TABLE user_token_audit_log (
 );
 ```
 
-Same shape as the existing `service_token_audit_log` for consistency.
+Same shape as the existing `service_access_token_audit_log` for consistency.
 
 ### 2.3 — Migrations
 
-Single Knex migration `add_user_tokens_tables` in
-`packages/plugin-service-tokens-backend/src/migrations.js`, applied via the
+Single Knex migration `add_personal_access_tokens_tables` in
+`packages/plugin-access-tokens-backend/src/migrations.js`, applied via the
 existing `applyServiceTokenMigrations` entry point. Migration is idempotent
 (`hasTable` check before create).
 
 ## 3. Public TypeScript exports
 
-### 3.1 — `@primedx/plugin-service-tokens-node`
+### 3.1 — `@primedx/plugin-access-tokens-node`
 
 ```ts
 import {
@@ -275,21 +274,21 @@ import {
   PermissionAction,
 } from '@backstage/plugin-permission-common';
 
-export const userTokensReadPermission = createPermission({ ... });
-export const userTokensWritePermission = createPermission({ ... });
-export const userTokensRevokePermission = createPermission({ ... });
-export const userTokensPermissions = [
-  userTokensReadPermission,
-  userTokensWritePermission,
-  userTokensRevokePermission,
+export const personalAccessTokensReadPermission = createPermission({ ... });
+export const personalAccessTokensWritePermission = createPermission({ ... });
+export const personalAccessTokensRevokePermission = createPermission({ ... });
+export const personalAccessTokensPermissions = [
+  personalAccessTokensReadPermission,
+  personalAccessTokensWritePermission,
+  personalAccessTokensRevokePermission,
 ] as const;
 ```
 
 No new auth-handler module is exported. Tokens authenticate via
 auth-backend's native pipeline, not via the existing
-`serviceTokenHandlerModule`.
+`serviceAccessTokenHandlerModule`.
 
-### 3.2 — `@primedx/plugin-service-tokens-backend`
+### 3.2 — `@primedx/plugin-access-tokens-backend`
 
 New exports alongside existing service-token exports:
 
@@ -297,10 +296,10 @@ New exports alongside existing service-token exports:
 export { userTokensRouter };   // for tests / advanced wiring; not required for default use
 ```
 
-`serviceTokensPlugin` is amended internally to register the user-tokens
+`accessTokensPlugin` is amended internally to register the user-tokens
 router and the new permissions; no new top-level plugin is exposed.
 
-### 3.3 — `@primedx/plugin-service-tokens`
+### 3.3 — `@primedx/plugin-access-tokens`
 
 New user-settings sub-page registered under Backstage's
 `page:user-settings` extension point:
@@ -310,7 +309,7 @@ const userTokensPage = SubPageBlueprint.make({
   attachTo: { id: 'page:user-settings', input: 'pages' },
   params: {
     path: 'personal-tokens',
-    routeRef: userTokensRouteRef,
+    routeRef: personalAccessTokensRouteRef,
     title: 'Personal Access Tokens',
     loader: () => import('./UserTokensPage.jsx')
       .then(m => React.createElement(m.UserTokensSettingsTab)),
@@ -321,7 +320,7 @@ const userTokensPage = SubPageBlueprint.make({
 Plus:
 
 ```ts
-export { userTokensRouteRef };  // for app-side route binding
+export { personalAccessTokensRouteRef };  // for app-side route binding
 ```
 
 The default-exported plugin's `extensions` array includes the admin
@@ -335,8 +334,8 @@ The plugin reads three new optional keys. All defaults are chosen so that
 plugin-specific config.
 
 ```yaml
-serviceTokens:
-  userTokens:
+accessTokens:
+  personal:
     enabled: true                   # default true if the plugin's frontend is wired
     defaultExpiryDays: 30           # default expiry shown in the mint dialog
     maxExpiryDays: 365              # cap (must be ≤ auth-backend maxRotationLifetime)
@@ -368,20 +367,14 @@ auth:
 ```
 
 The plugin's `init()` logs a clear error and refuses to mount the
-user-tokens router if either flag is unset.
+personal-access-token router if either flag is unset.
 
-## 5. Backward-compatibility guarantees
+## 5. Breaking Rename
 
-- No changes to existing `service_tokens` or `service_token_audit_log`
-  tables.
-- No changes to existing HTTP routes under `/api/service-tokens`.
-- No changes to existing `serviceTokenHandlerModule` behavior.
-- Existing exports (`serviceTokensReadPermission`, `ServiceTokensPage`,
-  etc.) remain at their current types.
-- Operators who do not wire the new frontend page see no behavior change.
-  (Backend migrations still run; the unused tables are inert.)
-- Adding the user-tokens capability is a minor-version bump of the
-  changeset under the standard repo workflow.
+This migration does not keep the old service-token package names,
+`/api/service-tokens` paths, `serviceTokens.*` config keys, or old
+permission names as runtime aliases. Existing service-token and PAT data
+is preserved by table-renaming migrations.
 
 ## 6. Verification — what proves this spec is satisfied
 
@@ -408,7 +401,7 @@ yes/no outcomes per user story.
 
 In short: bring up the harness with the experimental flags + the
 encryption key, mint a token in the UI, then run the two-curl
-sequence from [overview US-2](./user-tokens-overview.md#us-2--use-a-token-from-a-script)
+sequence from [overview US-2](./user-tokens-overview.md#us-2--use-a-token-from-an-integration)
 and confirm 200 against a probe endpoint that returns the calling
 user's `userEntityRef`. Revoke the token from the UI; the same
 sequence then returns 401 from `/v1/token`.

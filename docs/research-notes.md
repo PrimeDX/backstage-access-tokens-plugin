@@ -94,7 +94,7 @@ The closest plugin-accessible APIs are:
 **Implication (load-bearing for the spec)**: this plugin cannot synthesize a
 user JWT from scratch. Any "user-token" flow we design must obtain credentials
 by **going through auth-backend's standard OAuth pipeline**, then either store
-the resulting refresh token (so the user's script can use it) or wrap it
+the resulting refresh token (so external clients can exchange it) or wrap it
 behind a friendlier UX. We cannot, for example, accept an admin's request to
 "mint a token for `user:default/alice`" and return a JWT — only Alice herself,
 authenticated through an OAuth provider, can produce one.
@@ -208,67 +208,67 @@ auth-backend does not give us an audit story.
 exhaustive grep. A follow-up scan for `auditor` references near refresh
 paths would raise confidence.
 
-## R7 — Existing seams in `backstage-service-token-plugin`
+## R7 — Existing seams in `backstage-access-tokens-plugin`
 
 **Finding**: The plugin is built on the new backend and new frontend systems
 and exposes clean extension points that accommodate a parallel user-token code
 path without disturbing the existing service-token capability.
 
-**Backend extension points** (`packages/plugin-service-tokens-backend/src/plugin.js`):
-- `permissionsRegistry.addPermissions(serviceTokensPermissions)` registers the
-  permission set. A symmetric `addPermissions(userTokensPermissions)` would
+**Backend extension points** (`packages/plugin-access-tokens-backend/src/plugin.js`):
+- `permissionsRegistry.addPermissions(serviceAccessTokensPermissions)` registers the
+  permission set. A symmetric `addPermissions(personalAccessTokensPermissions)` would
   declare the new permissions cleanly.
 - Routes are mounted via `httpRouter.use(createExpressRouter(...))`. A second
   Express router mounted under a different path (e.g. `/personal/...` inside
-  the same plugin namespace) keeps user-token routes isolated.
+  the same plugin namespace) keeps personal-access-token routes isolated.
 - Auth policy declared via `httpRouter.addAuthPolicy({ path: '/...', allow: 'user-cookie' })`
   — interestingly `'user-cookie'` is used, not `'user'`, so today's routes are
   intended for browser sessions only. User-token mint endpoints likely need
   the same scope, but verify in the spec.
 
-**Database schema** (`packages/plugin-service-tokens-backend/src/migrations.js`):
-- Existing table `service_tokens` keys on `(group_entity_ref, name)` unique.
+**Database schema** (`packages/plugin-access-tokens-backend/src/migrations.js`):
+- Existing table `service_access_tokens` keys on `(group_entity_ref, name)` unique.
 - For user tokens the natural subject is `user_entity_ref`, so the uniqueness
-  constraint differs (per-user vs per-group). A new `user_tokens` table is the
+  constraint differs (per-user vs per-group). A new `personal_access_tokens` table is the
   cleaner option; reusing the existing table with a `subject_type` column would
   collide on the unique index and complicate migrations. The spec should
   prefer a new table unless a stronger reason emerges.
-- The existing `service_token_audit_log` table is keyed on `token_id`
-  referencing `service_tokens.id`. A parallel `user_token_audit_log` mirrors
+- The existing `service_access_token_audit_log` table is keyed on `token_id`
+  referencing `service_access_tokens.id`. A parallel `personal_access_token_audit_log` mirrors
   this for separation, or audit events can carry a `token_kind` discriminator.
   Spec decision.
 
-**Frontend extension points** (`packages/plugin-service-tokens/src/index.js`,
+**Frontend extension points** (`packages/plugin-access-tokens/src/index.js`,
 `routes.js`):
 - `createFrontendPlugin` already registers one `PageBlueprint` at
-  `/admin/service-tokens` via `rootRouteRef`. Adding a second `PageBlueprint`
+  `/admin/access-tokens` via `rootRouteRef`. Adding a second `PageBlueprint`
   at `/settings/personal-tokens` (or similar) with a new `routeRef` is the
   symmetric pattern.
 - Components live under `src/components/` and are imported lazily by the page
   loader. Adding a sibling `UserTokensPage.jsx` plus user-specific dialog and
   table components follows the existing layout.
 
-**Node package (`plugin-service-tokens-node`)**: holds shared constants, the
+**Node package (`plugin-access-tokens-node`)**: holds shared constants, the
 external token handler, permissions, and the auth module factory. For user
-tokens, the equivalent shared exports would be `userTokensPermissions`,
+tokens, the equivalent shared exports would be `personalAccessTokensPermissions`,
 `userTokenHandlerModule` (if a custom handler is needed — see R1–R3 to
 determine), and any helper utilities.
 
 **Sources**:
-- `packages/plugin-service-tokens-backend/src/plugin.js:32-103` — plugin
+- `packages/plugin-access-tokens-backend/src/plugin.js:32-103` — plugin
   registration, permission registry call, HTTP router mounting, auth policies.
-- `packages/plugin-service-tokens-backend/src/migrations.js:1-40` — schema
-  definitions for `service_tokens` and `service_token_audit_log`.
-- `packages/plugin-service-tokens/src/index.js:1-25` — frontend plugin
-  blueprint that registers the admin page at `/admin/service-tokens`.
-- `packages/plugin-service-tokens/src/routes.js:1-3` — route ref pattern.
+- `packages/plugin-access-tokens-backend/src/migrations.js:1-40` — schema
+  definitions for `service_access_tokens` and `service_access_token_audit_log`.
+- `packages/plugin-access-tokens/src/index.js:1-25` — frontend plugin
+  blueprint that registers the admin page at `/admin/access-tokens`.
+- `packages/plugin-access-tokens/src/routes.js:1-3` — route ref pattern.
 
 **Confidence**: high — direct code reading.
 
 ## R8 — UX precedent from `backstage-pat-plugin`
 
 **Finding**: One pattern from the abandoned PAT plugin is worth porting; the
-remainder is superseded by what `backstage-service-token-plugin` already
+remainder is superseded by what `backstage-access-tokens-plugin` already
 provides.
 
 **Worth porting — the show-once dialog idiom**
@@ -303,7 +303,7 @@ provides.
   — 66 lines, simple table; superseded by existing service-token table view.
 - `/Volumes/ADD_Dock/src/backstage-pat-plugin/backstage-plugin-pat/src/components/PATSettingsPage.tsx`
   — 74 lines, basic page wiring; superseded by existing service-token page.
-- `/Volumes/ADD_Dock/src/primedx/backstage-service-token-plugin/packages/plugin-service-tokens/src/components/`
+- `/Volumes/ADD_Dock/src/primedx/backstage-access-tokens-plugin/packages/plugin-access-tokens/src/components/`
   — existing component set (table view, filters, dialogs) to model on.
 
 **Confidence**: high — direct code reading and comparison.
@@ -325,7 +325,7 @@ gap to close before the spec is fully grounded.
 - Refresh tokens are 30-day default, can survive up to 1 year via rotation,
   capped at 20 per user, hashed at rest, revocable. They are a usable
   PAT-equivalent (R2, R5).
-- The existing `backstage-service-token-plugin` codebase has clean seams to
+- The existing `backstage-access-tokens-plugin` codebase has clean seams to
   add a parallel "user token" code path without disturbing service tokens
   (R7), and a single UX pattern from the abandoned PAT plugin (show-once
   dialog) is worth porting verbatim (R8).
@@ -337,7 +337,7 @@ clicks "Create Token" in a settings page; the plugin walks them through
 Backstage's OAuth flow (using DCR or a pre-registered client) to mint a fresh
 refresh token; the plugin captures the resulting token, displays it once with
 the show-once dialog, and persists metadata (name, created_at, last_used_at,
-maybe the auth-backend session ID) in its own table. The user's script uses
+maybe the auth-backend session ID) in its own table. External clients use
 the refresh token by calling `/api/auth/{provider}/refresh` to exchange it
 for a short-lived JWT.
 
@@ -419,7 +419,7 @@ Three options to resolve (user decision required):
    for this implementation.
 
 Reasonable hybrid: option 1 with encryption-at-rest, scoped narrowly. The
-plugin already stores `service_tokens.token_hash` (the existing capability
+plugin already stores `service_access_tokens.token_hash` (the existing capability
 already trusts the plugin DB with token-derived material), so the marginal
 trust delta is small.
 
@@ -446,7 +446,7 @@ operator-configurable per-user cap distinct from auth-backend's
 Three additional research items investigated before the harness E2E
 verification. Each resolved against upstream Backstage source.
 
-**R4-V1 — How a user's script exchanges a refresh token for a JWT.**
+**R4-V1 — How an integration exchanges a refresh token for a JWT.**
 Resolved: Backstage's `/v1/token` endpoint accepts `grant_type=refresh_token`
 **without client credentials**. From
 `plugins/auth-backend/src/service/OidcRouter.ts:368–381`:
@@ -462,7 +462,7 @@ Resolved: Backstage's `/v1/token` endpoint accepts `grant_type=refresh_token`
 > ```
 
 Client authentication is **conditional**. The refresh-token grant
-succeeds with just the refresh token. Concretely the user's script is:
+succeeds with just the refresh token. Concretely any HTTP client can do:
 
 ```bash
 JWT=$(curl -s -X POST $BACKSTAGE/v1/token \
@@ -499,7 +499,7 @@ Discovery 1.0), **not** at `/.well-known/oauth-authorization-server`
 The OIDC discovery doc DOES include `registration_endpoint` and
 `revocation_endpoint` when DCR is enabled, so a one-line URL change
 in the plugin orchestrator resolves it. Fixed in
-[commit 07bdbed](https://github.com/PrimeDX/backstage-service-token-plugin/commit/07bdbed)
+[commit 07bdbed](https://github.com/PrimeDX/backstage-access-tokens-plugin/commit/07bdbed)
 on `feat/user-tokens`.
 
 ---
@@ -515,12 +515,12 @@ Backstage **1.49.1**, plugin code at branch `feat/user-tokens`
 - `e2e/harness/app-config.yaml`:
   - `auth.experimentalDynamicClientRegistration.enabled: true`
   - `auth.experimentalRefreshToken.enabled: true`
-  - `serviceTokens.userTokens.encryptionKey: <local 32-byte base64>`
-- `e2e/harness/packages/backend/src/serviceTokensPermissionPolicyModule.ts`
-  amended to ALLOW the `user-tokens:{read,write,revoke}` permissions
+  - `accessTokens.personal.encryptionKey: <local 32-byte base64>`
+- `e2e/harness/packages/backend/src/accessTokensPermissionPolicyModule.ts`
+  amended to ALLOW the `access-tokens:user:{read,write,revoke}` permissions
   for the calling user.
 - `e2e/harness/packages/app/src/App.tsx` adds
-  `userTokensAuthPlugin` from `@primedx/plugin-service-tokens` to the
+  `personalAccessTokensAuthPlugin` from `@primedx/plugin-access-tokens` to the
   `features` array so the `/oauth2/authorize/:sessionId` consent route
   is registered with the personal-token consent copy.
 
@@ -528,8 +528,8 @@ Backstage **1.49.1**, plugin code at branch `feat/user-tokens`
 
 | Story | Result | Evidence |
 |---|---|---|
-| **US-1** Mint a token | **PASS** | UI navigation lands at `/oauth2/authorize/<sessionId>` in same tab; approving the consent page returns to `/settings/personal-tokens#user-tokens-mint=…`; the show-once dialog opens automatically and renders the raw `<sessionId>.<random>` refresh token. |
-| **US-2** Use token from a script | **PASS** | `POST /api/auth/v1/token` with `grant_type=refresh_token` and the raw token returned a 495-character JWT with `sub: user:development/guest` and `ent: [user:development/guest, group:development/platform]`. `GET /api/auth/v1/userinfo` with that JWT returned the same claims. `GET /api/catalog/entities` with that JWT returned **HTTP 200** with real catalog data — proving the request is treated as a user principal end-to-end. |
+| **US-1** Mint a token | **PASS** | UI navigation lands at `/oauth2/authorize/<sessionId>` in same tab; approving the consent page returns to `/settings/personal-tokens#personal-access-tokens-mint=…`; the show-once dialog opens automatically and renders the raw `<sessionId>.<random>` refresh token. |
+| **US-2** Use token from an integration | **PASS** | `POST /api/auth/v1/token` with `grant_type=refresh_token` and the raw token returned a 495-character JWT with `sub: user:development/guest` and `ent: [user:development/guest, group:development/platform]`. `GET /api/auth/v1/userinfo` with that JWT returned the same claims. `GET /api/catalog/entities` with that JWT returned **HTTP 200** with real catalog data — proving the request is treated as a user principal end-to-end. |
 | **US-3** List my tokens | **PASS** | The token from US-1 appeared in the page table with correct name, created/expires timestamps, prefix, and `active` status. The raw refresh token was not present anywhere on the listing. |
 | **US-4** Revoke a token | **PASS** | UI revoke transitioned the row to `revoked`. The previously-working refresh-grant from US-2 then returned **HTTP 400 `invalid_grant: "Invalid refresh token"`**, proving auth-backend's `OfflineAccessService` invalidated the underlying session (not just our local row). |
 
@@ -565,8 +565,8 @@ Backstage **1.49.1**, plugin code at branch `feat/user-tokens`
   executable in the harness today (single guest user); a follow-up
   PR that adds a second auth provider can verify this. The
   server-side scoping is unit-tested in
-  `userTokensRouter.test.js` ("GET /personal/tokens/:id returns 404
-  for another user's id" and "GET /personal/tokens lists only the
+  `userTokensRouter.test.js` ("GET /personal/:id returns 404
+  for another user's id" and "GET /personal lists only the
   caller's tokens").
 - **Negative 3.2 (encryption-key mismatch)** — DEFERRED with
   rationale. The AES-256-GCM wrong-key rejection is covered by the

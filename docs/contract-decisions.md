@@ -10,7 +10,7 @@ These decisions are the source of truth for future edits unless the public contr
 
 ## Audit Log API
 
-- `GET /api/service-tokens/:id/audit` returns an object with an `events` array.
+- `GET /api/access-tokens/service/:id/audit` returns an object with an `events` array.
 - Each audit event uses the current backend/storage field names:
   - `id`
   - `tokenId`
@@ -40,9 +40,9 @@ Why:
 
 ## Revocation and Cache TTL
 
-- Revocation takes effect after cache invalidation, which is bounded by `serviceTokens.cacheTtlSeconds`.
+- Revocation takes effect after cache invalidation, which is bounded by `accessTokens.service.cacheTtlSeconds`.
 - The documented default remains `60` seconds.
-- Beginner/tutorial flows should explicitly set `serviceTokens.cacheTtlSeconds: 0` when they need deterministic immediate rejection after revocation.
+- Beginner/tutorial flows should explicitly set `accessTokens.service.cacheTtlSeconds: 0` when they need deterministic immediate rejection after revocation.
 
 Why:
 
@@ -53,7 +53,7 @@ Why:
 
 ## Frontend Installation Pattern
 
-- The canonical setup example uses `createApp({ features: [...] })` with `serviceTokensPlugin` included in the `features` array.
+- The canonical setup example uses `createApp({ features: [...] })` with `accessTokensPlugin` included in the `features` array.
 - Documentation should show `@backstage/frontend-defaults` as the recommended import for scaffolded Backstage apps unless a document is specifically about another app bootstrap style.
 
 Why:

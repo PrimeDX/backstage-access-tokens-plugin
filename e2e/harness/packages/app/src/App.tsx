@@ -1,10 +1,10 @@
 import { createApp } from '@backstage/frontend-defaults';
-import serviceTokensPlugin, {
-  userTokensAuthPlugin,
-} from '@primedx/plugin-service-tokens';
+import accessTokensPlugin, {
+  personalAccessTokensAuthPlugin,
+} from '@primedx/plugin-access-tokens';
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
 import { navModule } from './modules/nav';
 
 export default createApp({
-  features: [userTokensAuthPlugin, catalogPlugin, serviceTokensPlugin, navModule],
+  features: [personalAccessTokensAuthPlugin, catalogPlugin, accessTokensPlugin, navModule],
 });

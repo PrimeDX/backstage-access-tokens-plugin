@@ -21,6 +21,10 @@ backend:
   # auth:
   #   keys:
   #     - secret: ${BACKEND_SECRET}
+  auth:
+    externalAccess:
+      - type: backstage-service-access-token
+        options: {}
   baseUrl: http://localhost:7007
   listen:
     port: 7007
@@ -38,7 +42,8 @@ backend:
   # The production database configuration is stored in app-config.production.yaml
   database:
     client: better-sqlite3
-    connection: ':memory:'
+    connection:
+      directory: /tmp/backstage-access-tokens-harness
   # workingDirectory: /tmp # Use this to configure a working directory for the scaffolder, defaults to the OS temp-dir
 
 integrations:
@@ -76,9 +81,9 @@ auth:
   providers:
     # See https://backstage.io/docs/auth/guest/provider
     guest: {}
-  # Required by the user-tokens capability — Backstage's DCR + refresh-token
+  # Required by the personal-access-token capability — Backstage's DCR + refresh-token
   # infrastructure. Without both flags the plugin logs a warning and skips
-  # wiring the /personal/tokens/* routes.
+  # wiring the /personal/* routes.
   experimentalDynamicClientRegistration:
     enabled: true
   experimentalRefreshToken:
@@ -110,9 +115,9 @@ catalog:
       rules:
         - allow: [User, Group]
 
-    # Service token harness org data
+    # Access token harness org data
     - type: file
-      target: ../../examples/service-tokens-org.yaml
+      target: ../../examples/access-tokens-org.yaml
       rules:
         - allow: [User, Group]
 
@@ -134,13 +139,14 @@ permission:
   # setting this to `false` will disable permissions
   enabled: true
 
-serviceTokens:
-  cacheTtlSeconds: 0
-  admin:
-    userEntityRefs:
-      - user:development/guest
-  # User-tokens capability (see ../../docs/spec/user-tokens-verification.md).
+accessTokens:
+  service:
+    cacheTtlSeconds: 0
+    admin:
+      userEntityRefs:
+        - user:development/guest
+  # Personal-access-token capability (see ../../docs/spec/user-tokens-verification.md).
   # The encryptionKey below was generated locally with `openssl rand -base64 32`;
   # rotate per environment and keep out of source control in production.
-  userTokens:
+  personal:
     encryptionKey: 'IWI4PeJv3dsrHsx/eUlPiDkvf8zM7P5Xa+FKLBQiHZk='

@@ -49,9 +49,9 @@
     "typescript": "~5.8.0"
   },
   "resolutions": {
-    "@primedx/plugin-service-tokens": "file:../../packages/plugin-service-tokens",
-    "@primedx/plugin-service-tokens-backend": "file:../../packages/plugin-service-tokens-backend",
-    "@primedx/plugin-service-tokens-node": "file:../../packages/plugin-service-tokens-node",
+    "@primedx/plugin-access-tokens": "file:../../packages/plugin-access-tokens",
+    "@primedx/plugin-access-tokens-backend": "file:../../packages/plugin-access-tokens-backend",
+    "@primedx/plugin-access-tokens-node": "file:../../packages/plugin-access-tokens-node",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "undici@npm:^5.28.2": "npm:6.24.0",

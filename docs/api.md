@@ -4,7 +4,7 @@ Audience: integrators and operators working directly with the token management A
 
 Use this reference for request and response contracts, route permissions, and development-time authentication examples.
 
-The service token backend exposes its API at `/api/service-tokens`. Every endpoint requires a valid Backstage user session plus the route-specific permission listed below.
+The service token backend exposes its API at `/api/access-tokens/service`. Every endpoint requires a valid Backstage user session plus the route-specific permission listed below.
 
 ---
 
@@ -37,11 +37,11 @@ In production, use your configured auth provider's token endpoint.
 
 ## Endpoints
 
-### `GET /api/service-tokens/scopes`
+### `GET /api/access-tokens/service/scopes`
 
 Returns the list of available scopes that can be assigned to a token.
 
-**Required permission:** `service-tokens:read`
+**Required permission:** `access-tokens:service:read`
 
 **Request:** No body or query parameters.
 
@@ -79,15 +79,15 @@ Returns the list of available scopes that can be assigned to a token.
 }
 ```
 
-Custom scopes defined in `app-config.yaml` are appended to this list. See [Configuration Reference — serviceTokens.scopes](configuration.md#servicetokensscopes).
+Custom scopes defined in `app-config.yaml` are appended to this list. See [Configuration Reference — accessTokens.service.scopes](configuration.md#servicetokensscopes).
 
 ---
 
-### `GET /api/service-tokens`
+### `GET /api/access-tokens/service`
 
 Returns the list of all service tokens. Supports optional filtering.
 
-**Required permission:** `service-tokens:read`
+**Required permission:** `access-tokens:service:read`
 
 **Query parameters:**
 
@@ -100,15 +100,15 @@ Returns the list of all service tokens. Supports optional filtering.
 
 ```bash
 # All tokens
-curl -s http://localhost:7007/api/service-tokens \
+curl -s http://localhost:7007/api/access-tokens/service \
   -H "Authorization: Bearer $TOKEN" | jq .
 
 # Active tokens only
-curl -s "http://localhost:7007/api/service-tokens?status=active" \
+curl -s "http://localhost:7007/api/access-tokens/service?status=active" \
   -H "Authorization: Bearer $TOKEN" | jq .
 
 # Tokens for a specific group
-curl -s "http://localhost:7007/api/service-tokens?groupEntityRef=group:default/platform" \
+curl -s "http://localhost:7007/api/access-tokens/service?groupEntityRef=group:default/platform" \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
@@ -150,15 +150,15 @@ curl -s "http://localhost:7007/api/service-tokens?groupEntityRef=group:default/p
 | `revokedBy` | string \| null | User entity ref of the revoker, or `null` |
 | `status` | `active` \| `revoked` \| `expired` | Computed status |
 
-> **Note:** The raw token value is **never** returned by this endpoint. It is only available in the response to `POST /api/service-tokens` at creation time.
+> **Note:** The raw token value is **never** returned by this endpoint. It is only available in the response to `POST /api/access-tokens/service` at creation time.
 
 ---
 
-### `POST /api/service-tokens`
+### `POST /api/access-tokens/service`
 
 Creates a new service token.
 
-**Required permission:** `service-tokens:write`
+**Required permission:** `access-tokens:service:write`
 
 **Request body:**
 
@@ -178,13 +178,13 @@ Creates a new service token.
 | `description` | string | | Human-readable description. |
 | `groupEntityRef` | string | ✅ | Owning group. Must exist in the Backstage catalog. |
 | `scopes` | string[] | ✅ | One or more scope IDs from the scope catalogue. |
-| `expiresInDays` | integer | | Days until expiry. Defaults to `serviceTokens.defaultTokenLifetimeDays`. Cannot exceed `serviceTokens.maxTokenLifetimeDays`. |
+| `expiresInDays` | integer | | Days until expiry. Defaults to `accessTokens.service.defaultTokenLifetimeDays`. Cannot exceed `accessTokens.service.maxTokenLifetimeDays`. |
 | `expiresAt` | ISO 8601 | | Absolute expiry timestamp. Use either `expiresInDays` or `expiresAt`, not both. |
 
 **Example:**
 
 ```bash
-curl -s -X POST http://localhost:7007/api/service-tokens \
+curl -s -X POST http://localhost:7007/api/access-tokens/service \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -213,7 +213,7 @@ curl -s -X POST http://localhost:7007/api/service-tokens \
     "revokedBy": null,
     "status": "active"
   },
-  "rawToken": "bsst_a1b2c3d4e5f6..."
+  "rawToken": "bsat_a1b2c3d4e5f6..."
 }
 ```
 
@@ -228,11 +228,11 @@ curl -s -X POST http://localhost:7007/api/service-tokens \
 
 ---
 
-### `GET /api/service-tokens/:id`
+### `GET /api/access-tokens/service/:id`
 
 Returns a single token by ID.
 
-**Required permission:** `service-tokens:read`
+**Required permission:** `access-tokens:service:read`
 
 **Path parameters:**
 
@@ -243,7 +243,7 @@ Returns a single token by ID.
 **Example:**
 
 ```bash
-curl -s http://localhost:7007/api/service-tokens/3fa85f64-5717-4562-b3fc-2c963f66afa6 \
+curl -s http://localhost:7007/api/access-tokens/service/3fa85f64-5717-4562-b3fc-2c963f66afa6 \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
@@ -274,11 +274,11 @@ curl -s http://localhost:7007/api/service-tokens/3fa85f64-5717-4562-b3fc-2c963f6
 
 ---
 
-### `DELETE /api/service-tokens/:id`
+### `DELETE /api/access-tokens/service/:id`
 
 Revokes a token. The token is marked as revoked in the database and a `revoked` audit event is recorded. The raw token immediately stops working (subject to cache TTL).
 
-**Required permission:** `service-tokens:revoke`
+**Required permission:** `access-tokens:service:revoke`
 
 **Path parameters:**
 
@@ -301,7 +301,7 @@ Revokes a token. The token is marked as revoked in the database and a `revoked` 
 **Example:**
 
 ```bash
-curl -s -X DELETE http://localhost:7007/api/service-tokens/3fa85f64-5717-4562-b3fc-2c963f66afa6 \
+curl -s -X DELETE http://localhost:7007/api/access-tokens/service/3fa85f64-5717-4562-b3fc-2c963f66afa6 \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"reason": "Rotating credentials"}' \
@@ -319,11 +319,11 @@ curl -s -X DELETE http://localhost:7007/api/service-tokens/3fa85f64-5717-4562-b3
 
 ---
 
-### `GET /api/service-tokens/:id/audit`
+### `GET /api/access-tokens/service/:id/audit`
 
 Returns the audit log for a token — the ordered history of lifecycle events.
 
-**Required permission:** `service-tokens:read`
+**Required permission:** `access-tokens:service:read`
 
 **Path parameters:**
 
@@ -334,7 +334,7 @@ Returns the audit log for a token — the ordered history of lifecycle events.
 **Example:**
 
 ```bash
-curl -s http://localhost:7007/api/service-tokens/3fa85f64-5717-4562-b3fc-2c963f66afa6/audit \
+curl -s http://localhost:7007/api/access-tokens/service/3fa85f64-5717-4562-b3fc-2c963f66afa6/audit \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
@@ -382,12 +382,12 @@ Events are returned in descending chronological order (newest first).
 
 ## Using a raw token
 
-Raw service tokens are used as Bearer tokens against any Backstage backend API endpoint. They are verified by the `backstage-service-token` external auth handler and authenticate as the group the token was scoped to.
+Raw service tokens are used as Bearer tokens against any Backstage backend API endpoint. They are verified by the `backstage-service-access-token` external auth handler and authenticate as the group the token was scoped to.
 
 ```bash
 # Use a service token to call the Catalog API
 curl -s "http://localhost:7007/api/catalog/entities?limit=10" \
-  -H "Authorization: Bearer bsst_a1b2c3d4e5f6..."
+  -H "Authorization: Bearer bsat_a1b2c3d4e5f6..."
 ```
 
 **Token behaviour:**
@@ -399,31 +399,33 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=10" \
 
 ---
 
-## Personal access token (user-tokens) endpoints
+## Personal Access Token Endpoints
 
 These endpoints implement the **user-self-service** PAT capability.
-They are mounted under the same `service-tokens` plugin namespace
+A personal access token is a user-managed Backstage **refresh token**,
+not a direct API bearer token.
+They are mounted under the same `access-tokens` plugin namespace
 but at the `/personal/` sub-path:
 
 | Method | Path | Auth | Permission |
 |---|---|---|---|
-| `POST` | `/api/service-tokens/personal/tokens/mint` | user session | `user-tokens:write` |
-| `GET` | `/api/service-tokens/personal/tokens/mint/callback` | none (state-bound) | — |
-| `GET` | `/api/service-tokens/personal/tokens` | user session | `user-tokens:read` |
-| `GET` | `/api/service-tokens/personal/tokens/:id` | user session | `user-tokens:read` |
-| `DELETE` | `/api/service-tokens/personal/tokens/:id` | user session | `user-tokens:revoke` |
-| `GET` | `/api/service-tokens/personal/tokens/:id/audit` | user session | `user-tokens:read` |
+| `POST` | `/api/access-tokens/personal/mint` | user session | `access-tokens:user:write` |
+| `GET` | `/api/access-tokens/personal/mint/callback` | none (state-bound) | — |
+| `GET` | `/api/access-tokens/personal` | user session | `access-tokens:user:read` |
+| `GET` | `/api/access-tokens/personal/:id` | user session | `access-tokens:user:read` |
+| `DELETE` | `/api/access-tokens/personal/:id` | user session | `access-tokens:user:revoke` |
+| `GET` | `/api/access-tokens/personal/:id/audit` | user session | `access-tokens:user:read` |
 
-All routes scope to the calling user. `GET /personal/tokens/:id`
+All routes scope to the calling user. `GET /personal/:id`
 returns `404` (not `403`) for another user's id so existence cannot
 be probed across users.
 
 ### Mint a token
 
-`POST /api/service-tokens/personal/tokens/mint` starts a same-tab
+`POST /api/access-tokens/personal/mint` starts a same-tab
 OAuth flow. The dialog calls this endpoint, then navigates the
 browser to the returned `authorizeUrl`. After approval the user
-returns to `/settings/personal-tokens#user-tokens-mint=<payload>`
+returns to `/settings/personal-tokens#personal-access-tokens-mint=<payload>`
 and the dialog reopens automatically in result mode showing the raw
 refresh token.
 
@@ -449,20 +451,26 @@ shape on the callback and the error-fragment payload — is in
 
 ### Using a personal access token
 
-A personal access token is a Backstage **refresh token** that the
-user's script exchanges for short-lived JWTs via the standard
-RFC 6749 token endpoint exposed by `@backstage/plugin-auth-backend`
-when DCR is enabled. Two `curl` calls:
+A personal access token is a user-managed Backstage **refresh token**.
+Do not send it directly as `Authorization: Bearer <token>` to normal
+Backstage APIs. Any integration, tool, or automation in any programming
+language can exchange it for short-lived JWTs via the standard RFC 6749
+token endpoint exposed by `@backstage/plugin-auth-backend` when DCR is
+enabled. The protocol is:
+
+1. Store the personal access token securely.
+2. POST it to `/api/auth/v1/token` with `grant_type=refresh_token`.
+3. Use the returned `access_token` as the bearer token for Backstage APIs.
 
 ```bash
-# Step 1 — exchange refresh token for a JWT (no client credentials needed)
-JWT=$(curl -s -X POST "$BACKSTAGE/api/auth/v1/token" \
+ACCESS_TOKEN=$(curl -s -X POST "$BACKSTAGE/api/auth/v1/token" \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d "grant_type=refresh_token&refresh_token=$RT" \
+  --data-urlencode 'grant_type=refresh_token' \
+  --data-urlencode "refresh_token=$REFRESH_TOKEN" \
   | jq -r .access_token)
 
-# Step 2 — call any Backstage backend API as the user
-curl -H "Authorization: Bearer $JWT" "$BACKSTAGE/api/catalog/entities"
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "$BACKSTAGE/api/catalog/entities"
 ```
 
 The catalog, scaffolder, and every other backend plugin will see

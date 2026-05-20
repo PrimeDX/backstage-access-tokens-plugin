@@ -1,7 +1,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: plugin-service-tokens
+  name: plugin-access-tokens
   description: Backstage plugin for machine-to-machine service token lifecycle management.
   annotations:
     # Tells TechDocs to build docs from the mkdocs.yml in this directory.

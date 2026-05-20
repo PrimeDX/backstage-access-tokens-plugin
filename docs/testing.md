@@ -11,7 +11,7 @@ By the end of this guide you should be able to verify:
 - raw service tokens authenticate against Backstage backend routes
 - revocation and permission checks behave as expected
 
-The frontend UI at `/admin/service-tokens` provides a full page experience: token list with filters, a **Create token** button, and **Audit** / **Revoke** actions per row — all wired to the backend. Choose the path that suits your workflow:
+The frontend UI at `/admin/access-tokens` provides a full page experience: token list with filters, a **Create token** button, and **Audit** / **Revoke** actions per row — all wired to the backend. Choose the path that suits your workflow:
 
 ---
 
@@ -87,7 +87,7 @@ echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
 Open a browser and navigate to:
 
 ```
-http://localhost:3000/admin/service-tokens
+http://localhost:3000/admin/access-tokens
 ```
 
 **Expected result:**
@@ -98,14 +98,14 @@ http://localhost:3000/admin/service-tokens
 
 This confirms that:
 - The frontend plugin is wired and the route is registered.
-- The guest user has the service token permissions required by the UI flow (`service-tokens:read`, `service-tokens:write`, and `service-tokens:revoke`), granted by your permission policy using `serviceTokens.admin.userEntityRefs` in `app-config.yaml`.
+- The guest user has the service token permissions required by the UI flow (`access-tokens:service:read`, `access-tokens:service:write`, and `access-tokens:service:revoke`), granted by your permission policy using `accessTokens.service.admin.userEntityRefs` in `app-config.yaml`.
 
 ---
 
 ### Step A3 — List Available Scopes
 
 ```bash
-curl -s http://localhost:7007/api/service-tokens/scopes \
+curl -s http://localhost:7007/api/access-tokens/service/scopes \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
@@ -128,7 +128,7 @@ curl -s http://localhost:7007/api/service-tokens/scopes \
 ### Step A4 — List Tokens (Empty)
 
 ```bash
-curl -s http://localhost:7007/api/service-tokens \
+curl -s http://localhost:7007/api/access-tokens/service \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
@@ -143,7 +143,7 @@ curl -s http://localhost:7007/api/service-tokens \
 ### Step A5 — Create a Service Token
 
 ```bash
-RESPONSE=$(curl -s -X POST http://localhost:7007/api/service-tokens \
+RESPONSE=$(curl -s -X POST http://localhost:7007/api/access-tokens/service \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -192,7 +192,7 @@ echo "RAW_TOKEN=$RAW_TOKEN"
 
 ### Step A6 — Confirm Token Appears in the UI
 
-Refresh the browser at `http://localhost:3000/admin/service-tokens`.
+Refresh the browser at `http://localhost:3000/admin/access-tokens`.
 
 **Expected result:** The table now shows one row for `test-token` with status **Active**.
 
@@ -201,7 +201,7 @@ Refresh the browser at `http://localhost:3000/admin/service-tokens`.
 ### Step A7 — Inspect the Audit Log
 
 ```bash
-curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID/audit \
+curl -s http://localhost:7007/api/access-tokens/service/$TOKEN_ID/audit \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
@@ -226,7 +226,7 @@ curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID/audit \
 
 ### Step A8 — Use the Raw Token Against the Catalog API
 
-The raw token authenticates as the group `group:default/guests` via the `backstage-service-token` external access handler.
+The raw token authenticates as the group `group:default/guests` via the `backstage-service-access-token` external access handler.
 
 ```bash
 curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
@@ -240,7 +240,7 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
 ### Step A9 — Revoke the Token
 
 ```bash
-curl -s -X DELETE http://localhost:7007/api/service-tokens/$TOKEN_ID \
+curl -s -X DELETE http://localhost:7007/api/access-tokens/service/$TOKEN_ID \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"reason": "testing revocation flow"}' \
@@ -256,7 +256,7 @@ curl -s -X DELETE http://localhost:7007/api/service-tokens/$TOKEN_ID \
 #### Get the individual token record
 
 ```bash
-curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID \
+curl -s http://localhost:7007/api/access-tokens/service/$TOKEN_ID \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
@@ -265,7 +265,7 @@ curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID \
 #### Confirm the audit log has a revoked event
 
 ```bash
-curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID/audit \
+curl -s http://localhost:7007/api/access-tokens/service/$TOKEN_ID/audit \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
@@ -277,7 +277,7 @@ curl -s http://localhost:7007/api/service-tokens/$TOKEN_ID/audit \
 #### Filter the list by status
 
 ```bash
-curl -s "http://localhost:7007/api/service-tokens?status=revoked" \
+curl -s "http://localhost:7007/api/access-tokens/service?status=revoked" \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
@@ -291,7 +291,7 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
   -w "\nHTTP status: %{http_code}\n"
 ```
 
-**Expected:** HTTP `401 Unauthorized` once revocation has propagated through the configured cache TTL. If your app keeps the default `serviceTokens.cacheTtlSeconds: 60`, wait up to 60 seconds; for deterministic local checks, set the TTL to `0`.
+**Expected:** HTTP `401 Unauthorized` once revocation has propagated through the configured cache TTL. If your app keeps the default `accessTokens.service.cacheTtlSeconds: 60`, wait up to 60 seconds; for deterministic local checks, set the TTL to `0`.
 
 ---
 
@@ -300,7 +300,7 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
 #### 11a — No token (unauthenticated)
 
 ```bash
-curl -s -X POST http://localhost:7007/api/service-tokens \
+curl -s -X POST http://localhost:7007/api/access-tokens/service \
   -H "Content-Type: application/json" \
   -d '{"name":"should-fail","groupEntityRef":"group:default/guests","scopes":["catalog:read"]}' \
   -w "\nHTTP status: %{http_code}\n"
@@ -310,15 +310,16 @@ curl -s -X POST http://localhost:7007/api/service-tokens \
 
 #### 11b — Non-admin user (403 path)
 
-The permission policy grants the service token management permissions only to users listed in `serviceTokens.admin.userEntityRefs`. To demonstrate the 403 path, add a second user to `org.yaml` and `app-config.yaml` who is **not** in the admin list, then obtain their token.
+The permission policy grants the service token management permissions only to users listed in `accessTokens.service.admin.userEntityRefs`. To demonstrate the 403 path, add a second user to `org.yaml` and `app-config.yaml` who is **not** in the admin list, then obtain their token.
 
 **Quick demo without a second user account:** temporarily remove `user:development/guest` from `app-config.yaml`:
 
 ```yaml
 # app-config.yaml — temporarily change to an empty list to simulate a non-admin
-serviceTokens:
-  admin:
-    userEntityRefs: []
+accessTokens:
+  service:
+    admin:
+      userEntityRefs: []
 ```
 
 Restart the backend, obtain a fresh guest token, then call:
@@ -327,7 +328,7 @@ Restart the backend, obtain a fresh guest token, then call:
 TOKEN=$(curl -s -X POST http://localhost:7007/api/auth/guest/refresh \
   -H 'Content-Type: application/json' | jq -r '.backstageIdentity.token')
 
-curl -s -X POST http://localhost:7007/api/service-tokens \
+curl -s -X POST http://localhost:7007/api/access-tokens/service \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"should-fail","groupEntityRef":"group:default/guests","scopes":["catalog:read"]}' \
@@ -342,10 +343,10 @@ Restore the original config and restart the backend before continuing.
 
 ### Step A12 — Cleanup
 
-The service token data is persisted in a SQLite file at `/tmp/service-tokens.sqlite`. To reset all token state:
+The service token data is persisted in a SQLite file at `/tmp/access-tokens.sqlite`. To reset all token state:
 
 ```bash
-rm /tmp/service-tokens.sqlite
+rm /tmp/access-tokens.sqlite
 ```
 
 The file is recreated with fresh migrations on the next backend start.
@@ -363,12 +364,13 @@ This path exercises the same scenarios entirely through the browser. Start both 
 Open a browser and go to:
 
 ```
-http://localhost:3000/admin/service-tokens
+http://localhost:3000/admin/access-tokens
 ```
 
 **Expected:**
 - The page loads with the **"Service Tokens"** header and subtitle.
-- A filter bar (Status dropdown + Group field) and a **Create token** button are visible at the top.
+- A filter bar (Status dropdown + Group autocomplete) and a **Create token** button are visible at the top.
+- The token table includes sortable column headers and a **Created** column.
 - The table shows an empty state: *"No service tokens yet"*.
 - No 401 or 403 error is displayed.
 
@@ -404,10 +406,12 @@ http://localhost:3000/admin/service-tokens
 
 1. In the **Status** dropdown, select `Active`.
    - **Expected:** Only active tokens are shown. `ui-test-token` remains visible.
-2. In the **Group** field, type `group:default/guests`.
+2. In the **Group** autocomplete, select `group:default/guests`.
    - **Expected:** `ui-test-token` still appears (it belongs to that group).
 3. Click **Clear** to reset both filters.
    - **Expected:** All tokens are shown again.
+4. Click a sortable table header, such as **Created** or **Name**.
+   - **Expected:** The table toggles between ascending and descending order without changing the active filters.
 
 ---
 
@@ -462,7 +466,7 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
   -w "\nHTTP status: %{http_code}\n"
 ```
 
-**Expected:** HTTP `401 Unauthorized` once revocation has propagated through the configured cache TTL. If your local app sets `serviceTokens.cacheTtlSeconds: 0`, this happens immediately.
+**Expected:** HTTP `401 Unauthorized` once revocation has propagated through the configured cache TTL. If your local app sets `accessTokens.service.cacheTtlSeconds: 0`, this happens immediately.
 
 ---
 
@@ -481,7 +485,7 @@ curl -s "http://localhost:7007/api/catalog/entities?limit=1" \
 Reset all token state by removing the SQLite database:
 
 ```bash
-rm /tmp/service-tokens.sqlite
+rm /tmp/access-tokens.sqlite
 ```
 
 The file is recreated with fresh migrations on the next backend start.
@@ -490,7 +494,7 @@ The file is recreated with fresh migrations on the next backend start.
 
 ## Current UI capabilities
 
-The frontend page at `/admin/service-tokens`:
+The frontend page at `/admin/access-tokens`:
 
 - ✅ Fetches and renders the token list (with loading/error/empty states)
 - ✅ Filter bar — status dropdown + group text field, wired to re-fetch on change
@@ -509,7 +513,7 @@ This path is a focused smoke test for the primary admin UI flow. It is designed 
 
 ### What it covers
 
-- page load at `/admin/service-tokens`
+- page load at `/admin/access-tokens`
 - create dialog happy path
 - one-time raw token display after creation
 - audit log rendering
@@ -527,14 +531,14 @@ This path is a focused smoke test for the primary admin UI flow. It is designed 
 - Node `22`
 - the plugin repo dependencies installed
 - a local Backstage harness already running
-- `serviceTokens.cacheTtlSeconds: 0` in the harness local config so revocation checks are deterministic
+- `accessTokens.service.cacheTtlSeconds: 0` in the harness local config so revocation checks are deterministic
 
 ### Run the smoke test
 
 With your harness already running:
 
 ```bash
-cd /path/to/backstage-service-token-plugin
+cd /path/to/backstage-access-tokens-plugin
 PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke
 ```
 

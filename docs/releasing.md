@@ -6,9 +6,9 @@ Use this guide after code, tests, and documentation are already aligned and read
 
 This repository publishes three public scoped packages:
 
-- `@primedx/plugin-service-tokens`
-- `@primedx/plugin-service-tokens-backend`
-- `@primedx/plugin-service-tokens-node`
+- `@primedx/plugin-access-tokens`
+- `@primedx/plugin-access-tokens-backend`
+- `@primedx/plugin-access-tokens-node`
 
 ## Prerequisites
 
@@ -154,7 +154,7 @@ Before dispatching the workflow, confirm the target harness:
 - is reachable from GitHub Actions at the supplied `base_url`
 - has the service token plugin installed and the admin route available
 - includes catalog data and auth/permission configuration needed for the create, audit, and revoke path
-- uses `serviceTokens.cacheTtlSeconds: 0` when you need deterministic revoked-token rejection timing during the smoke flow
+- uses `accessTokens.service.cacheTtlSeconds: 0` when you need deterministic revoked-token rejection timing during the smoke flow
 
 ## Prepare a release
 

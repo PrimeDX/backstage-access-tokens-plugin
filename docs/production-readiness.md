@@ -13,11 +13,11 @@ This guide covers what you need to verify, configure, and decide before running 
 Run through this before going live. Each item links to the relevant section below.
 
 - [ ] Default auth policy is **enabled** — `dangerouslyDisableDefaultAuthPolicy` is not set to `true` in production config
-- [ ] `serviceTokens.admin.userEntityRefs` is set to an explicit list — the development default (`user:development/guest`) is not present in production config
+- [ ] `accessTokens.service.admin.userEntityRefs` is set to an explicit list — the development default (`user:development/guest`) is not present in production config
 - [ ] Admin access is granted to a **group or role**, not just individual users (see [Admin access via catalog groups](#admin-access-via-catalog-groups))
-- [ ] Your permission policy handles `service-tokens:read`, `service-tokens:write`, and `service-tokens:revoke` — either as a standalone policy or merged into an existing one (see [Merging into an existing permission policy](#merging-into-an-existing-permission-policy))
-- [ ] `serviceTokens.cacheTtlSeconds` is tuned to match your revocation SLO (see [Cache TTL and revocation SLO](#cache-ttl-and-revocation-slo))
-- [ ] `serviceTokens.maxTokenLifetimeDays` is set to a value appropriate for your security policy
+- [ ] Your permission policy handles `access-tokens:service:read`, `access-tokens:service:write`, and `access-tokens:service:revoke` — either as a standalone policy or merged into an existing one (see [Merging into an existing permission policy](#merging-into-an-existing-permission-policy))
+- [ ] `accessTokens.service.cacheTtlSeconds` is tuned to match your revocation SLO (see [Cache TTL and revocation SLO](#cache-ttl-and-revocation-slo))
+- [ ] `accessTokens.service.maxTokenLifetimeDays` is set to a value appropriate for your security policy
 - [ ] Audit log retention is understood and covered by your logging infrastructure (see [Audit log retention](#audit-log-retention))
 - [ ] At least one smoke test has been run against the production backend (see [Getting Started](getting-started.md) for the smoke-test flow in Step 7)
 
@@ -53,13 +53,13 @@ import {
 } from '@backstage/plugin-permission-node';
 import { CatalogApi } from '@backstage/catalog-client';
 import {
-  serviceTokensReadPermission,
-  serviceTokensWritePermission,
-  serviceTokensRevokePermission,
-} from '@primedx/plugin-service-tokens-node';
+  serviceAccessTokensReadPermission,
+  serviceAccessTokensWritePermission,
+  serviceAccessTokensRevokePermission,
+} from '@primedx/plugin-access-tokens-node';
 import { Config } from '@backstage/config';
 
-export class ServiceTokensPermissionPolicy implements PermissionPolicy {
+export class AccessTokensPermissionPolicy implements PermissionPolicy {
   constructor(
     private readonly config: Config,
     private readonly catalogApi: CatalogApi,
@@ -70,9 +70,9 @@ export class ServiceTokensPermissionPolicy implements PermissionPolicy {
     user?: PolicyQueryUser,
   ): Promise<PolicyDecision> {
     if (
-      isPermission(request.permission, serviceTokensReadPermission) ||
-      isPermission(request.permission, serviceTokensWritePermission) ||
-      isPermission(request.permission, serviceTokensRevokePermission)
+      isPermission(request.permission, serviceAccessTokensReadPermission) ||
+      isPermission(request.permission, serviceAccessTokensWritePermission) ||
+      isPermission(request.permission, serviceAccessTokensRevokePermission)
     ) {
       const allowed = await this.isAdminUser(user);
       return allowed
@@ -88,11 +88,11 @@ export class ServiceTokensPermissionPolicy implements PermissionPolicy {
 
     // Option A: explicit user list (simple, good for small teams)
     const adminRefs =
-      this.config.getOptionalStringArray('serviceTokens.admin.userEntityRefs') ?? [];
+      this.config.getOptionalStringArray('accessTokens.service.admin.userEntityRefs') ?? [];
     if (adminRefs.includes(user.info.userEntityRef)) return true;
 
     // Option B: group membership (recommended for teams)
-    const adminGroup = this.config.getOptionalString('serviceTokens.admin.groupEntityRef');
+    const adminGroup = this.config.getOptionalString('accessTokens.service.admin.groupEntityRef');
     if (!adminGroup) return false;
 
     const userEntity = await this.catalogApi.getEntityByRef(
@@ -119,11 +119,11 @@ Register the policy with the catalog API injected:
 import { createBackendModule, coreServices } from '@backstage/backend-plugin-api';
 import { policyExtensionPoint } from '@backstage/plugin-permission-node/alpha';
 import { catalogServiceRef } from '@backstage/plugin-catalog-node';
-import { ServiceTokensPermissionPolicy } from './serviceTokensPermissionPolicy';
+import { AccessTokensPermissionPolicy } from './serviceTokensPermissionPolicy';
 
 const permissionModuleServiceTokens = createBackendModule({
   pluginId: 'permission',
-  moduleId: 'service-tokens-policy',
+  moduleId: 'access-tokens-policy',
   register(reg) {
     reg.registerInit({
       deps: {
@@ -132,7 +132,7 @@ const permissionModuleServiceTokens = createBackendModule({
         catalog: catalogServiceRef,
       },
       async init({ policy, config, catalog }) {
-        policy.setPolicy(new ServiceTokensPermissionPolicy(config, catalog));
+        policy.setPolicy(new AccessTokensPermissionPolicy(config, catalog));
       },
     });
   },
@@ -144,11 +144,12 @@ backend.add(permissionModuleServiceTokens);
 Configure the admin group in `app-config.yaml`:
 
 ```yaml
-serviceTokens:
-  admin:
-    # Option A: explicit users (can be combined with Option B)
-    userEntityRefs:
-      - user:default/alice
+accessTokens:
+  service:
+    admin:
+      # Option A: explicit users (can be combined with Option B)
+      userEntityRefs:
+        - user:default/alice
 
     # Option B: group membership (recommended)
     groupEntityRef: group:default/platform-team
@@ -170,7 +171,7 @@ Backstage supports **exactly one active permission policy** at a time. If your a
 
 ### The problem
 
-The getting-started guide shows creating a new `ServiceTokensPermissionPolicy`. If you already have a policy, this will conflict.
+The getting-started guide shows creating a new `AccessTokensPermissionPolicy`. If you already have a policy, this will conflict.
 
 ### The solution: merge, don't replace
 
@@ -180,10 +181,10 @@ Add the service token permission checks to your existing policy's `handle` metho
 // packages/backend/src/myExistingPermissionPolicy.ts
 import { isPermission } from '@backstage/plugin-permission-common';
 import {
-  serviceTokensReadPermission,
-  serviceTokensWritePermission,
-  serviceTokensRevokePermission,
-} from '@primedx/plugin-service-tokens-node';
+  serviceAccessTokensReadPermission,
+  serviceAccessTokensWritePermission,
+  serviceAccessTokensRevokePermission,
+} from '@primedx/plugin-access-tokens-node';
 
 // BEFORE — your existing policy
 class MyExistingPolicy implements PermissionPolicy {
@@ -202,12 +203,12 @@ class MyExistingPolicy implements PermissionPolicy {
   async handle(request, user) {
     // Add this block — order doesn't matter, each permission is checked independently
     if (
-      isPermission(request.permission, serviceTokensReadPermission) ||
-      isPermission(request.permission, serviceTokensWritePermission) ||
-      isPermission(request.permission, serviceTokensRevokePermission)
+      isPermission(request.permission, serviceAccessTokensReadPermission) ||
+      isPermission(request.permission, serviceAccessTokensWritePermission) ||
+      isPermission(request.permission, serviceAccessTokensRevokePermission)
     ) {
       const adminRefs =
-        this.config.getOptionalStringArray('serviceTokens.admin.userEntityRefs') ?? [];
+        this.config.getOptionalStringArray('accessTokens.service.admin.userEntityRefs') ?? [];
       return adminRefs.includes(user?.info.userEntityRef ?? '')
         ? { result: AuthorizeResult.ALLOW }
         : { result: AuthorizeResult.DENY };
@@ -232,10 +233,10 @@ Some Backstage setups use a policy generated by a platform tool (e.g., Roadie, J
 
 ```typescript
 import {
-  serviceTokensReadPermission,
-  serviceTokensWritePermission,
-  serviceTokensRevokePermission,
-} from '@primedx/plugin-service-tokens-node';
+  serviceAccessTokensReadPermission,
+  serviceAccessTokensWritePermission,
+  serviceAccessTokensRevokePermission,
+} from '@primedx/plugin-access-tokens-node';
 
 class WrappedPolicy implements PermissionPolicy {
   constructor(
@@ -245,12 +246,12 @@ class WrappedPolicy implements PermissionPolicy {
 
   async handle(request, user) {
     if (
-      isPermission(request.permission, serviceTokensReadPermission) ||
-      isPermission(request.permission, serviceTokensWritePermission) ||
-      isPermission(request.permission, serviceTokensRevokePermission)
+      isPermission(request.permission, serviceAccessTokensReadPermission) ||
+      isPermission(request.permission, serviceAccessTokensWritePermission) ||
+      isPermission(request.permission, serviceAccessTokensRevokePermission)
     ) {
       const adminRefs =
-        this.config.getOptionalStringArray('serviceTokens.admin.userEntityRefs') ?? [];
+        this.config.getOptionalStringArray('accessTokens.service.admin.userEntityRefs') ?? [];
       return adminRefs.includes(user?.info.userEntityRef ?? '')
         ? { result: AuthorizeResult.ALLOW }
         : { result: AuthorizeResult.DENY };
@@ -266,14 +267,14 @@ class WrappedPolicy implements PermissionPolicy {
 
 ## Cache TTL and revocation SLO
 
-The plugin caches verified tokens in memory for `serviceTokens.cacheTtlSeconds` seconds (default: 60). This means a revoked token continues to be accepted for up to that many seconds on any replica that has a cached entry.
+The plugin caches verified tokens in memory for `accessTokens.service.cacheTtlSeconds` seconds (default: 60). This means a revoked token continues to be accepted for up to that many seconds on any replica that has a cached entry.
 
 ### Setting your revocation SLO
 
 Your revocation SLO is the maximum time between an admin revoking a token and that token being rejected on all replicas:
 
 ```
-Revocation SLO = serviceTokens.cacheTtlSeconds
+Revocation SLO = accessTokens.service.cacheTtlSeconds
 ```
 
 Choose a value based on your security requirements:
@@ -286,8 +287,9 @@ Choose a value based on your security requirements:
 | Disable caching entirely | 0 | Every request hits the DB — not recommended for production |
 
 ```yaml
-serviceTokens:
-  cacheTtlSeconds: 60   # adjust to match your revocation SLO
+accessTokens:
+  service:
+    cacheTtlSeconds: 60   # adjust to match your revocation SLO
 ```
 
 ### Multi-replica deployments
@@ -307,7 +309,7 @@ Token expiry (`expires_at`) is checked on every DB lookup and on every cache hit
 
 ## Audit log retention
 
-The plugin writes two event types to the `service_token_audit_log` table:
+The plugin writes two event types to the `service_access_token_audit_log` table:
 
 | Event | When | What's stored |
 |---|---|---|
@@ -326,7 +328,7 @@ The plugin writes two event types to the `service_token_audit_log` table:
 
 ```sql
 -- Example: delete audit log entries older than 1 year
-DELETE FROM service_token_audit_log
+DELETE FROM service_access_token_audit_log
 WHERE occurred_at < NOW() - INTERVAL '1 year';
 ```
 
@@ -334,9 +336,9 @@ Run this as a scheduled task (cron, Kubernetes CronJob, database scheduled event
 
 **External log shipping:** For compliance or SIEM integration, consider shipping audit events to your logging infrastructure. Options:
 
-- **Database CDC (Change Data Capture):** Stream inserts from `service_token_audit_log` to your log aggregator using Debezium, AWS DMS, or equivalent.
-- **Backstage audit log integration:** If your Backstage deployment uses `@backstage/backend-plugin-audit-log-node`, you can extend the backend plugin to emit structured audit events through that system. This requires a code change to `plugin-service-tokens-backend`.
-- **Periodic export:** A scheduled job that queries `service_token_audit_log WHERE occurred_at > :last_run` and ships rows to your SIEM.
+- **Database CDC (Change Data Capture):** Stream inserts from `service_access_token_audit_log` to your log aggregator using Debezium, AWS DMS, or equivalent.
+- **Backstage audit log integration:** If your Backstage deployment uses `@backstage/backend-plugin-audit-log-node`, you can extend the backend plugin to emit structured audit events through that system. This requires a code change to `plugin-access-tokens-backend`.
+- **Periodic export:** A scheduled job that queries `service_access_token_audit_log WHERE occurred_at > :last_run` and ships rows to your SIEM.
 
 ### What to retain
 
@@ -358,16 +360,16 @@ For auth provider setup, follow the [Backstage auth provider documentation](http
 
 ---
 
-## User tokens — operational concerns
+## Personal access tokens — operational concerns
 
-If you enabled the optional user-tokens capability
+If you enabled the optional personal-access-token capability
 ([Getting Started §Step 8](getting-started.md#step-8--optional-enable-user-tokens),
-[Configuration §User tokens](configuration.md#user-tokens)), there
+[Configuration §Personal access tokens](configuration.md#user-tokens)), there
 are a few production concerns that don't apply to service tokens.
 
 ### Encryption key management
 
-The plugin uses `serviceTokens.userTokens.encryptionKey` to encrypt
+The plugin uses `accessTokens.personal.encryptionKey` to encrypt
 refresh tokens at rest with AES-256-GCM. The same key is needed at
 revoke time to decrypt the ciphertext and present the raw token to
 RFC 7009 `/v1/revoke`.
@@ -390,9 +392,9 @@ Backstage backend signing key:
 The v1 plugin does not ship a rotation tool. To rotate today:
 
 1. Add the new key as a secondary variable; keep the old key.
-2. Run an out-of-band script that, for each row in `user_tokens`,
+2. Run an out-of-band script that, for each row in `personal_access_tokens`,
    decrypts with the old key and re-encrypts with the new key.
-3. Atomically swap `serviceTokens.userTokens.encryptionKey` to the
+3. Atomically swap `accessTokens.personal.encryptionKey` to the
    new value. Restart the backend.
 4. Retire the old key after one rotation cycle.
 
@@ -410,7 +412,7 @@ them.
 ### Refresh-token audit
 
 The plugin audits **its own** mint and revoke events
-(`user_token_audit_log`). It does NOT audit each `/api/auth/v1/token`
+(`personal_access_token_audit_log`). It does NOT audit each `/api/auth/v1/token`
 exchange — that traffic is observable only through Backstage's
 standard request logging. If you need a per-exchange audit trail
 (who used which token from which IP, when), enable structured
@@ -421,8 +423,9 @@ audit-emitting layer.
 
 If the key is permanently lost:
 
-- Existing minted tokens **continue to work** for the user's
-  scripts (auth-backend itself still has the refresh-token hash).
+- Existing minted tokens **continue to work** for integrations that
+  exchange them at `/api/auth/v1/token` (auth-backend itself still
+  has the refresh-token hash).
 - The plugin **cannot revoke** them through `/v1/revoke` (it can't
   decrypt the stored ciphertext). The UI revoke button returns a
   5xx error and the row stays `active`.
@@ -441,23 +444,23 @@ A final checklist to run before cutting over to production traffic.
 ### Configuration (service tokens)
 
 - [ ] `backend.auth.dangerouslyDisableDefaultAuthPolicy` is **not** set to `true`
-- [ ] `serviceTokens.admin.userEntityRefs` or `serviceTokens.admin.groupEntityRef` is set to a production value (not the development default)
-- [ ] `serviceTokens.maxTokenLifetimeDays` is set to a value that matches your security policy
-- [ ] `serviceTokens.cacheTtlSeconds` is set and documented as your revocation SLO
+- [ ] `accessTokens.service.admin.userEntityRefs` or `accessTokens.service.admin.groupEntityRef` is set to a production value (not the development default)
+- [ ] `accessTokens.service.maxTokenLifetimeDays` is set to a value that matches your security policy
+- [ ] `accessTokens.service.cacheTtlSeconds` is set and documented as your revocation SLO
 - [ ] Database is configured to use Postgres or MySQL (not SQLite) for production
 
-### Configuration (user tokens — if enabled)
+### Configuration (personal access tokens — if enabled)
 
 - [ ] `auth.experimentalDynamicClientRegistration.enabled` and `auth.experimentalRefreshToken.enabled` are both `true`
-- [ ] `serviceTokens.userTokens.encryptionKey` is 32 bytes base64, sourced from your secret manager, not committed to source control
-- [ ] `serviceTokens.userTokens.maxExpiryDays` ≤ `auth.experimentalRefreshToken.maxRotationLifetime`
+- [ ] `accessTokens.personal.encryptionKey` is 32 bytes base64, sourced from your secret manager, not committed to source control
+- [ ] `accessTokens.personal.maxExpiryDays` ≤ `auth.experimentalRefreshToken.maxRotationLifetime`
 - [ ] The encryption key is backed up alongside DB backups
-- [ ] `userTokensAuthPlugin` from `@primedx/plugin-service-tokens` is wired into `packages/app/src/App.tsx` so the consent route `/oauth2/authorize/:sessionId` resolves
-- [ ] The permission policy explicitly handles `user-tokens:read/write/revoke`
+- [ ] `personalAccessTokensAuthPlugin` from `@primedx/plugin-access-tokens` is wired into `packages/app/src/App.tsx` so the consent route `/oauth2/authorize/:sessionId` resolves
+- [ ] The permission policy explicitly handles `access-tokens:user:read/write/revoke`
 
 ### Permission policy
 
-- [ ] The `service-tokens:read`, `service-tokens:write`, and `service-tokens:revoke` permissions are handled in your active permission policy
+- [ ] The `access-tokens:service:read`, `access-tokens:service:write`, and `access-tokens:service:revoke` permissions are handled in your active permission policy
 - [ ] Only one `policy.setPolicy()` call exists in your backend
 - [ ] The policy has been tested: admin user gets `200`, non-admin user gets `403`
 
@@ -465,7 +468,7 @@ A final checklist to run before cutting over to production traffic.
 
 - [ ] Audit log retention policy is defined and implemented
 - [ ] Revocation SLO is documented in your incident response runbook
-- [ ] At least one admin user can access `/admin/service-tokens` in production
+- [ ] At least one admin user can access `/admin/access-tokens` in production
 - [ ] A smoke test token has been created, used, and revoked successfully
 - [ ] Token rotation process is documented for your team
 
@@ -473,4 +476,4 @@ A final checklist to run before cutting over to production traffic.
 
 - [ ] No raw tokens are stored in logs, config files, or environment variables
 - [ ] The admin user list (or group) is reviewed and limited to the minimum necessary
-- [ ] `serviceTokens.maxTokenLifetimeDays` is set — tokens do not live forever by default, but verify this matches your policy
+- [ ] `accessTokens.service.maxTokenLifetimeDays` is set — tokens do not live forever by default, but verify this matches your policy

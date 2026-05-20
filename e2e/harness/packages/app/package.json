@@ -38,7 +38,7 @@
     "@backstage/ui": "^0.13.1",
     "@material-ui/core": "^4.12.2",
     "@material-ui/icons": "^4.9.1",
-    "@primedx/plugin-service-tokens": "file:../../../../packages/plugin-service-tokens",
+    "@primedx/plugin-access-tokens": "file:../../../../packages/plugin-access-tokens",
     "react": "^18.0.2",
     "react-dom": "^18.0.2",
     "react-router": "^6.30.2",

@@ -8,7 +8,7 @@ existing service-token capability.
 ## Problem statement
 
 > Backstage users need to create and manage long-lived tokens so they can
-> build their own apps and scripts that call the Backstage API on their
+> build their own integrations, tools, and automation that call the Backstage API on their
 > behalf, authenticating as themselves and being subject to their own
 > permissions and ownership claims.
 
@@ -26,8 +26,9 @@ patterns:
 
 This spec defines a thin user-facing capability that bridges the gap: a
 settings page where users mint a personal access token in three clicks,
-display the token once with the show-once warning, paste it into a script,
-and revoke it later. The underlying credential **is** a Backstage refresh
+display the token once with the show-once warning, store it for an
+integration, tool, or automation, and revoke it later. The underlying
+credential **is** a Backstage refresh
 token issued through the standard OAuth + DCR pipeline; the plugin contributes
 UX, metadata storage, and revocation orchestration around it.
 
@@ -57,16 +58,17 @@ Acceptance:
   warning.
 - Closing the dialog removes the token from the UI permanently.
 
-### US-2 — Use a token from a script
+### US-2 — Use a token from an integration
 
 > As an authenticated Backstage user, I can use a personal access token I
 > previously minted to call any Backstage backend API as myself.
 
 Acceptance criteria (concrete; resolved via Phase 4 research R4-V1):
 
-The user's script needs **only the raw `refresh_token`**. It exchanges
-the refresh token for a short-lived JWT at Backstage's RFC 6749
-`/v1/token` endpoint (which DCR enables) and uses the JWT as a bearer:
+The client needs **only the raw `refresh_token`**. It can be written in
+any programming language that can make HTTP requests. It exchanges the
+refresh token for a short-lived JWT at Backstage's RFC 6749 `/v1/token`
+endpoint (which DCR enables) and uses the JWT as a bearer:
 
 ```bash
 # Step 1 — exchange refresh token for a JWT. No client credentials required.
@@ -91,7 +93,7 @@ The pass criteria are:
   the calling user's `userEntityRef`, proving the framework treats the
   request as a user principal, not a service principal.
 
-The script does **not** need `client_id`, `client_secret`, or PKCE
+The client does **not** need `client_id`, `client_secret`, or PKCE
 verifier. Backstage's `/v1/token` accepts the refresh-token grant
 without client credentials; the plugin holds those credentials only
 for the authorization-code half of the dance, which the user does
@@ -172,7 +174,7 @@ Concretely:
 - A DCR-registered plugin-owned OAuth client mints refresh tokens through
   `/v1/authorize` → `/v1/token` (RFC 6749 / RFC 7591 compliant) — confirmed
   in [research-notes Q-R4-a](../research-notes.md#open-questions-surfaced-by-research).
-- The plugin maintains a metadata table (`user_tokens`) for the UX (name,
+- The plugin maintains a metadata table (`personal_access_tokens`) for the UX (name,
   expiry, prefix, last used). The actual token validity and rotation live in
   `OfflineSessionDatabase` owned by `@backstage/plugin-auth-backend`
   (research R5).
@@ -194,7 +196,7 @@ User      Browser/Frontend       Plugin Backend       auth-backend       Offline
   |              |                       |                  |                  |
   | click "Create token"                 |                  |                  |
   |------------> |                       |                  |                  |
-  |              | POST /api/user-tokens (name, expiry)     |                  |
+  |              | POST /api/access-tokens/personal (name, expiry)     |                  |
   |              |---------------------> |                  |                  |
   |              |                       | start OAuth (DCR client)            |
   |              |                       |----------------> |                  |
@@ -205,7 +207,7 @@ User      Browser/Frontend       Plugin Backend       auth-backend       Offline
   |              |                       |                  |----------------> |
   |              |                       |                  | <- refresh_token |
   |              |                       | <- access+refresh_token (JSON body) |
-  |              |                       | insert row in user_tokens metadata  |
+  |              |                       | insert row in personal_access_tokens metadata  |
   |              | <- token (one-time) + metadata           |                  |
   | <- show-once dialog                   |                  |                  |
   | copy token   |                       |                  |                  |
@@ -266,9 +268,9 @@ plugin-specific envelope.
 **Rationale**: A wrapped envelope would require the plugin to proxy every
 token-exchange call (to unwrap before forwarding), introducing the same drawbacks
 as the audit-wrapper above. The raw token works directly with
-`/api/auth/v1/token` — the standard DCR token endpoint — so the user's
-script is portable across Backstage versions and doesn't depend on this
-plugin remaining installed for it to work. Should we later want the wrapping
+`/api/auth/v1/token` — the standard DCR token endpoint — so integrations
+are portable across Backstage versions and don't depend on this plugin
+remaining installed for token exchange. Should we later want the wrapping
 behavior, the metadata table already gives us a foreign key into a per-token
 envelope without a v1 breaking change.
 
@@ -290,7 +292,7 @@ A v1 implementation is "done" when:
 1. A logged-in user can mint, list, and revoke their own tokens via the
    plugin UI, end-to-end against a real Backstage instance with the two
    experimental flags enabled.
-2. A bare `curl` script (no browser involved beyond mint) can use a minted
+2. A bare `curl` command (no browser involved beyond mint) can use a minted
    refresh token to obtain a JWT and call `/api/catalog/entities`, receiving
    results filtered by the user's ownership claims (i.e., proving the
    request is treated as the user, not a service).

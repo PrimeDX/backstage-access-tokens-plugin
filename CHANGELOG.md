@@ -11,9 +11,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - End-to-end tutorial covering install, configuration, API validation, and UI validation.
 - Granular service token permissions:
-  - `service-tokens:read`
-  - `service-tokens:write`
-  - `service-tokens:revoke`
+  - `access-tokens:service:read`
+  - `access-tokens:service:write`
+  - `access-tokens:service:revoke`
 
 ### Changed
 
@@ -24,17 +24,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Breaking
 
-- `serviceTokensAdminPermission` is now a deprecated alias of `service-tokens:read`.
-- Existing permission policies that check only `serviceTokensAdminPermission` will no longer grant create or revoke access until they are updated to allow `service-tokens:write` and `service-tokens:revoke`.
+- `serviceAccessTokensReadPermission` is now a deprecated alias of `access-tokens:service:read`.
+- Existing permission policies that check only `serviceAccessTokensReadPermission` will no longer grant create or revoke access until they are updated to allow `access-tokens:service:write` and `access-tokens:service:revoke`.
 
 ## [0.1.0] - 2026-04-05
 
 ### Added
 
 - Initial public package baseline for service token management in Backstage:
-  - Frontend admin UI (`/admin/service-tokens`)
-  - Backend REST API (`/api/service-tokens`)
-  - External auth handler module (`backstage-service-token`)
+  - Frontend admin UI (`/admin/access-tokens`)
+  - Backend REST API (`/api/access-tokens/service`)
+  - External auth handler module (`backstage-service-access-token`)
   - Audit logging and revocation flows
   - Configurable cache TTL and token lifetime settings
   - Built-in + custom scope catalogue support

@@ -5,7 +5,7 @@
 [API](./user-tokens-api.md), [architecture](./user-tokens-architecture.md),
 [research](../research-notes.md).
 **Scope**: The exact procedure to run against the local `e2e/harness/`
-Backstage 1.49 app to prove the user-tokens capability is working
+Backstage 1.49 app to prove the personal-access-token capability is working
 software. Pass criteria are binary; a single failure blocks the PR.
 
 This is the **operator-facing test plan**. It contains nothing the
@@ -35,7 +35,7 @@ change between verification runs.
 ### 1.1 Install repo dependencies
 
 ```bash
-cd /path/to/backstage-service-token-plugin
+cd /path/to/backstage-access-tokens-plugin
 yarn install --frozen-lockfile
 ```
 
@@ -71,14 +71,14 @@ auth:
   experimentalRefreshToken:
     enabled: true
 
-serviceTokens:
-  userTokens:
+accessTokens:
+  personal:
     encryptionKey: '<paste the openssl output from §1.3>'
 ```
 
 If the harness's permission policy is not yet aware of the
-`user-tokens:*` permissions, also extend
-`e2e/harness/packages/backend/src/serviceTokensPermissionPolicyModule.ts`
+`access-tokens:user:*` permissions, also extend
+`e2e/harness/packages/backend/src/accessTokensPermissionPolicyModule.ts`
 to ALLOW them for the calling user. The example diff is the one
 already applied in this repo's `e2e/harness/` — copy the same shape
 into your own host app's policy module.
@@ -94,7 +94,7 @@ You should see:
 
 - `Listening on port 7007` from the backend.
 - `Listening on port 3000` from the frontend.
-- A log line **`user-tokens capability enabled at /api/service-tokens/personal/tokens`**
+- A log line **`personal-access-token capability enabled at /api/access-tokens/personal`**
   emitted by the plugin's `plugin.js` (this confirms the experimental
   flags and the encryption key were read correctly). If you do not see
   this line, abort and re-check §1.4.
@@ -157,7 +157,7 @@ Save the raw refresh token to a shell variable for later steps:
 export RT='paste-the-raw-token-here'
 ```
 
-### 2.2 US-2 — Use the token from a script
+### 2.2 US-2 — Use the token from an integration
 
 This is the load-bearing pass criterion for the v1 release.
 
@@ -229,7 +229,7 @@ For a real test, mint a token with an explicit short expiry
 
 ```bash
 # Replace <SESSION_COOKIE> with the cookie value from a browser session.
-curl -s -X POST http://localhost:7007/api/service-tokens/personal/tokens/mint \
+curl -s -X POST http://localhost:7007/api/access-tokens/personal/mint \
   -H "Cookie: <SESSION_COOKIE>" \
   -H 'Content-Type: application/json' \
   -d '{"name":"expiry-test","expiresAt":"<ISO now+1min>"}'
@@ -260,7 +260,7 @@ identity) and:
 
 - Visit `/settings/personal-tokens` in B. **Pass**: the list is empty;
   the token minted in A is not visible.
-- Direct-fetch GET `/api/service-tokens/personal/tokens/<id-from-A>`
+- Direct-fetch GET `/api/access-tokens/personal/<id-from-A>`
   in B. **Pass**: returns 404 (not 403 — the spec mandates 404 so
   existence cannot be probed).
 
@@ -289,7 +289,7 @@ Harness commit: <git rev-parse HEAD>
 Plugin commit: <feat/user-tokens HEAD>
 Results:
   US-1 mint:         PASS / FAIL  (notes)
-  US-2 script use:   PASS / FAIL  (notes)
+  US-2 integration use: PASS / FAIL  (notes)
   US-3 list:         PASS / FAIL  (notes)
   US-4 revoke:       PASS / FAIL  (notes)
   US-5 expiry:       PASS / FAIL / DEFERRED  (notes)
@@ -309,12 +309,12 @@ Likely failure modes and the first thing to check for each:
 
 | Symptom | First check |
 |---|---|
-| Plugin init log line absent | `serviceTokens.userTokens.encryptionKey` is set to a 32-byte base64 string. Refusal logs are at WARN. |
+| Plugin init log line absent | `accessTokens.personal.encryptionKey` is set to a 32-byte base64 string. Refusal logs are at WARN. |
 | Discovery curl returns 404 | `auth.experimentalDynamicClientRegistration.enabled: true` is set. Restart the harness after editing. |
 | Discovery missing `registration_endpoint` | Same as above — DCR flag is read at boot only. |
-| Page returns from OAuth but dialog doesn't show the token | The redirect URL fragment may have been stripped by a strict referrer policy. Check the URL bar for `#user-tokens-mint=…` before the dialog opens; if missing, inspect the backend log for a callback that returned 500. |
-| Create button does not navigate | Check the browser console for a failed `POST /api/service-tokens/personal/tokens/mint` request and the backend logs for the matching error. |
-| `/v1/token` returns 401 on the script call | The token was revoked or expired. Mint a fresh one. |
+| Page returns from OAuth but dialog doesn't show the token | The redirect URL fragment may have been stripped by a strict referrer policy. Check the URL bar for `#personal-access-tokens-mint=…` before the dialog opens; if missing, inspect the backend log for a callback that returned 500. |
+| Create button does not navigate | Check the browser console for a failed `POST /api/access-tokens/personal/mint` request and the backend logs for the matching error. |
+| `/v1/token` returns 401 on the token exchange | The token was revoked or expired. Mint a fresh one. |
 | `/api/catalog/entities` returns 403 with a valid JWT | The catalog has no entities the user can see — try `/v1/userinfo` (§2.2 Step B) to confirm the JWT itself is valid. |
 
 ## 6. Non-goals for this verification

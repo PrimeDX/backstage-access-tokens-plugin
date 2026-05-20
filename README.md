@@ -1,6 +1,6 @@
-# backstage-service-token-plugin
+# Backstage Access Tokens Plugin
 
-> Long-lived tokens for Backstage. Admin-managed service tokens for system integrations, plus user-self-service personal access tokens that authenticate as the user.
+> Long-lived Backstage credentials for user and service integrations. The plugin provides user-self-service personal access tokens, plus admin-managed service tokens for group-scoped automation.
 
 [![Node 22](https://img.shields.io/badge/node-22-brightgreen)](https://nodejs.org/)
 [![Backstage](https://img.shields.io/badge/backstage-compatible-blue)](https://backstage.io/)
@@ -9,32 +9,39 @@
 
 ## What This Plugin Does
 
-Backstage's built-in auth model is centered on short-lived user tokens. That is a good fit for browser sessions, but it is awkward for CI jobs, automation, and service-to-service integrations that need stable credentials for backend APIs.
+Backstage's built-in auth model is centered on short-lived user tokens. That is a good fit for browser sessions, but it is awkward for developer tooling, CI jobs, automation, and service-to-service integrations that need stable credentials for backend APIs.
 
 This plugin offers two complementary capabilities:
 
-**Service tokens** — admin-managed, group-scoped, **service principals**:
-
-- created and managed through an admin page at `/admin/service-tokens`
-- stored as SHA-256 hashes, with the raw token shown only once at creation time
-- scoped to a catalog group and resolved as a `service` principal
-- revocable, with audit events for creation and revocation
-- protected by granular admin permissions: `service-tokens:read`, `service-tokens:write`, and `service-tokens:revoke`
-
-**User tokens (personal access tokens)** — user-self-service, **user principals**:
+**Personal access tokens (PATs)** — user-self-service, **user principals**:
 
 - minted by any authenticated Backstage user from the
   `Settings` → `Personal Access Tokens` tab (`/settings/personal-tokens`)
-- backed by Backstage's standard OAuth 2.0 + Dynamic Client Registration pipeline; the resulting refresh token authenticates as the user against every Backstage backend (catalog, scaffolder, …) — see [docs/spec/user-tokens-overview.md](docs/spec/user-tokens-overview.md) for the design
+- each personal access token is a user-managed Backstage refresh token, backed by Backstage's standard OAuth 2.0 + Dynamic Client Registration pipeline
+- integrations exchange the refresh token at `/api/auth/v1/token` for a short-lived Backstage API JWT, then call Backstage APIs with that JWT as `Authorization: Bearer <access_token>`
 - the raw refresh token is shown once at creation time, then encrypted at rest with AES-256-GCM in the plugin DB so the plugin can later call RFC 7009 `/v1/revoke` on the user's behalf
-- requires the auth-backend flags `auth.experimentalDynamicClientRegistration.enabled` and `auth.experimentalRefreshToken.enabled`, plus a 32-byte base64 `serviceTokens.userTokens.encryptionKey`
-- gated by separate permissions: `user-tokens:read`, `user-tokens:write`, `user-tokens:revoke` — default-open for the calling user, tightenable by policy
+- requires the auth-backend flags `auth.experimentalDynamicClientRegistration.enabled` and `auth.experimentalRefreshToken.enabled`, plus a 32-byte base64 `accessTokens.personal.encryptionKey`
+- gated by separate permissions: `access-tokens:user:read`, `access-tokens:user:write`, `access-tokens:user:revoke` — default-open for the calling user, tightenable by policy
+
+**Service tokens** — admin-managed, group-scoped, **service principals**:
+
+- created and managed through an admin page at `/admin/access-tokens`
+- stored as SHA-256 hashes, with the raw token shown only once at creation time
+- scoped to a catalog group and resolved as a `service` principal
+- revocable, with audit events for creation and revocation
+- protected by granular admin permissions: `access-tokens:service:read`, `access-tokens:service:write`, and `access-tokens:service:revoke`
 
 ## What This Plugin Does Not Do
 
+Personal access tokens are refresh tokens. Do not send them directly as API bearer tokens; exchange them at `/api/auth/v1/token` and use the returned short-lived `access_token` for Backstage API calls.
+
 Service token scopes are metadata only. They are stored, displayed, and exposed through the API, but this plugin does not automatically enforce scope-level authorization on arbitrary Backstage routes.
 
-If you need strict scope enforcement, implement those checks in the consuming plugin or permission policy. The plugin itself is responsible for token issuance, hashing at rest, verification, expiry, revocation, audit logging, and admin authorization around token management.
+If you need strict scope enforcement, implement those checks in the consuming plugin or permission policy. For personal access tokens, the plugin coordinates the mint flow, stores encrypted refresh tokens for later revocation, and manages token metadata. For service tokens, it handles issuance, hashing at rest, verification, expiry, revocation, audit logging, and admin authorization around token management.
+
+## Breaking Rename
+
+This release renames the project from service-token-specific naming to **Access Tokens**. The old package names, `/api/service-tokens` routes, `serviceTokens.*` config keys, and `service-tokens:*` / `user-tokens:*` permissions are not kept as runtime aliases. Existing adopters must update imports, configuration, permission policies, and API clients during the migration.
 
 ## Packages
 
@@ -42,9 +49,9 @@ This workspace publishes three packages:
 
 | Package | Purpose |
 |---|---|
-| [`@primedx/plugin-service-tokens`](packages/plugin-service-tokens) | Frontend plugin that adds the admin UI |
-| [`@primedx/plugin-service-tokens-backend`](packages/plugin-service-tokens-backend) | Backend plugin with the REST API, persistence, and permission checks |
-| [`@primedx/plugin-service-tokens-node`](packages/plugin-service-tokens-node) | Shared node library with the auth handler module, permission exports, and token verification utilities |
+| [`@primedx/plugin-access-tokens`](packages/plugin-access-tokens) | Frontend plugin with the personal-token settings tab, PAT consent route, and service-token admin UI |
+| [`@primedx/plugin-access-tokens-backend`](packages/plugin-access-tokens-backend) | Backend plugin with PAT and service-token REST APIs, persistence, and permission checks |
+| [`@primedx/plugin-access-tokens-node`](packages/plugin-access-tokens-node) | Shared node library with user-token and service-token permissions, the service-token auth handler module, and token verification utilities |
 
 ## Before You Install
 
@@ -64,20 +71,20 @@ The [Getting Started guide](docs/getting-started.md) walks through these prerequ
 Add the published packages to your Backstage app:
 
 ```bash
-yarn --cwd packages/backend add @primedx/plugin-service-tokens-backend
-yarn --cwd packages/backend add @primedx/plugin-service-tokens-node
-yarn --cwd packages/app add @primedx/plugin-service-tokens
+yarn --cwd packages/backend add @primedx/plugin-access-tokens-backend
+yarn --cwd packages/backend add @primedx/plugin-access-tokens-node
+yarn --cwd packages/app add @primedx/plugin-access-tokens
 ```
 
 ### 2. Register the backend plugin and auth handler
 
 ```ts
 // packages/backend/src/index.ts
-import { serviceTokensPlugin } from '@primedx/plugin-service-tokens-backend';
-import { serviceTokenHandlerModule } from '@primedx/plugin-service-tokens-node';
+import { accessTokensPlugin } from '@primedx/plugin-access-tokens-backend';
+import { serviceAccessTokenHandlerModule } from '@primedx/plugin-access-tokens-node';
 
-backend.add(serviceTokensPlugin);
-backend.add(serviceTokenHandlerModule);
+backend.add(accessTokensPlugin);
+backend.add(serviceAccessTokenHandlerModule);
 ```
 
 ### 3. Register the frontend plugin
@@ -85,10 +92,10 @@ backend.add(serviceTokenHandlerModule);
 ```ts
 // packages/app/src/App.tsx
 import { createApp } from '@backstage/frontend-defaults';
-import serviceTokensPlugin from '@primedx/plugin-service-tokens';
+import accessTokensPlugin from '@primedx/plugin-access-tokens';
 
 const app = createApp({
-  features: [serviceTokensPlugin],
+  features: [accessTokensPlugin],
 });
 
 export default app.createRoot();
@@ -105,24 +112,35 @@ import {
 import { PermissionPolicy } from '@backstage/plugin-permission-node';
 import { Config } from '@backstage/config';
 import {
-  serviceTokensReadPermission,
-  serviceTokensWritePermission,
-  serviceTokensRevokePermission,
-} from '@primedx/plugin-service-tokens-node';
+  personalAccessTokensReadPermission,
+  personalAccessTokensWritePermission,
+  personalAccessTokensRevokePermission,
+  serviceAccessTokensReadPermission,
+  serviceAccessTokensWritePermission,
+  serviceAccessTokensRevokePermission,
+} from '@primedx/plugin-access-tokens-node';
 
 class ServiceTokensPermissionPolicy implements PermissionPolicy {
   constructor(private readonly config: Config) {}
 
   async handle(request, user) {
     const adminRefs =
-      this.config.getOptionalStringArray('serviceTokens.admin.userEntityRefs') ?? [];
+      this.config.getOptionalStringArray('accessTokens.service.admin.userEntityRefs') ?? [];
 
     const isAdmin = adminRefs.includes(user?.info.userEntityRef ?? '');
 
     if (
-      isPermission(request.permission, serviceTokensReadPermission) ||
-      isPermission(request.permission, serviceTokensWritePermission) ||
-      isPermission(request.permission, serviceTokensRevokePermission)
+      isPermission(request.permission, personalAccessTokensReadPermission) ||
+      isPermission(request.permission, personalAccessTokensWritePermission) ||
+      isPermission(request.permission, personalAccessTokensRevokePermission)
+    ) {
+      return { result: AuthorizeResult.ALLOW };
+    }
+
+    if (
+      isPermission(request.permission, serviceAccessTokensReadPermission) ||
+      isPermission(request.permission, serviceAccessTokensWritePermission) ||
+      isPermission(request.permission, serviceAccessTokensRevokePermission)
     ) {
       return {
         result: isAdmin ? AuthorizeResult.ALLOW : AuthorizeResult.DENY,
@@ -134,30 +152,13 @@ class ServiceTokensPermissionPolicy implements PermissionPolicy {
 }
 ```
 
-Existing policies that still check only `serviceTokensAdminPermission` will grant read access only. Update them before rollout if those users should also create or revoke tokens.
+Personal access tokens use `access-tokens:user:*` permissions and are usually default-open for the calling user. Service tokens use `access-tokens:service:*` permissions and are usually limited to platform administrators.
 
-### 5. Add minimal configuration
+### 5. Enable personal access tokens
 
-```yaml
-# app-config.yaml
-serviceTokens:
-  admin:
-    userEntityRefs:
-      - user:default/alice
-      - user:default/bob
-```
+Personal access tokens are user-managed Backstage refresh tokens. They are not sent directly as API bearer tokens; integrations exchange them for short-lived Backstage API JWTs that authenticate as the user principal.
 
-At that point the admin UI is available at `/admin/service-tokens`.
-
-### 6. (Optional) Enable user tokens
-
-Service tokens (above) are admin-managed and authenticate as a
-group. The same plugin family also offers **user-self-service
-personal access tokens** that authenticate as the user. Enable
-them with three small additions:
-
-**a.** Add two upstream auth-backend flags and an encryption key to
-`app-config.yaml`:
+Add two upstream auth-backend flags and an encryption key to `app-config.yaml`:
 
 ```yaml
 auth:
@@ -166,76 +167,98 @@ auth:
   experimentalRefreshToken:
     enabled: true
 
-serviceTokens:
-  userTokens:
+accessTokens:
+  personal:
     encryptionKey: '<output of `openssl rand -base64 32`>'
 ```
 
-**b.** Wire the personal-token consent route into the frontend so
-`/oauth2/authorize/:sessionId` resolves to the plugin's focused
-"Create personal access token" approval screen:
+Wire the personal-token consent route into the frontend so `/oauth2/authorize/:sessionId` resolves to the plugin's focused "Create personal access token" approval screen:
 
 ```ts
 // packages/app/src/App.tsx
-import serviceTokensPlugin, {
-  userTokensAuthPlugin,
-} from '@primedx/plugin-service-tokens';
+import accessTokensPlugin, {
+  personalAccessTokensAuthPlugin,
+} from '@primedx/plugin-access-tokens';
 
 export default createApp({
-  features: [userTokensAuthPlugin, /* …, */ serviceTokensPlugin],
+  features: [personalAccessTokensAuthPlugin, /* …, */ accessTokensPlugin],
 });
 ```
 
-Do not install both `userTokensAuthPlugin` and Backstage's stock auth
-consent frontend for `/oauth2` unless your app intentionally resolves
-that route conflict itself.
-
-**c.** Permit the user-tokens permissions in your permission policy
-(default-open: any authenticated user can manage their own tokens):
-
-```ts
-import {
-  userTokensReadPermission,
-  userTokensWritePermission,
-  userTokensRevokePermission,
-} from '@primedx/plugin-service-tokens-node';
-
-if (
-  isPermission(request.permission, userTokensReadPermission) ||
-  isPermission(request.permission, userTokensWritePermission) ||
-  isPermission(request.permission, userTokensRevokePermission)
-) {
-  return { result: AuthorizeResult.ALLOW };
-}
-```
+Do not install both `personalAccessTokensAuthPlugin` and Backstage's stock auth consent frontend for `/oauth2` unless your app intentionally resolves that route conflict itself.
 
 After restarting the backend you should see this log line at boot:
 
 ```
-service-tokens info user-tokens capability enabled at /api/service-tokens/personal/tokens
+access-tokens info personal access tokens capability enabled at /api/access-tokens/personal
 ```
 
-Then any authenticated user can mint, list, and revoke tokens from
-`Settings` → `Personal Access Tokens` (`/settings/personal-tokens`). See
-[Getting Started §Step 8](docs/getting-started.md#step-8--optional-enable-user-tokens)
-for the full walkthrough including a smoke test.
+Then any authenticated user can mint, list, and revoke tokens from `Settings` → `Personal Access Tokens` (`/settings/personal-tokens`). See [Getting Started §Step 8](docs/getting-started.md#step-8--optional-enable-user-tokens) for the full walkthrough including a smoke test.
+
+### 6. Configure service-token administrators
+
+```yaml
+# app-config.yaml
+accessTokens:
+  service:
+    admin:
+      userEntityRefs:
+        - user:default/alice
+        - user:default/bob
+```
+
+At that point the service-token admin UI is available at `/admin/access-tokens`.
+
+## Using a Personal Access Token
+
+A personal access token is a user-managed **Backstage refresh token**.
+Do not send it directly as `Authorization: Bearer <token>` to catalog,
+scaffolder, or other Backstage APIs. Any integration or programming
+language that can make HTTP requests can use it with this protocol:
+
+1. Store the personal access token securely.
+2. POST it to `/api/auth/v1/token` with `grant_type=refresh_token`.
+3. Use the returned `access_token` as the bearer token for Backstage APIs.
+
+```bash
+BACKSTAGE=https://your-backstage.example.com
+REFRESH_TOKEN=<personal-access-token>
+
+ACCESS_TOKEN=$(curl -s -X POST "$BACKSTAGE/api/auth/v1/token" \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'grant_type=refresh_token' \
+  --data-urlencode "refresh_token=$REFRESH_TOKEN" \
+  | jq -r .access_token)
+
+curl -s "$BACKSTAGE/api/catalog/entities?limit=10" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+The returned API token authenticates as the user principal that minted
+the personal access token. Service tokens are different: a service token
+is used directly as a bearer token and authenticates as its configured
+service principal.
 
 ## Using a Service Token
 
-Once a token is created, use it as a bearer token against any Backstage backend API:
+Once a service token is created, use it as a bearer token against any Backstage backend API:
 
 ```bash
 curl -s "https://your-backstage.example.com/api/catalog/entities?limit=10" \
   -H "Authorization: Bearer <raw-token>"
 ```
 
-The token authenticates as the group it was created for. Revoked or expired tokens eventually stop working once cache invalidation propagates, bounded by `serviceTokens.cacheTtlSeconds`.
+The service token authenticates as the group it was created for. Revoked or
+expired service tokens eventually stop working once cache invalidation
+propagates, bounded by `accessTokens.service.cacheTtlSeconds`.
 
-For deterministic local testing of immediate revocation, set `serviceTokens.cacheTtlSeconds: 0`.
+For deterministic local testing of immediate service-token revocation, set
+`accessTokens.service.cacheTtlSeconds: 0`.
 
 ## Security Notes
 
 - Keep the default auth policy enabled. Do not set `backend.auth.dangerouslyDisableDefaultAuthPolicy: true` in production.
+- Store personal access tokens as secrets and exchange them for short-lived Backstage API tokens before calling APIs.
 - Treat service token scopes as advisory metadata unless you have added enforcement in consuming plugins or policies.
 - The raw token is shown once and cannot be retrieved later.
 - Audit responses use `{ "events": [...] }` and are returned newest-first.
@@ -263,9 +286,9 @@ Start here based on what you are trying to do:
 
 If you are looking at this project from npm package pages:
 
-- [Frontend package README](packages/plugin-service-tokens/README.md)
-- [Backend package README](packages/plugin-service-tokens-backend/README.md)
-- [Node package README](packages/plugin-service-tokens-node/README.md)
+- [Frontend package README](packages/plugin-access-tokens/README.md)
+- [Backend package README](packages/plugin-access-tokens-backend/README.md)
+- [Node package README](packages/plugin-access-tokens-node/README.md)
 
 ## Development
 

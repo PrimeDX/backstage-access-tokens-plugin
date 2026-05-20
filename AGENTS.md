@@ -4,13 +4,13 @@ This file is a tracked repo document for coding agents working in this project.
 
 ## Project Purpose
 
-This repository publishes a Backstage service-token plugin workspace with three packages:
+This repository publishes a Backstage Access Tokens plugin workspace with three packages:
 
-- `@primedx/plugin-service-tokens` — frontend admin UI
-- `@primedx/plugin-service-tokens-backend` — backend API and persistence
-- `@primedx/plugin-service-tokens-node` — shared node utilities and auth handler module
+- `@primedx/plugin-access-tokens` — frontend admin UI
+- `@primedx/plugin-access-tokens-backend` — backend API and persistence
+- `@primedx/plugin-access-tokens-node` — shared node utilities and auth handler module
 
-The plugin manages long-lived, group-scoped service tokens with create, audit, and revoke flows.
+The plugin manages Personal Access Tokens and long-lived, group-scoped service tokens with create, audit, and revoke flows.
 
 ## Canonical Sources
 
@@ -31,8 +31,8 @@ Treat these as locked unless the public contract is intentionally changed across
 - Audit responses are `{ "events": [...] }`
 - Audit event fields are `id`, `tokenId`, `event`, `actor`, `metadata`, and `occurredAt`
 - Audit events are returned newest-first
-- Revocation is bounded by `serviceTokens.cacheTtlSeconds`
-- Immediate revoke rejection is only deterministic when the local harness sets `serviceTokens.cacheTtlSeconds: 0`
+- Revocation is bounded by `accessTokens.service.cacheTtlSeconds`
+- Immediate revoke rejection is only deterministic when the local harness sets `accessTokens.service.cacheTtlSeconds: 0`
 - Frontend installation examples should prefer `createApp({ features: [...] })`
 
 ## Working Rules
@@ -69,6 +69,10 @@ When relevant to the change, also use:
 - `npm run test:ui-smoke` for the primary admin UI create → audit → revoke path
 
 Use a local Backstage integration harness for end-to-end validation. For recommended harness characteristics and maintainer workflow, follow `docs/developer-test-guide.md`.
+
+## Harness Local Package Refresh
+
+The harness consumes this repo's packages through Yarn `file:` dependencies, which are copied into `e2e/harness/node_modules/@primedx/*` rather than live-symlinked. After changing any `packages/plugin-access-tokens*` package, run `yarn install` from `e2e/harness` before starting the harness or running harness-based validation. This refreshes the copied package snapshots and the harness lockfile hash so manual testing and Playwright/API smoke tests exercise the current source.
 
 If a change is not meaningfully tested, call that out explicitly rather than implying confidence.
 

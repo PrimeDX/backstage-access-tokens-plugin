@@ -7,9 +7,9 @@
  */
 
 import { createBackend } from '@backstage/backend-defaults';
-import { serviceTokenHandlerModule } from '@primedx/plugin-service-tokens-node';
-import { serviceTokensPlugin } from '@primedx/plugin-service-tokens-backend';
-import { serviceTokensPermissionPolicyModule } from './serviceTokensPermissionPolicyModule';
+import { serviceAccessTokenHandlerModule } from '@primedx/plugin-access-tokens-node';
+import { accessTokensPlugin } from '@primedx/plugin-access-tokens-backend';
+import { accessTokensPermissionPolicyModule } from './accessTokensPermissionPolicyModule';
 
 const backend = createBackend();
 
@@ -43,7 +43,7 @@ backend.add(import('@backstage/plugin-catalog-backend-module-logs'));
 
 // permission plugin
 backend.add(import('@backstage/plugin-permission-backend'));
-backend.add(serviceTokensPermissionPolicyModule);
+backend.add(accessTokensPermissionPolicyModule);
 
 // search plugin
 backend.add(import('@backstage/plugin-search-backend'));
@@ -62,7 +62,7 @@ backend.add(import('@backstage/plugin-kubernetes-backend'));
 // notifications and signals plugins
 backend.add(import('@backstage/plugin-notifications-backend'));
 backend.add(import('@backstage/plugin-signals-backend'));
-backend.add(serviceTokensPlugin);
-backend.add(serviceTokenHandlerModule);
+backend.add(accessTokensPlugin);
+backend.add(serviceAccessTokenHandlerModule);
 
 backend.start();

@@ -9,26 +9,26 @@ This document describes the internal design of the service token plugin — how 
 ## Package overview
 
 ```
-backstage-service-token-plugin/
+backstage-access-tokens-plugin/
 ├── packages/
-│   ├── plugin-service-tokens/          # Frontend plugin
-│   ├── plugin-service-tokens-backend/  # Backend plugin
-│   └── plugin-service-tokens-node/     # Shared node library
+│   ├── plugin-access-tokens/          # Frontend plugin
+│   ├── plugin-access-tokens-backend/  # Backend plugin
+│   └── plugin-access-tokens-node/     # Shared node library
 ```
 
 The three packages have a strict dependency direction:
 
 ```
-plugin-service-tokens          (frontend — no dependency on the other two)
-plugin-service-tokens-backend  → plugin-service-tokens-node
-plugin-service-tokens-node     (no internal dependencies)
+plugin-access-tokens          (frontend — no dependency on the other two)
+plugin-access-tokens-backend  → plugin-access-tokens-node
+plugin-access-tokens-node     (no internal dependencies)
 ```
 
 The frontend plugin has no runtime dependency on the backend or node packages. It communicates with the backend exclusively through the REST API.
 
 ---
 
-## `plugin-service-tokens-node` — Shared node library
+## `plugin-access-tokens-node` — Shared node library
 
 This package contains everything that needs to be shared between the backend plugin and the auth handler, without creating a circular dependency.
 
@@ -42,15 +42,15 @@ This package contains everything that needs to be shared between the backend plu
 | `cache.js` | In-memory LRU-style cache keyed by token hash, with configurable TTL |
 | `database.js` | Auth-scoped database adapter — read-only interface used during token verification |
 | `serviceTokenHandler.js` | Wraps `verifyToken` in a Backstage `ExternalTokenHandler` |
-| `module.js` | `serviceTokenHandlerModule` — registers the handler as a Backstage service factory |
-| `permission.js` | Exports three granular `ResourcePermission<'service-token'>` objects (`serviceTokensReadPermission`, `serviceTokensWritePermission`, `serviceTokensRevokePermission`) and the `SERVICE_TOKEN_RESOURCE_TYPE` constant. Compatible with Backstage RBAC plugins. |
-| `config.js` | Reads `serviceTokens.cacheTtlSeconds` from root config |
-| `constants.js` | `serviceTokenHandlerType = 'backstage-service-token'` |
+| `module.js` | `serviceAccessTokenHandlerModule` — registers the handler as a Backstage service factory |
+| `permission.js` | Exports three granular `ResourcePermission<'service-token'>` objects (`serviceAccessTokensReadPermission`, `serviceAccessTokensWritePermission`, `serviceAccessTokensRevokePermission`) and the `SERVICE_ACCESS_TOKEN_RESOURCE_TYPE` constant. Compatible with Backstage RBAC plugins. |
+| `config.js` | Reads `accessTokens.service.cacheTtlSeconds` from root config |
+| `constants.js` | `serviceTokenHandlerType = 'backstage-service-access-token'` |
 | `resolveTokenScopes.js` | `createScopeResolver` — creates a function that reads token scopes from the verification cache |
 
 ---
 
-## `plugin-service-tokens-backend` — Backend plugin
+## `plugin-access-tokens-backend` — Backend plugin
 
 This package owns the REST API, the write-path database operations, and the permission enforcement middleware.
 
@@ -58,11 +58,11 @@ This package owns the REST API, the write-path database operations, and the perm
 
 | Module | Purpose |
 |---|---|
-| `plugin.js` | `serviceTokensPlugin` — Backstage backend plugin entry point; wires all services together |
+| `plugin.js` | `accessTokensPlugin` — Backstage backend plugin entry point; wires all services together |
 | `expressRouter.js` | Express router — auth middleware + route handlers |
 | `http.js` | Pure handler functions (`handleCreateToken`, `handleListTokens`, etc.) — no Express dependency |
 | `database.js` | Knex-backed database adapter — full CRUD for tokens and audit log |
-| `migrations.js` | Schema migrations — creates `service_tokens` and `service_token_audit_log` tables |
+| `migrations.js` | Schema migrations — creates `service_access_tokens` and `service_access_token_audit_log` tables |
 | `createToken.js` | Token creation logic — generates raw token, hashes it, validates input, writes to DB |
 | `revokeToken.js` | Revocation logic — marks token revoked, writes audit event |
 | `listTokens.js` | List/filter logic — computes `status` field from DB columns |
@@ -75,16 +75,16 @@ This package owns the REST API, the write-path database operations, and the perm
 
 ---
 
-## `plugin-service-tokens` — Frontend plugin
+## `plugin-access-tokens` — Frontend plugin
 
-This package is a standard Backstage new-frontend-system plugin. It registers the admin service-token page at `/admin/service-tokens`, contributes a `Personal Access Tokens` tab to Backstage user settings at `/settings/personal-tokens`, and exports an optional consent-route feature for the user-token OAuth flow.
+This package is a standard Backstage new-frontend-system plugin. It registers the admin service-token page at `/admin/access-tokens`, contributes a `Personal Access Tokens` tab to Backstage user settings at `/settings/personal-tokens`, and exports an optional consent-route feature for the user-token OAuth flow.
 
 **Key modules:**
 
 | Module | Purpose |
 |---|---|
 | `index.js` | Plugin entry point — `createFrontendPlugin` with `PageBlueprint` for admin service tokens, `NavItemBlueprint` for the admin sidebar item, and `SubPageBlueprint` for the user-settings PAT tab |
-| `routes.js` | Route definitions for `/admin/service-tokens`, `/settings/personal-tokens`, and `/oauth2` consent routing |
+| `routes.js` | Route definitions for `/admin/access-tokens`, `/settings/personal-tokens`, and `/oauth2` consent routing |
 | `ServiceTokensPage.jsx` | Top-level page component — owns all state and API calls |
 | `components/ServiceTokensTableView.jsx` | Token list table — pure presentational |
 | `components/ServiceTokensFilters.jsx` | Status + group filter bar — pure presentational |
@@ -107,15 +107,15 @@ All presentational components are pure — they receive data and callbacks as pr
 
 ```
 Admin user (browser)
-  → POST /api/service-tokens
-    → expressRouter: authenticate user, check service-tokens:write permission
+  → POST /api/access-tokens/service
+    → expressRouter: authenticate user, check access-tokens:service:write permission
     → handleCreateToken:
         1. Validate input (name, group, scopes, expiry)
         2. Verify group exists in catalog (via catalogServiceRef)
         3. Generate raw token (crypto.randomUUID-based, prefixed)
         4. Hash raw token with SHA-256
-        5. Write token record to service_tokens table
-        6. Write 'created' event to service_token_audit_log
+        5. Write token record to service_access_tokens table
+        6. Write 'created' event to service_access_token_audit_log
         7. Return token record + rawToken (one time only)
 ```
 
@@ -131,7 +131,7 @@ External caller (CI, script)
         → serviceTokenHandler.verifyToken(token):
             1. Hash the raw token with SHA-256
             2. Check in-memory cache (hit → return cached principal)
-            3. Cache miss → query service_tokens table by hash
+            3. Cache miss → query service_access_tokens table by hash
             4. Check: token exists, not revoked, not expired
             5. Cache the result for cacheTtlSeconds
             6. Return principal: { type: 'service', subject: 'service-token:group:default/platform:ci-pipeline' }
@@ -143,13 +143,13 @@ The principal type is `service` and the subject is `service-token:<groupEntityRe
 
 ```
 Admin user (browser)
-  → DELETE /api/service-tokens/:id
-    → expressRouter: authenticate user, check service-tokens:revoke permission
+  → DELETE /api/access-tokens/service/:id
+    → expressRouter: authenticate user, check access-tokens:service:revoke permission
     → handleRevokeToken:
         1. Look up token by ID
         2. Check token is not already revoked
         3. Set revoked_at, revoked_by on the token record
-        4. Write 'revoked' event to service_token_audit_log
+        4. Write 'revoked' event to service_access_token_audit_log
         5. Return 204 No Content
 
 Next verification attempt with the revoked raw token:
@@ -162,7 +162,7 @@ Next verification attempt with the revoked raw token:
 
 ## Database schema
 
-### `service_tokens`
+### `service_access_tokens`
 
 | Column | Type | Notes |
 |---|---|---|
@@ -188,12 +188,12 @@ Next verification attempt with the revoked raw token:
 - `INDEX (expires_at)` — fast expiry queries
 - `INDEX (revoked_at)` — fast revocation status queries
 
-### `service_token_audit_log`
+### `service_access_token_audit_log`
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | VARCHAR(36) PK | UUID |
-| `token_id` | VARCHAR(36) NOT NULL FK → `service_tokens.id` | |
+| `token_id` | VARCHAR(36) NOT NULL FK → `service_access_tokens.id` | |
 | `event` | VARCHAR(50) NOT NULL | `created` or `revoked` |
 | `actor` | VARCHAR(255) NULL | User entity ref |
 | `metadata` | TEXT NULL | JSON — stores revocation reason |
@@ -208,7 +208,7 @@ Next verification attempt with the revoked raw token:
 
 ## Auth handler wiring — why a service factory?
 
-The `serviceTokenHandlerModule` is registered as a **service factory** for `externalTokenHandlersServiceRef`, not as a backend module init hook. This is a deliberate design choice.
+The `serviceAccessTokenHandlerModule` is registered as a **service factory** for `externalTokenHandlersServiceRef`, not as a backend module init hook. This is a deliberate design choice.
 
 Backstage instantiates `core.auth` **per plugin**, and it does so during service construction — before any module init hooks run. The `externalTokenHandlersServiceRef` is a multiton service: each plugin gets its own instance, and the handlers must be present at construction time.
 
@@ -216,13 +216,13 @@ If the handler were registered as a module init hook, it would run after `core.a
 
 The service factory approach ensures the handler is available during `core.auth` construction for every plugin that needs it.
 
-**Consequence:** The handler must resolve the `service-tokens` plugin database independently, using `DatabaseManager.forPlugin('service-tokens', ...)`, rather than relying on the consuming plugin's scoped database. This is why `module.js` uses `createRequire` to load `DatabaseManager` from the consuming app's `node_modules`.
+**Consequence:** The handler must resolve the `access-tokens` plugin database independently, using `DatabaseManager.forPlugin('access-tokens', ...)`, rather than relying on the consuming plugin's scoped database. This is why `module.js` uses `createRequire` to load `DatabaseManager` from the consuming app's `node_modules`.
 
 ---
 
 ## Node module resolution
 
-The plugin workspace does not install all Backstage packages locally. The `plugin-service-tokens-node` package uses `createRequire(import.meta.url)` to resolve Backstage internals from the consuming app's `node_modules` at runtime:
+The plugin workspace does not install all Backstage packages locally. The `plugin-access-tokens-node` package uses `createRequire(import.meta.url)` to resolve Backstage internals from the consuming app's `node_modules` at runtime:
 
 ```javascript
 const require = createRequire(import.meta.url);
@@ -235,8 +235,8 @@ This pattern allows the plugin to be developed and tested in a standalone worksp
 For consumers installing this plugin as regular dependencies in their Backstage app, this is primarily an implementation detail and should be transparent in normal operation.
 
 Files using this pattern:
-- `packages/plugin-service-tokens-node/src/module.js`
-- `packages/plugin-service-tokens-node/src/serviceTokenHandler.js`
+- `packages/plugin-access-tokens-node/src/module.js`
+- `packages/plugin-access-tokens-node/src/serviceTokenHandler.js`
 
 ---
 
@@ -250,7 +250,7 @@ To bridge this gap, the plugin provides two mechanisms for consumers to access s
 
 1. **`getServiceTokenScopeResolver()`** — returns a function bound to the verification cache. Pass the raw token from the `Authorization` header and get back the scopes array. Zero-cost, no DB queries. Best for route-level middleware (Pattern A in the [Scope Enforcement Runbook](runbooks/scope-enforcement.md)).
 
-2. **Direct database read** — parse the subject (`service-token:<group>:<name>`) to extract the group and token name, then query the `service_tokens` table. Required for permission policy integration (Pattern B) where the raw token is not available.
+2. **Direct database read** — parse the subject (`service-token:<group>:<name>`) to extract the group and token name, then query the `service_access_tokens` table. Required for permission policy integration (Pattern B) where the raw token is not available.
 
 This design preserves the plugin's "minimal and non-opinionated" philosophy: scopes are **available** to consumers but not **enforced** by the plugin. Enforcement remains consumer-driven.
 

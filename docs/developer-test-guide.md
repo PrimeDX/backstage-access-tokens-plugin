@@ -56,7 +56,7 @@ nvm use 22
 From this repository:
 
 ```bash
-cd /path/to/backstage-service-token-plugin
+cd /path/to/backstage-access-tokens-plugin
 npm test
 npm run pack:dry-run
 npm run security:ci
@@ -86,9 +86,9 @@ Use any local Backstage app that you can restart quickly and modify safely. The 
 
 Before starting the harness, verify:
 
-- `serviceTokens.admin.userEntityRefs` grants the guest or test user the service token permissions
-- `serviceTokens.cacheTtlSeconds: 0` is set in local config if you want deterministic revocation checks
-- the harness catalog seeds include `user:development/guest` and `group:development/platform` (from `examples/service-tokens-org.yaml`)
+- `accessTokens.service.admin.userEntityRefs` grants the guest or test user the service token permissions
+- `accessTokens.service.cacheTtlSeconds: 0` is set in local config if you want deterministic revocation checks
+- the harness catalog seeds include `user:development/guest` and `group:development/platform` (from `examples/access-tokens-org.yaml`)
 - the catalog includes at least one group you can use for token creation, such as `group:development/platform`
 - your harness can start both backend and frontend locally
 
@@ -110,7 +110,7 @@ Expected:
 With the harness running, execute the repository API smoke script:
 
 ```bash
-cd /path/to/backstage-service-token-plugin
+cd /path/to/backstage-access-tokens-plugin
 npm run test:api-script -- http://localhost:7007
 ```
 
@@ -132,7 +132,7 @@ If this path fails, treat it as a contract, config, or harness issue before debu
 With the harness already running:
 
 ```bash
-cd /path/to/backstage-service-token-plugin
+cd /path/to/backstage-access-tokens-plugin
 PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:ui-smoke
 ```
 
@@ -156,8 +156,8 @@ CI now runs this path automatically in the `CI / ui-smoke` job by installing `e2
 
 If the smoke test fails while selecting the owning group:
 
-- confirm `e2e/harness/examples/service-tokens-org.yaml` still defines `group:development/platform`
-- confirm `e2e/harness/app-config.yaml` still includes the `../../examples/service-tokens-org.yaml` catalog location
+- confirm `e2e/harness/examples/access-tokens-org.yaml` still defines `group:development/platform`
+- confirm `e2e/harness/app-config.yaml` still includes the `../../examples/access-tokens-org.yaml` catalog location
 - check harness backend logs for catalog warnings and verify `GET /api/catalog/entities?filter=kind=group&limit=200` returns `group:development/platform`
 
 ## 5. Revalidate Local `file:` Installs in a Fresh App
@@ -184,13 +184,13 @@ Then install the plugin packages from local folders:
 
 ```bash
 yarn --cwd packages/backend add \
-  @primedx/plugin-service-tokens-node@file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens-node
+  @primedx/plugin-access-tokens-node@file:/path/to/backstage-access-tokens-plugin/packages/plugin-access-tokens-node
 
 yarn --cwd packages/backend add \
-  @primedx/plugin-service-tokens-backend@file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens-backend
+  @primedx/plugin-access-tokens-backend@file:/path/to/backstage-access-tokens-plugin/packages/plugin-access-tokens-backend
 
 yarn --cwd packages/app add \
-  @primedx/plugin-service-tokens@file:/path/to/backstage-service-token-plugin/packages/plugin-service-tokens
+  @primedx/plugin-access-tokens@file:/path/to/backstage-access-tokens-plugin/packages/plugin-access-tokens
 ```
 
 If your app needs a root `resolutions` entry so the local node package is used consistently, add it deliberately and keep any existing values intact.
@@ -200,7 +200,7 @@ After install, wire the app to match the documented tutorial contract:
 - register the backend plugin
 - register the service token auth handler module
 - register the frontend plugin in `createApp({ features: [...] })`
-- configure admin users and, if needed, `serviceTokens.cacheTtlSeconds: 0` for deterministic revocation checks
+- configure admin users and, if needed, `accessTokens.service.cacheTtlSeconds: 0` for deterministic revocation checks
 
 Then run the same API and UI smoke paths.
 

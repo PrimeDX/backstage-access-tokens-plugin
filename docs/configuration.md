@@ -4,41 +4,42 @@ Audience: platform engineers configuring the plugin in an existing Backstage app
 
 Use this reference to tune token lifetime, cache behavior, admin access, and scope catalog entries.
 
-All configuration lives under the `serviceTokens` key in `app-config.yaml`. Every key is optional — the plugin ships with sensible defaults and will start without any configuration present.
+All configuration lives under the `accessTokens` key in `app-config.yaml`. Every key is optional — the plugin ships with sensible defaults and will start without any configuration present.
 
 ---
 
 ## Full example
 
 ```yaml
-serviceTokens:
-  cacheTtlSeconds: 60
-  maxTokenLifetimeDays: 365
-  defaultTokenLifetimeDays: 30
-  admin:
-    userEntityRefs:
-      - user:default/alice
-      - user:default/bob
-  scopes:
-    - id: my-plugin:read
-      description: Read access to my plugin API
-      plugin: my-plugin
-    - id: my-plugin:write
-      description: Write access to my plugin API
-      plugin: my-plugin
+accessTokens:
+  service:
+    cacheTtlSeconds: 60
+    maxTokenLifetimeDays: 365
+    defaultTokenLifetimeDays: 30
+    admin:
+      userEntityRefs:
+        - user:default/alice
+        - user:default/bob
+    scopes:
+      - id: my-plugin:read
+        description: Read access to my plugin API
+        plugin: my-plugin
+      - id: my-plugin:write
+        description: Write access to my plugin API
+        plugin: my-plugin
 ```
 
 ---
 
 ## Keys
 
-### `serviceTokens.cacheTtlSeconds`
+### `accessTokens.service.cacheTtlSeconds`
 
 | | |
 |---|---|
 | **Type** | integer |
 | **Default** | `60` |
-| **Package** | `plugin-service-tokens-node` |
+| **Package** | `plugin-access-tokens-node` |
 
 How long (in seconds) a verified token is held in the in-memory cache before the next request triggers a fresh database lookup.
 
@@ -47,83 +48,87 @@ The cache is per-process. In a multi-replica deployment each replica maintains i
 Set to `0` to disable caching (every request hits the database). This is not recommended for production.
 
 ```yaml
-serviceTokens:
-  cacheTtlSeconds: 30   # tighter TTL — revocations take effect faster
+accessTokens:
+  service:
+    cacheTtlSeconds: 30   # tighter TTL — revocations take effect faster
 ```
 
 ---
 
-### `serviceTokens.maxTokenLifetimeDays`
+### `accessTokens.service.maxTokenLifetimeDays`
 
 | | |
 |---|---|
 | **Type** | integer |
 | **Default** | `365` |
-| **Package** | `plugin-service-tokens-backend` |
+| **Package** | `plugin-access-tokens-backend` |
 
-The maximum number of days a token may be valid for. The API rejects `POST /api/service-tokens` requests where the requested expiry exceeds this value.
+The maximum number of days a token may be valid for. The API rejects `POST /api/access-tokens/service` requests where the requested expiry exceeds this value.
 
 ```yaml
-serviceTokens:
-  maxTokenLifetimeDays: 90   # tokens expire in at most 90 days
+accessTokens:
+  service:
+    maxTokenLifetimeDays: 90   # tokens expire in at most 90 days
 ```
 
 ---
 
-### `serviceTokens.defaultTokenLifetimeDays`
+### `accessTokens.service.defaultTokenLifetimeDays`
 
 | | |
 |---|---|
 | **Type** | integer |
 | **Default** | same as `maxTokenLifetimeDays` |
-| **Package** | `plugin-service-tokens-backend` |
+| **Package** | `plugin-access-tokens-backend` |
 
-The default expiry (in days) used when a `POST /api/service-tokens` request does not include an `expiresInDays` field. If not set, defaults to `maxTokenLifetimeDays`.
+The default expiry (in days) used when a `POST /api/access-tokens/service` request does not include an `expiresInDays` field. If not set, defaults to `maxTokenLifetimeDays`.
 
 ```yaml
-serviceTokens:
-  maxTokenLifetimeDays: 365
-  defaultTokenLifetimeDays: 30   # new tokens default to 30 days unless overridden
+accessTokens:
+  service:
+    maxTokenLifetimeDays: 365
+    defaultTokenLifetimeDays: 30   # new tokens default to 30 days unless overridden
 ```
 
 ---
 
-### `serviceTokens.admin.userEntityRefs`
+### `accessTokens.service.admin.userEntityRefs`
 
 | | |
 |---|---|
 | **Type** | string array |
 | **Default** | `['user:development/guest']` (development only) |
-| **Package** | `plugin-service-tokens-backend` |
+| **Package** | `plugin-access-tokens-backend` |
 
-The list of Backstage user entity refs that your permission policy typically treats as service-token administrators. In the reference policy, these users receive `service-tokens:read`, `service-tokens:write`, and `service-tokens:revoke`.
+The list of Backstage user entity refs that your permission policy typically treats as service-token administrators. In the reference policy, these users receive `access-tokens:service:read`, `access-tokens:service:write`, and `access-tokens:service:revoke`.
 
 Entity refs must be fully qualified: `user:<namespace>/<name>`.
 
 ```yaml
-serviceTokens:
-  admin:
-    userEntityRefs:
-      - user:default/alice
-      - user:default/bob
-      - user:default/platform-team-lead
+accessTokens:
+  service:
+    admin:
+      userEntityRefs:
+        - user:default/alice
+        - user:default/bob
+        - user:default/platform-team-lead
 ```
 
 > **Important:** The default value (`user:development/guest`) is intentionally permissive for local development. Always set an explicit list in production.
 
 The permission check is delegated to your Backstage permission policy. The config value is read by the policy implementation — see [Getting Started](getting-started.md) for the reference policy in Step 4.
 
-> **Migration note:** Older examples used a single `service-tokens.admin` permission. The current plugin uses three granular permissions instead. If you still check only `serviceTokensAdminPermission`, users will have read access only until you update your policy.
+> **Migration note:** Older examples used a single `access-tokens.admin` permission. The current plugin uses three granular permissions instead. If you still check only `serviceAccessTokensReadPermission`, users will have read access only until you update your policy.
 
 ---
 
-### `serviceTokens.scopes`
+### `accessTokens.service.scopes`
 
 | | |
 |---|---|
 | **Type** | array of objects |
 | **Default** | `[]` (built-in scopes are always included) |
-| **Package** | `plugin-service-tokens-backend` |
+| **Package** | `plugin-access-tokens-backend` |
 
 Additional scopes to add to the scope catalogue, beyond the built-in defaults. Each entry requires three fields:
 
@@ -134,17 +139,18 @@ Additional scopes to add to the scope catalogue, beyond the built-in defaults. E
 | `plugin` | string | The plugin this scope relates to, e.g. `my-plugin` |
 
 ```yaml
-serviceTokens:
-  scopes:
-    - id: my-plugin:read
-      description: Read access to my plugin API
-      plugin: my-plugin
-    - id: my-plugin:write
-      description: Write access to my plugin API
-      plugin: my-plugin
+accessTokens:
+  service:
+    scopes:
+      - id: my-plugin:read
+        description: Read access to my plugin API
+        plugin: my-plugin
+      - id: my-plugin:write
+        description: Write access to my plugin API
+        plugin: my-plugin
 ```
 
-Custom scopes are appended to the built-in scope list. The combined list is returned by `GET /api/service-tokens/scopes` and presented as checkboxes in the Create Token dialog.
+Custom scopes are appended to the built-in scope list. The combined list is returned by `GET /api/access-tokens/service/scopes` and presented as checkboxes in the Create Token dialog.
 
 ---
 
@@ -166,18 +172,18 @@ The following scopes are always available regardless of configuration:
 
 ---
 
-## User tokens
+## Personal access tokens
 
 The plugin family also exposes a **user-self-service personal access
-token** capability under `serviceTokens.userTokens.*`. It is opt-in
-and gated by upstream Backstage auth-backend flags; service-tokens
+token** capability under `accessTokens.personal.*`. It is opt-in
+and gated by upstream Backstage auth-backend flags; access-tokens
 behavior is unchanged whether you enable it or not. See
 [Getting Started §Step 8](getting-started.md#step-8--optional-enable-user-tokens)
 for the integration walkthrough.
 
 ### Required upstream `auth.*` flags
 
-Both must be `true` for the plugin to mount the `/personal/tokens/*`
+Both must be `true` for the plugin to mount the `/personal/*`
 routes. With either unset the plugin logs a warning at boot and
 skips wiring; service tokens still work.
 
@@ -189,11 +195,11 @@ auth:
     enabled: true
 ```
 
-### `serviceTokens.userTokens` keys
+### `accessTokens.personal` keys
 
 ```yaml
-serviceTokens:
-  userTokens:
+accessTokens:
+  personal:
     enabled: true
     defaultExpiryDays: 30
     maxExpiryDays: 365
@@ -224,7 +230,7 @@ window exceeds its limit.
 #### `encryptionKey` (REQUIRED, no default)
 
 Base64 of exactly 32 raw bytes. The plugin uses this key with
-AES-256-GCM to encrypt the refresh token at rest in `user_tokens`
+AES-256-GCM to encrypt the refresh token at rest in `personal_access_tokens`
 so it can later be presented to RFC 7009 `/v1/revoke` at
 revocation time. Generate with:
 
@@ -232,7 +238,7 @@ revocation time. Generate with:
 openssl rand -base64 32
 ```
 
-The plugin refuses to mount the user-tokens routes if this key is
+The plugin refuses to mount the personal-access-token routes if this key is
 missing or doesn't decode to 32 bytes. **Treat as a secret** —
 losing it permanently breaks UI revocation for tokens minted
 under it. See [Production Readiness](production-readiness.md) for
@@ -246,7 +252,7 @@ when your OAuth deployment requires admin pre-approval of clients,
 or when you want a stable `clientId` across deploys.
 
 If absent, the plugin self-registers a client on first mint and
-caches it in the singleton `user_tokens_dcr_client` table.
+caches it in the singleton `personal_access_tokens_dcr_client` table.
 
 ---
 
@@ -263,17 +269,17 @@ backend:
       port: 5432
       user: backstage
       password: secret
-      database: backstage_plugin_service_tokens
+      database: backstage_plugin_service_access_tokens
 ```
 
-To use a dedicated SQLite file for the service-tokens plugin only (useful in development):
+To use a dedicated SQLite file for the access-tokens plugin only (useful in development):
 
 ```yaml
 backend:
   database:
     plugin:
-      service-tokens:
-        connection: '/tmp/service-tokens.sqlite'
+      access-tokens:
+        connection: '/tmp/access-tokens.sqlite'
 ```
 
 Migrations run automatically on backend startup. No manual schema management is required.
