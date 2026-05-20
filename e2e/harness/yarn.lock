@@ -7952,34 +7952,34 @@ __metadata:
   linkType: hard
 
 "@primedx/plugin-access-tokens-backend@file:../../packages/plugin-access-tokens-backend::locator=root%40workspace%3A.":
-  version: 0.1.0
-  resolution: "@primedx/plugin-access-tokens-backend@file:../../packages/plugin-access-tokens-backend#../../packages/plugin-access-tokens-backend::hash=33f6b4&locator=root%40workspace%3A."
+  version: 0.2.0
+  resolution: "@primedx/plugin-access-tokens-backend@file:../../packages/plugin-access-tokens-backend#../../packages/plugin-access-tokens-backend::hash=22af8d&locator=root%40workspace%3A."
   dependencies:
     "@backstage/backend-plugin-api": "npm:^1.8.0"
     "@backstage/catalog-model": "npm:^1.7.5"
     "@backstage/plugin-catalog-node": "npm:^2.0.0"
     "@backstage/plugin-permission-common": "npm:^0.9.7"
-    "@primedx/plugin-access-tokens-node": "npm:^0.1.0"
+    "@primedx/plugin-access-tokens-node": "npm:^0.2.0"
     express: "npm:^4.22.0"
     express-rate-limit: "npm:^7.4.0"
-  checksum: 10c0/403563039a1a21a44ac74ef7076df85786cfc112a1eb5ebd048e6209e69d02d6dbe0d4802a69c6aca9082d4312e7a70f4abeb6c6321da929b6b1966ff0f071c2
+  checksum: 10c0/e8a8535f0f31b515b9e84acce3fb20fbeedefed9acd190a44fa4f4d3becff0a23bc40c80ba12dfbc42e5740a5ff5f1a1db919ea907a53433713d095f159decef
   languageName: node
   linkType: hard
 
 "@primedx/plugin-access-tokens-node@file:../../packages/plugin-access-tokens-node::locator=root%40workspace%3A.":
-  version: 0.1.0
-  resolution: "@primedx/plugin-access-tokens-node@file:../../packages/plugin-access-tokens-node#../../packages/plugin-access-tokens-node::hash=eb0405&locator=root%40workspace%3A."
+  version: 0.2.0
+  resolution: "@primedx/plugin-access-tokens-node@file:../../packages/plugin-access-tokens-node#../../packages/plugin-access-tokens-node::hash=070df9&locator=root%40workspace%3A."
   dependencies:
     "@backstage/backend-defaults": "npm:^0.16.0"
     "@backstage/backend-plugin-api": "npm:^1.8.0"
     "@backstage/plugin-permission-common": "npm:^0.9.7"
-  checksum: 10c0/c4a661704984c8a827752cb37899b34541ebebf3eaf90949406cc33db83638fd00db1d83c9bfcf49aa555e9b79930d0b2291fe35079f6ffaeb79263518b0f414
+  checksum: 10c0/f77d37115a7485cb48b724887b25faed9faaf56c00bd9b1dbb6fbf2c01955442ef706c61b3328337e8c6795b28489c9772c24a740ff3ffae12fd4e590abadbba
   languageName: node
   linkType: hard
 
 "@primedx/plugin-access-tokens@file:../../packages/plugin-access-tokens::locator=root%40workspace%3A.":
-  version: 0.1.0
-  resolution: "@primedx/plugin-access-tokens@file:../../packages/plugin-access-tokens#../../packages/plugin-access-tokens::hash=39a392&locator=root%40workspace%3A."
+  version: 0.2.0
+  resolution: "@primedx/plugin-access-tokens@file:../../packages/plugin-access-tokens#../../packages/plugin-access-tokens::hash=14daa9&locator=root%40workspace%3A."
   dependencies:
     "@backstage/catalog-model": "npm:^1.7.7"
     "@backstage/core-components": "npm:^0.18.8"
@@ -7992,7 +7992,7 @@ __metadata:
     react: ^18.0.2
     react-dom: ^18.0.2
     react-router-dom: ^6.30.2
-  checksum: 10c0/479d85475016179cd5044d78bea00ac1c4968cbcbdaec49b4051e0dc87467ccb239403081e877c47f9bc950692fc9b877959b2c80a4437b2b0935b04ee3ac457
+  checksum: 10c0/67881841e5547670d48d689a042c95d28e6c52f4fbc9ec587380da0280ea889238e655ee7337f0ad8a550a64286d6758c4198b8d707897f5c77c36fe4ffb7f5f
   languageName: node
   linkType: hard
 
