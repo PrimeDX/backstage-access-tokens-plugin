@@ -1,6 +1,6 @@
 {
   "name": "@primedx/plugin-access-tokens-backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Backstage backend plugin for access token lifecycle APIs.",
   "license": "Apache-2.0",
   "backstage": {
@@ -56,7 +56,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@primedx/plugin-access-tokens-node": "^0.1.0",
+    "@primedx/plugin-access-tokens-node": "^0.2.0",
     "@backstage/catalog-model": "^1.7.5",
     "@backstage/backend-plugin-api": "^1.8.0",
     "@backstage/plugin-permission-common": "^0.9.7",
