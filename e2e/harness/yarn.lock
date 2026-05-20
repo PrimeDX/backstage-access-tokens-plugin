@@ -7953,7 +7953,7 @@ __metadata:
 
 "@primedx/plugin-access-tokens-backend@file:../../packages/plugin-access-tokens-backend::locator=root%40workspace%3A.":
   version: 0.1.0
-  resolution: "@primedx/plugin-access-tokens-backend@file:../../packages/plugin-access-tokens-backend#../../packages/plugin-access-tokens-backend::hash=29c4dd&locator=root%40workspace%3A."
+  resolution: "@primedx/plugin-access-tokens-backend@file:../../packages/plugin-access-tokens-backend#../../packages/plugin-access-tokens-backend::hash=33f6b4&locator=root%40workspace%3A."
   dependencies:
     "@backstage/backend-plugin-api": "npm:^1.8.0"
     "@backstage/catalog-model": "npm:^1.7.5"
@@ -7962,23 +7962,9 @@ __metadata:
     "@primedx/plugin-access-tokens-node": "npm:^0.1.0"
     express: "npm:^4.22.0"
     express-rate-limit: "npm:^7.4.0"
-  checksum: 10c0/5db9674883710299286d491854c84516bb9c79ac11af3a27654a0049dac0b3730757bed054d2244dc51af849c760bd54b1dd2a8dbeaad7d34620a060171a4ba3
+  checksum: 10c0/403563039a1a21a44ac74ef7076df85786cfc112a1eb5ebd048e6209e69d02d6dbe0d4802a69c6aca9082d4312e7a70f4abeb6c6321da929b6b1966ff0f071c2
   languageName: node
   linkType: hard
-
-"@primedx/plugin-access-tokens-backend@workspace:packages/plugin-access-tokens-backend":
-  version: 0.0.0-use.local
-  resolution: "@primedx/plugin-access-tokens-backend@workspace:packages/plugin-access-tokens-backend"
-  dependencies:
-    "@backstage/backend-plugin-api": "npm:^1.8.0"
-    "@backstage/catalog-model": "npm:^1.7.5"
-    "@backstage/plugin-catalog-node": "npm:^2.0.0"
-    "@backstage/plugin-permission-common": "npm:^0.9.7"
-    "@primedx/plugin-access-tokens-node": "npm:^0.1.0"
-    express: "npm:^4.22.0"
-    express-rate-limit: "npm:^7.4.0"
-  languageName: unknown
-  linkType: soft
 
 "@primedx/plugin-access-tokens-node@file:../../packages/plugin-access-tokens-node::locator=root%40workspace%3A.":
   version: 0.1.0
@@ -7990,16 +7976,6 @@ __metadata:
   checksum: 10c0/c4a661704984c8a827752cb37899b34541ebebf3eaf90949406cc33db83638fd00db1d83c9bfcf49aa555e9b79930d0b2291fe35079f6ffaeb79263518b0f414
   languageName: node
   linkType: hard
-
-"@primedx/plugin-access-tokens-node@workspace:packages/plugin-access-tokens-node":
-  version: 0.0.0-use.local
-  resolution: "@primedx/plugin-access-tokens-node@workspace:packages/plugin-access-tokens-node"
-  dependencies:
-    "@backstage/backend-defaults": "npm:^0.16.0"
-    "@backstage/backend-plugin-api": "npm:^1.8.0"
-    "@backstage/plugin-permission-common": "npm:^0.9.7"
-  languageName: unknown
-  linkType: soft
 
 "@primedx/plugin-access-tokens@file:../../packages/plugin-access-tokens::locator=root%40workspace%3A.":
   version: 0.1.0
@@ -8019,24 +7995,6 @@ __metadata:
   checksum: 10c0/479d85475016179cd5044d78bea00ac1c4968cbcbdaec49b4051e0dc87467ccb239403081e877c47f9bc950692fc9b877959b2c80a4437b2b0935b04ee3ac457
   languageName: node
   linkType: hard
-
-"@primedx/plugin-access-tokens@workspace:packages/plugin-access-tokens":
-  version: 0.0.0-use.local
-  resolution: "@primedx/plugin-access-tokens@workspace:packages/plugin-access-tokens"
-  dependencies:
-    "@backstage/catalog-model": "npm:^1.7.7"
-    "@backstage/core-components": "npm:^0.18.8"
-    "@backstage/core-plugin-api": "npm:^1.12.4"
-    "@backstage/frontend-plugin-api": "npm:^0.15.0"
-    "@backstage/plugin-catalog-react": "npm:^2.1.0"
-    "@material-ui/core": "npm:^4.12.2"
-    "@material-ui/icons": "npm:^4.9.1"
-  peerDependencies:
-    react: ^18.0.2
-    react-dom: ^18.0.2
-    react-router-dom: ^6.30.2
-  languageName: unknown
-  linkType: soft
 
 "@protobufjs/aspromise@npm:^1.1.1, @protobufjs/aspromise@npm:^1.1.2":
   version: 1.1.2
