@@ -115,7 +115,7 @@ It does not require a Changeset for:
 - Default branch: `main`
 - Branch protection on `main` so CI must pass before merge
 - Required status checks on pull requests: `CI / verify`, `CI / security-publishable`, `CI / security-harness`, `CI / ui-smoke`, `Changeset Required`, and `CodeQL`
-- `NPM_TOKEN` configured in repository or organization GitHub Actions secrets
+- npm Trusted Publishing configured on each `@primedx` package (Settings → Trusted Publisher on npmjs.com), pointing to `PrimeDX/backstage-access-tokens-plugin` with workflow `publish.yml`
 - npm package ownership configured for the `@primedx` scope
 - GitHub code scanning enabled so CodeQL results are visible in the Security tab
 
@@ -198,7 +198,7 @@ Before publishing, confirm documentation and compatibility guardrails for this r
 - Security-significant or breaking changes include migration notes and operator actions
 - Public API or integration pattern changes are called out in release notes/changelogs
 - Open security findings from `Dependency Review` and `CodeQL` are triaged before release
-- `Publish` is expected to skip cleanly when `NPM_TOKEN` is not configured, and to push tags only after a successful publish
+- `Publish` pushes release tags only after a successful publish run reports published packages
 
 ## Manual publish fallback
 
@@ -210,13 +210,6 @@ Publish all changed packages with public scoped access:
 npx changeset publish
 ```
 
-For a first manual publish of an individual package, use:
-
-```bash
-npm publish --access public
-```
-
-Run that command from the package directory you want to publish.
 
 ## Post-publish checks
 
