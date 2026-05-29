@@ -11,6 +11,7 @@ import {
   personalAccessTokensAuthRouteRef,
   personalAccessTokensRouteRef,
 } from './routes.js';
+import { UserTokensPage, UserTokensSettingsTab } from './UserTokensPage.jsx';
 
 const serviceTokensPage = PageBlueprint.make({
   params: {
@@ -90,5 +91,7 @@ export {
   personalAccessTokensRouteRef,
   accessTokensPlugin,
   personalAccessTokensAuthPlugin,
+  UserTokensPage,
+  UserTokensSettingsTab,
 };
 export default accessTokensPlugin;
