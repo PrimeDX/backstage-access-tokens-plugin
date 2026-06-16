@@ -1,5 +1,11 @@
 # @primedx/plugin-access-tokens
 
+## 0.2.1
+
+### Patch Changes
+
+- a20b704: Export `UserTokensPage` and `UserTokensSettingsTab` from the frontend plugin public API.
+
 ## 0.2.0
 
 ### Minor Changes
