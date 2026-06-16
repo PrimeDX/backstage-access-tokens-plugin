@@ -75,6 +75,21 @@ Use a local Backstage integration harness for end-to-end validation. For recomme
 
 The harness consumes this repo's packages through Yarn `file:` dependencies, which are copied into `e2e/harness/node_modules/@primedx/*` rather than live-symlinked. After changing any `packages/plugin-access-tokens*` package, run `yarn install` from `e2e/harness` before starting the harness or running harness-based validation. This refreshes the copied package snapshots and the harness lockfile hash so manual testing and Playwright/API smoke tests exercise the current source.
 
+### CI impact: you must commit the refreshed harness lockfile
+
+Because the harness depends on the local packages via Yarn `file:` references, `e2e/harness/yarn.lock` pins a **content hash** of each `@primedx/*` package. Any change to a `packages/plugin-access-tokens*` `package.json` or to a published file (anything in that package's `files` list) changes that hash.
+
+The `ui-smoke` CI job runs `yarn install --immutable` in `e2e/harness`, so a stale harness lockfile fails the build with `YN0028: The lockfile would have been modified by this install, which is explicitly forbidden.`
+
+Therefore, in the **same PR** as any such package change, regenerate and commit the harness lockfile:
+
+```bash
+npm run harness:lockfile   # cd e2e/harness && yarn install --mode update-lockfile
+git add e2e/harness/yarn.lock
+```
+
+This is the single most common cause of an otherwise-green PR failing `ui-smoke`. Note: the release `version:ci` script already runs this automatically during `changeset version`, so the auto-generated `Version Packages` PR does not need manual lockfile updates — but direct edits to package files do.
+
 If a change is not meaningfully tested, call that out explicitly rather than implying confidence.
 
 ## Pull Requests
