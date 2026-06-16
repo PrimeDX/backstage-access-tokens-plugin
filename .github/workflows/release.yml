@@ -42,7 +42,7 @@ jobs:
       - name: Open or update version PR
         uses: changesets/action@v1
         with:
-          version: npx changeset version
+          version: npm run version:ci
           title: Version Packages
           commit: "chore(release): version packages"
         env:

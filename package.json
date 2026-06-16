@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "changeset": "changeset",
+    "version:ci": "changeset version && cd e2e/harness && yarn install --mode update-lockfile",
     "docs:install": "python3 -m venv .venv && .venv/bin/pip install mkdocs mkdocs-material",
     "docs:serve": ".venv/bin/mkdocs serve",
     "harness:install": "yarn --cwd e2e/harness install",
