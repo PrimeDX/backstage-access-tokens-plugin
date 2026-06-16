@@ -3,6 +3,11 @@
   "version": "0.2.0",
   "description": "Backstage node library for access token permissions and service token verification.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PrimeDX/backstage-access-tokens-plugin.git",
+    "directory": "packages/plugin-access-tokens-node"
+  },
   "backstage": {
     "role": "node-library"
   },

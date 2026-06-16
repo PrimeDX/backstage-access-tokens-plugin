@@ -3,6 +3,11 @@
   "version": "0.2.0",
   "description": "Backstage backend plugin for access token lifecycle APIs.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PrimeDX/backstage-access-tokens-plugin.git",
+    "directory": "packages/plugin-access-tokens-backend"
+  },
   "backstage": {
     "role": "backend-plugin",
     "pluginId": "access-tokens",
