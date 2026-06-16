@@ -10,6 +10,7 @@
     "docs:install": "python3 -m venv .venv && .venv/bin/pip install mkdocs mkdocs-material",
     "docs:serve": ".venv/bin/mkdocs serve",
     "harness:install": "yarn --cwd e2e/harness install",
+    "harness:lockfile": "cd e2e/harness && yarn install --mode update-lockfile",
     "harness:start": "yarn --cwd e2e/harness start",
     "ci": "npm run test && npm run storybook:build && npm run pack:dry-run",
     "pack:backend": "npm_config_cache=/tmp/npm-cache npm pack --dry-run --workspace packages/plugin-access-tokens-backend",
