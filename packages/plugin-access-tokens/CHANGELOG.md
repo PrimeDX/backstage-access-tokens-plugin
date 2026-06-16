@@ -1,5 +1,11 @@
 # @primedx/plugin-access-tokens
 
+## 0.2.2
+
+### Patch Changes
+
+- 55abdfd: Add `repository` metadata to each package so npm provenance (OIDC trusted publishing) can validate the source repository during publish.
+
 ## 0.2.1
 
 ### Patch Changes
