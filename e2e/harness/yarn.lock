@@ -7953,7 +7953,7 @@ __metadata:
 
 "@primedx/plugin-access-tokens-backend@file:../../packages/plugin-access-tokens-backend::locator=root%40workspace%3A.":
   version: 0.2.0
-  resolution: "@primedx/plugin-access-tokens-backend@file:../../packages/plugin-access-tokens-backend#../../packages/plugin-access-tokens-backend::hash=087fd7&locator=root%40workspace%3A."
+  resolution: "@primedx/plugin-access-tokens-backend@file:../../packages/plugin-access-tokens-backend#../../packages/plugin-access-tokens-backend::hash=22af8d&locator=root%40workspace%3A."
   dependencies:
     "@backstage/backend-plugin-api": "npm:^1.8.0"
     "@backstage/catalog-model": "npm:^1.7.5"
@@ -7962,7 +7962,7 @@ __metadata:
     "@primedx/plugin-access-tokens-node": "npm:^0.2.0"
     express: "npm:^4.22.0"
     express-rate-limit: "npm:^7.4.0"
-  checksum: 10c0/b22e0aea76a4b1b29a892b6ab52f400f92ef849dc7fac4be6693ab4af063f82b70e24ed36f0207dc3d14f8c14a2dad31ba5ee945b2d046a82cfb617f639b871c
+  checksum: 10c0/e8a8535f0f31b515b9e84acce3fb20fbeedefed9acd190a44fa4f4d3becff0a23bc40c80ba12dfbc42e5740a5ff5f1a1db919ea907a53433713d095f159decef
   languageName: node
   linkType: hard
 
