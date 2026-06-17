@@ -25,6 +25,7 @@
     "src/module.js",
     "src/permission.js",
     "src/primitives.js",
+    "src/resolveTokenScopes.js",
     "src/serviceTokenHandler.js",
     "src/verifyToken.js"
   ],
