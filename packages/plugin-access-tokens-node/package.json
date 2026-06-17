@@ -1,6 +1,6 @@
 {
   "name": "@primedx/plugin-access-tokens-node",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Backstage node library for access token permissions and service token verification.",
   "license": "Apache-2.0",
   "repository": {

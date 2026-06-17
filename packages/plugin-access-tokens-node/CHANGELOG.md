@@ -1,5 +1,11 @@
 # @primedx/plugin-access-tokens-node
 
+## 0.2.2
+
+### Patch Changes
+
+- 5503ed7: Include `src/resolveTokenScopes.js` in the npm publish manifest. The file is imported by `module.js` and `index.js` but was omitted from `package.json` `files`, causing `ERR_MODULE_NOT_FOUND` for npm consumers since the initial release.
+
 ## 0.2.1
 
 ### Patch Changes

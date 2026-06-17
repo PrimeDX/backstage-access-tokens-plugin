@@ -7967,13 +7967,13 @@ __metadata:
   linkType: hard
 
 "@primedx/plugin-access-tokens-node@file:../../packages/plugin-access-tokens-node::locator=root%40workspace%3A.":
-  version: 0.2.1
-  resolution: "@primedx/plugin-access-tokens-node@file:../../packages/plugin-access-tokens-node#../../packages/plugin-access-tokens-node::hash=f50834&locator=root%40workspace%3A."
+  version: 0.2.2
+  resolution: "@primedx/plugin-access-tokens-node@file:../../packages/plugin-access-tokens-node#../../packages/plugin-access-tokens-node::hash=b1f385&locator=root%40workspace%3A."
   dependencies:
     "@backstage/backend-defaults": "npm:^0.16.0"
     "@backstage/backend-plugin-api": "npm:^1.8.0"
     "@backstage/plugin-permission-common": "npm:^0.9.7"
-  checksum: 10c0/bc59721c19b40376666ff60c7ea191a5adb3abfe392d3f59b2531e34ef4df4a3f307e9ff9998f241868ebe51e0224dbedf567d206b0c5660b4dd52a982731e7b
+  checksum: 10c0/0e73764eba442ed6a676a9b8b34476cc21568847805cf923081b9c8ea0d4ed5afb7d5514ff5d3fd3f83e5a9113ae165675ac098f9dc027716a276cdb60fe3b0a
   languageName: node
   linkType: hard
 
